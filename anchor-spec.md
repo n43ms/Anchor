@@ -695,19 +695,99 @@ Copy should name things by what the operator controls and recognizes. A run is c
 - A fencing event renders as an explicit marker on the track, not as a buried log line
 - Steps skipped because their idempotency key already carried a result are rendered distinctly, so **"the tool did not run twice" is visible rather than asserted**
 
-### 13.3 Page inventory
+### 13.3 Navigation and page inventory
 
-**Runs list.** Live table: id, agent type, status, current step, elapsed time, owning worker, attempt count. Filterable by status, sorted with active runs first, rows updating in place over the WebSocket.
+Anchor follows the navigational pattern of Render and Vercel: **a persistent left sidebar with grouped sections**, rather than a flat handful of top-level pages.
 
-**Run detail.** The timeline as the hero, with the raw event log below it in a monospaced expandable view. Every event shows its sequence number, epoch, and writing worker. Tool intents and results are paired and collapsible. A replay indicator shows how many steps were replayed versus freshly executed on the current attempt.
+The reason is positioning rather than function. A product with five pages reads as a single-screen demo; a product with a grouped sidebar reads as an operator console with real surface area. The runtime underneath is identical either way — but the perceived scope is not, and perceived scope is what a reviewer forms an opinion about in the first ten seconds.
 
-**Worker fleet.** One card per worker: id, uptime, current runs, steps executed, last heartbeat age, code version — and a **kill control**. Killing a worker from the interface is a first-class feature, because it is how the product demonstrates itself.
+#### The sidebar
 
-**Chaos console.** Configure and launch a chaos run — worker count, kill rate, latency injection, failure injection, duration — then watch the invariant panel live: duplicate executions (must read zero), stranded runs (must read zero), recovery time distribution, replay overhead.
+Present on every page. Three zones, top to bottom.
+
+**Zone 1 — workspace switcher, pinned at the top.** A project or workspace selector. **This slot exists even though there is only one project**, because it is what makes the product read as built for multiple projects rather than as a one-off. It need do nothing beyond naming the current workspace and showing that the concept exists. It does not reintroduce the accounts and multi-tenancy that §18 cuts — it is a navigational affordance, not a tenancy boundary.
+
+**Zone 2 — seven grouped sections**, detailed below.
+
+**Zone 3 — a Docs link, pinned at the bottom** and separated from the groups by a divider. Links out to the written design document of §18 — the artifact a senior reviewer is most likely to actually read, which is reason enough to give it permanent placement rather than burying it in a footer.
+
+| Group | Pages |
+|---|---|
+| Overview | Dashboard |
+| Runs | All runs · Needs review · Scheduled |
+| Workers | Fleet · Deployments |
+| Chaos | Console · History |
+| Tools | Registry · Test run |
+| Observability | Metrics · Logs |
+| Settings | Environment · API keys · Webhooks |
+
+#### Overview
+
+**Dashboard.** Fleet health at a glance: active run count, a live sparkline of step throughput, and any recent duplicate-side-effect alerts, which read zero. Per §22.5 the throughput sparkline belongs inside a stat tile rather than as its own chart, and the duplicate count is the one figure permitted to be large here.
+
+This is the console's landing page. **It is not the same page as the public landing surface of §21.3** — since §21.7 establishes there is no login, the two coexist: the persuasion layer at the root path for a cold visitor, and this dashboard as the console's own entry point once they cross into the instrument layer. Do not merge them; they have different jobs and different readers.
+
+#### Runs
+
+**All runs.** The primary list view. Live table: id, agent type, status, current step, elapsed time, owning worker, attempt count. Filterable by status — pending, running, completed, failed, needs_review — sorted with active runs first, rows updating in place over the WebSocket. **Each row carries the compact thread strand of §24.3** as a visual summary, so a reader can see at a glance which runs changed hands. Per §24.8 the compact strand does not identify *which* workers touched a run, so the owning-worker column stays.
+
+**Needs review.** Dead-lettered and ambiguous runs — those that exhausted retries, and those that entered the uncertainty window of §3.3 and could not be resolved automatically — surfaced as **their own page rather than only as a filter on the main list.** Each entry carries its full log, the failing step highlighted, and for uncertainty-window cases the specific ambiguous tool call with the available reconciliation options and a resolution action.
+
+**Scheduled.** Recurring or delayed runs. Forward-looking: **build this page only if the recurring-run feature of §18 gets built.** Until then the group has two pages and the sidebar shows two.
+
+#### Workers
+
+**Fleet.** One card per worker: id, uptime, current runs, steps executed, last heartbeat age, code version — and a **kill control**. Killing a worker from the interface is a first-class feature, because it is how the product demonstrates itself. Unchanged from the previous inventory; only its location in the navigation has moved.
+
+**Deployments.** Which code version each worker is currently running, presented as a deploy-history-style list. Lets an operator see "three workers on v12, one still on v11" at a glance. **Populated entirely from the `version` column already defined on the `workers` table in §7** — no new schema, no new instrumentation, no new writes. It also answers a question the fleet view cannot: whether an in-flight run is being resumed by a worker running different code than the one that started it, which is a genuinely interesting durability question to be able to ask.
+
+#### Chaos
+
+**Console.** The chaos configuration and live-launch page: worker count, kill rate, latency injection, failure injection, duration — then the invariant panel live, showing duplicate executions (must read zero), stranded runs (must read zero), recovery time distribution, and replay overhead. Content unchanged; only relocated under this group.
 
 **This page is the project. It is what you show first.**
 
-**Dead letter.** Runs that exhausted retries or entered `needs_review`, each with its full log, the failing step highlighted, and — for uncertainty-window cases — the specific ambiguous tool call with the reconciliation options available and a resolution action.
+**History.** Every past chaos run with its final invariant report preserved permanently — duplicate executions, stranded runs, recovery time distribution — rather than visible only while the run is live.
+
+**Why this page matters more than its size suggests.** It converts the chaos harness from a one-time demonstration into an **accumulating, inspectable body of evidence.** A reviewer can scroll back through weeks of runs and see that the invariants held every time, which is a materially stronger claim than one successful demo. Section 10.3 already argues that a number which regenerates is more credible than a number that was true once; this page is that argument given a surface. It carries a second, quieter signal too: a system that preserves every past result is one that could not have quietly discarded a bad one.
+
+#### Tools
+
+**Registry.** Every tool in the `tool_registry` table of §7: name, declared safety category — retry-safe, reconcilable, or unsafe — and last-used timestamp. This page makes the per-tool policy decision of §3.3 visible rather than buried in configuration, and that decision is among the design choices most worth highlighting.
+
+**Test run.** Submit a one-off synthetic task through a simple form, without writing code. Useful for manual verification during development, and for demos where a specific step count or tool mix is wanted rather than whatever the preset produces.
+
+#### Observability
+
+**Metrics.** The §12 metrics visualized rather than merely tracked: throughput, recovery latency, replay overhead, and fencing rate over time. Chart forms, color assignment, and the no-dual-axis rule per §22.5.
+
+**Logs.** A searchable view across the raw event log for **all** runs, filterable by event type, worker, epoch, and time range. Distinct from the per-run event log on the run-detail page, which stays scoped to one run.
+
+#### Settings
+
+**Environment.** Lease duration, per-step retry limits, and worker concurrency caps, **editable live without a redeploy.**
+
+This is a deliberate design choice and worth stating as one. Section 6.1 establishes that lease duration must exceed the maximum expected step duration plus the renewal interval, and that getting it wrong produces spurious fencing — an intermittent bug that is genuinely hard to diagnose. An operator who can retune the lease while watching the fencing-rate metric of §12 closes that loop in seconds. Requiring a redeploy to change it would make this console documentation rather than tooling, which is the distinction the whole page inventory is trying to land.
+
+**API keys.** For programmatic run submission. Keys authenticate a caller against the API; they are not user accounts and do not reintroduce the auth cut in §18 and §21.7.
+
+**Webhooks.** Notify an external URL on run completion or failure. Cheap and genuinely useful: it reuses the `RUN_COMPLETED` and `RUN_FAILED` event types already defined in §7, so the implementation is a subscriber on the existing log rather than new machinery.
+
+#### Why this structure
+
+Four of these choices are doing more work than they appear to.
+
+**Separating Needs review from the main run list** mirrors how deploy tools isolate failures instead of burying them behind a filter. A failure reachable only by selecting a dropdown value is a failure that goes unnoticed, and for this product the ambiguous-run case is the one most worth noticing — it is where the system admits what it does not know, which is the most credible thing it does.
+
+**Deployments under Workers costs nothing extra**, since worker version is already tracked in §7, and it gives a real answer to "which code is actually running right now" — a question every operator eventually asks and most consoles cannot answer.
+
+**Chaos History converts the harness's output from a demo into an asset.** The proof stops being an event that happened and becomes a record that accumulates.
+
+**Live-editable Environment settings is what makes the console read as operational tooling** rather than a static demo. It is also the page that most directly reflects §6.1's hard-won constraint about lease duration, which means it doubles as evidence that the constraint was understood.
+
+#### Page count is not build priority
+
+**This expanded inventory does not change the build order of §15.** The chaos console and the run-detail view remain the priority builds. Every page added here — Deployments, Chaos History, Tools Registry, Test run, Metrics, Logs, Environment, API keys, Webhooks — is a UI shell over data that already exists, and all of it can be built last, after the runtime and its proof are working, exactly as phase 7 already implies. **Do not read a longer sidebar as a longer critical path**, and do not build any of it before phase 4.
 
 ### 13.4 Motion
 
@@ -849,3 +929,953 @@ Worth including in the repository README, because the vocabulary is the project.
 The specification is complete. The protocol is defined, the invariants are stated, and the build order is sequenced by dependency rather than by appeal.
 
 Build to phase 2 first — a worker that dies mid-run and resumes correctly. Everything else in this document is elaboration on that single behaviour, and until it works, nothing else in the system means anything.
+
+---
+---
+
+# Addendum A — The self-explanatory surface and the visual system
+
+**Addendum version:** 1.1
+**Status:** Additive. Nothing in sections 0–20 is retracted. Where this addendum refines an earlier statement, it says so explicitly and gives the reason.
+**Scope note:** Sections 21–23 specify the surface a reviewer meets in the first ten seconds, and the visual system that carries it. Section 13 remains authoritative for the dense operational views; this addendum governs the explanatory layer above them and the design tokens beneath them both.
+
+---
+
+## 21. The landing surface — the project must explain itself
+
+### 21.1 The problem this section solves
+
+Sections 0–20 describe a system that is correct. They do not describe a system that is *legible to someone who has never heard of it*. Those are different problems, and the second one is what determines whether the first one is ever noticed.
+
+The reviewer arriving at the deployed URL has no context. They have not read this document. They will not read a wall of prose. They have somewhere between ten and ninety seconds of patience, and in that window they must arrive at three conclusions, in order:
+
+1. **"I understand what this does."**
+2. **"I just watched it do the hard thing."**
+3. **"The hard thing is measured, not claimed."**
+
+If the landing surface delivers those three, every remaining page is a reward for interest already earned. If it doesn't, the chaos console and the invariant assertions are never reached, and the engineering in them counts for nothing.
+
+**The governing rule for this section:** the landing surface must require **zero prior knowledge and zero reading** to produce conclusion 2. Explanation is a fallback for the curious, not the primary channel. The primary channel is a thing happening on screen.
+
+### 21.2 Reconciling this with section 13
+
+Section 13.1 sets the design position as "closer to a flight recorder than to a dashboard," with "zero decoration." Section 13.4 requires motion to be "functional only, and almost invisible." Taken literally and applied to the landing surface, those instructions produce something correct and unreadable.
+
+**The resolution is two layers with different jobs, not a compromise between them.**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  THE PERSUASION LAYER          — landing / overview / demo       │
+│                                                                   │
+│    Job: comprehension in ten seconds, for a cold reader.         │
+│    Permitted: large type, a hero figure, an animated             │
+│      explainer, generous whitespace, deliberate motion,          │
+│      a guided call to action.                                    │
+│    Still forbidden: gradient washes, glassmorphism, decorative   │
+│      illustration, marketing copy, anything that moves           │
+│      without carrying information.                               │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              │  one click, no friction
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  THE INSTRUMENT LAYER          — runs, timeline, fleet, chaos,   │
+│                                  dead letter                     │
+│                                                                   │
+│    Job: operational density for a reader who is now invested.    │
+│    Section 13 governs here, unchanged: monospaced where          │
+│      alignment carries meaning, high information density,        │
+│      motion only where it conveys a state change.                │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**"Flashy" is defined here as high production value, never as decoration.** The distinction is load-bearing and worth stating precisely, because it is the difference between a console that reads as professional tooling and one that reads as a student project with a template bolted on:
+
+| Reads as FAANG-grade | Reads as a template |
+|---|---|
+| Live data moving on screen | Gradient hero background |
+| A number counting up because a run completed | A number counting up on page load for effect |
+| One hero figure, enormous, in the same typeface as everything else | Three competing display fonts |
+| Motion that marks a state transition | Motion on scroll, on hover, on everything |
+| Whitespace and alignment doing the work | Borders, shadows, and glass panels doing the work |
+| A dense table that is genuinely readable | A dense table with a decorative header |
+
+The most persuasive thing this project can put on a screen is **its own live state**. That is free, it is unfakeable, and no amount of visual styling competes with it.
+
+### 21.3 The landing page, top to bottom
+
+One scrolling page. Every band earns its place by advancing one of the three conclusions.
+
+```
+╔═══════════════════════════════════════════════════════════════════╗
+║  BAND 1 — THE CLAIM                                    (no scroll) ║
+╠═══════════════════════════════════════════════════════════════════╣
+║                                                                    ║
+║   Anchor keeps AI agents running when the machine                  ║
+║   executing them dies.                                             ║
+║                                                                    ║
+║   Agent runs are stored as an append-only log in Postgres,         ║
+║   not in a process's memory. Kill a worker mid-run and             ║
+║   another resumes from the exact step it stopped on —              ║
+║   without re-sending the email it already sent.                    ║
+║                                                                    ║
+║   ┌──────────────────────────────┐  ┌───────────────────────────┐  ║
+║   │  ▶  Run the example agent    │  │  Read the design doc  →   │  ║
+║   └──────────────────────────────┘  └───────────────────────────┘  ║
+║                                                                    ║
+║   ● 3 workers online   ·   1,284 runs   ·   0 duplicate effects    ║
+║     └── live, from /api/health and /api/metrics ──┘                ║
+╚═══════════════════════════════════════════════════════════════════╝
+```
+
+Two sentences. The first states the outcome in language requiring no distributed-systems vocabulary. The second names the mechanism and lands on the concrete consequence — *the email it already sent* — because that image does more work than the word "idempotency" ever will.
+
+**The live status strip is the most important element in this band.** Three real numbers, polled from the existing `/api/health` and `/api/metrics` endpoints, proving before any interaction that this is a running system rather than a repository with a screenshot. If the fleet is degraded it says so — a strip that can report bad news is the reason to believe it when it reports good news.
+
+```
+╔═══════════════════════════════════════════════════════════════════╗
+║  BAND 2 — THE MECHANISM, ANIMATED                                  ║
+╠═══════════════════════════════════════════════════════════════════╣
+║                                                                    ║
+║        worker-a                              worker-c              ║
+║       ┌────────┐                            ┌────────┐             ║
+║       │  ▓▓▓   │  ✕ killed at step 6        │        │             ║
+║       └────┬───┘                            └───▲────┘             ║
+║            │ appends each step                  │ reads the log    ║
+║            ▼                                    │ resumes at 6     ║
+║       ┌────────────────────────────────────────────────┐           ║
+║       │  ▓▓ ▓▓ ▓▓ ▓▓ ▓▓ ░░ ░░ ░░ ░░ ░░   run_47 log   │           ║
+║       │   1  2  3  4  5  6  7  8  9 10                 │           ║
+║       └────────────────────────────────────────────────┘           ║
+║                     Postgres — the source of truth                 ║
+║                                                                    ║
+║   A three-beat loop, ~6s, pausing on the handoff.                  ║
+╚═══════════════════════════════════════════════════════════════════╝
+```
+
+A single looping animation, three beats: worker-a executing and appending; worker-a dying with the log intact; worker-c reading the log and continuing from step 6. It holds for roughly a second on the handoff, because the handoff is the entire idea.
+
+Constraints: **SVG or CSS, hand-built, no animation library, no video file.** It must be under a few kilobytes, must not autoplay audio, must respect `prefers-reduced-motion` by falling back to the third beat as a static frame with the transition labelled, and must be captionable so that it is comprehensible with the animation disabled. This is an explanatory diagram that happens to move — the movement carries the causal sequence, which is exactly the case where motion is information rather than decoration.
+
+```
+╔═══════════════════════════════════════════════════════════════════╗
+║  BAND 3 — THE GUIDED DEMO                                          ║
+╠═══════════════════════════════════════════════════════════════════╣
+║   The four-step walkthrough of §21.4, rendered inline.             ║
+║   This band is the product. Everything above it is preamble.       ║
+╚═══════════════════════════════════════════════════════════════════╝
+
+╔═══════════════════════════════════════════════════════════════════╗
+║  BAND 4 — THE EVIDENCE                                             ║
+╠═══════════════════════════════════════════════════════════════════╣
+║                                                                    ║
+║              0                                                     ║
+║              duplicate tool executions                             ║
+║              across 517 injected worker kills                      ║
+║                                                                    ║
+║   ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐     ║
+║   │ Runs       │ │ Steps      │ │ Median     │ │ Stranded   │     ║
+║   │ 2,041      │ │ 41,388     │ │ recovery   │ │ runs       │     ║
+║   │ ▁▂▃▅▇▆▇    │ │ ▂▃▄▆▇▇▇    │ │ 1.8s       │ │ 0          │     ║
+║   └────────────┘ └────────────┘ └────────────┘ └────────────┘     ║
+║                                                                    ║
+║   Last chaos run: 4h ago, 30 min sustained   ·   Full report →     ║
+╚═══════════════════════════════════════════════════════════════════╝
+```
+
+The hero figure is the zero. It is the only hero figure in the entire product (§22.5), and it is the sentence from §10.3 rendered as a number instead of a claim. **It must be generated by the chaos harness and timestamped**, because a number with a "last run: 4 hours ago" beside it is evidence, and the same number hardcoded is a decoration that a reviewer will assume is hardcoded.
+
+```
+╔═══════════════════════════════════════════════════════════════════╗
+║  BAND 5 — THE ARCHITECTURE, AND THE HONEST PART                    ║
+╠═══════════════════════════════════════════════════════════════════╣
+║   The §5 diagram, rendered rather than ASCII, with the four        ║
+║   invariants called out where they are enforced.                   ║
+║                                                                    ║
+║   Then, in plain type and not hidden:                              ║
+║     · This is durable execution in the Temporal lineage,           ║
+║       scoped to agent runs.                                        ║
+║     · True exactly-once is impossible. This is at-least-once       ║
+║       with idempotent effects, plus a declared policy per tool     ║
+║       for the uncertainty window.                                  ║
+║     · Single region, single Postgres writer. Here is where         ║
+║       it stops scaling, and here is how it would shard.            ║
+╚═══════════════════════════════════════════════════════════════════╝
+```
+
+Band 5 puts §1.5 and §17.3 on the page rather than saving them for an interview. A landing page that names its own prior art and states its own ceiling is doing something almost no portfolio project does, and it converts the two most likely objections into evidence of judgment before they are ever raised.
+
+### 21.4 The guided demo — the interaction that has to land
+
+This is the load-bearing sequence. It must work on a first visit, with no configuration, no account, and no reading. Four steps, each one click.
+
+```
+STEP 1  ─  "Run the example agent"
+           One click submits a real run of the demo agent (§21.5).
+           No form. No options. No modal.
+           → The timeline appears inline, already populating.
+
+STEP 2  ─  Steps land in real time over the WebSocket
+           Each segment labelled with its action and its worker id.
+           Every segment reads worker-a. This uniformity is
+           deliberate: it is the baseline the next step breaks.
+
+STEP 3  ─  A single highlighted control appears mid-run:
+           ┌──────────────────────────────────────────────┐
+           │  ✕  Kill worker-a                            │
+           │     It is executing step 6 of this run.       │
+           │     Watch what happens.                       │
+           └──────────────────────────────────────────────┘
+           This calls the real POST /api/workers/{id}/kill.
+           It is not a simulation, and the UI should say so.
+
+STEP 4  ─  The payoff, and it must NOT be smoothed over:
+             · the timeline stalls, visibly, and is labelled
+               "orphaned — lease expiring"
+             · a countdown shows the lease expiry, so the pause
+               reads as a designed interval rather than a bug
+             · a new segment appears reading worker-c
+             · steps 1–5 are marked "replayed from log — not
+               re-executed"
+             · a line of copy states the conclusion outright:
+               "Steps 1–5 were read back from the log. The tool
+                calls in them did not run a second time."
+```
+
+Four notes on why this is specified this tightly:
+
+**The countdown during the stall converts the worst moment into the best one.** Section 13.4 correctly insists the two-second gap must not be hidden. But an unexplained pause reads as a broken page to someone who does not yet know what they are watching. A countdown labelled "lease expires in 1.4s" tells the reviewer the pause is the mechanism working. The gap stays fully visible — it is *narrated*, not smoothed.
+
+**Step 4 must state its own conclusion in words.** The visual distinction between replayed and freshly-executed segments (§22.4) is the proof, but a reviewer seeing this interface for the first time has not yet learned the encoding. One sentence of copy makes the proof self-interpreting. This is the single highest-value sentence in the product.
+
+**The kill must be real.** A simulated kill is worthless, and a reviewer will suspect simulation by default. Label the button with the endpoint it calls and let them find the same worker gone from the fleet page.
+
+**Nothing in this sequence may require the reviewer to navigate.** The demo runs inline on the landing page. The dedicated run-detail, fleet, and chaos pages of §13.3 exist unchanged for the reviewer who now wants depth — but the first proof must not cost a page load.
+
+### 21.5 The demo agent — deliberately small, deliberately honest
+
+The workload exists to make the runtime legible. Section 17.3 already commits to saying this out loud: a complex agent would obscure the mechanism rather than showcase it.
+
+| Property | Specification | Reason |
+|---|---|---|
+| Steps | 8–10 | Enough for a mid-run kill to have visible history behind it and visible work ahead of it |
+| Total duration | 25–40 seconds | Long enough to kill a worker in the middle; short enough to watch the whole thing without losing interest |
+| Step duration | 2–5s, deliberately varied | Uniform steps make the timeline look synthetic; varied ones make duration-sized segments meaningful |
+| Model calls | Stubbed by default, with fixed latency and canned responses | The runtime's claim is about durability, not model quality. A stub removes API keys, cost, rate limits, and non-determinism from the demo path — and the determinism boundary of §3.2 means the runtime cannot tell the difference. **State this on the page.** |
+| Tool calls | Fake but named after real consequential actions — `web_search`, `fetch_page`, `send_email` | `send_email` is what makes the double-execution risk intuitive without a word of explanation |
+| Tool mix | At least one `retry-safe`, one `reconcilable`, and one `unsafe` | So all three uncertainty policies of §3.3 are reachable from the UI |
+| Side effect | Writes to a `demo_effects` table, one row per execution | **This is the proof surface.** The row count is the ground truth for "it ran once." Show it. |
+
+**The `demo_effects` table is not an implementation detail — it is the strongest evidence in the product.** A counter reading `send_email executed: 1 time` beside a timeline showing the run was interrupted and resumed is a claim a reviewer can verify without trusting the log. Surface it in step 4 of the guided demo.
+
+Three one-click presets on the empty state, per §13.5, now specified:
+
+| Preset | Shows |
+|---|---|
+| **Short run** — 8 steps, ~30s | The happy path and the guided kill |
+| **Long run** — 40 steps, several minutes | Replay overhead at a scale where it is measurable, and a run that survives multiple kills |
+| **Unsafe-tool run** — crashes inside the uncertainty window | The `needs_review` path and the dead-letter resolution UI. **The one that proves the system knows what it does not know** — and the one most likely to genuinely impress, because handling ambiguity honestly is rarer than handling failure. |
+
+### 21.6 Self-sufficiency and shared-instance discipline
+
+Section 0 establishes that the system generates its own workload. Making the deployment survive public, unauthenticated use requires four things that are worth specifying, because each one is a small engineering decision that reads well:
+
+**Workers must respawn automatically.** The kill endpoint hard-exits the process; the platform restarts it. A reviewer who kills all three workers must find three workers again within seconds. **A demo that a visitor can permanently break is not a fault-tolerant runtime.** Render's own process supervision does this — the point is that killing workers is safe *because* the fleet is self-healing, which is the same property the product claims.
+
+**Submission is capped and cheap.** A global concurrency cap already exists in §5 admission control. Add a rate limit on submission by IP and a hard cap on demo runs per hour. Stubbed model calls mean an abusive visitor costs compute, not money.
+
+**Nothing destructive is exposed.** Kill a worker: yes, it is the product. Cancel a run, resolve a `needs_review`: yes, scoped to demo runs. Drop data, mutate another visitor's run, or alter chaos history: never. The kill endpoint should also be rate-limited — not for safety, but so the fleet view stays readable.
+
+**A reset affordance exists.** "Clear demo runs" prunes completed demo runs so the runs list stays legible. It must never touch chaos-harness history, because that history is the published evidence.
+
+### 21.7 Explicitly out of scope: accounts and per-user state
+
+**Anchor has no authentication, no accounts, no login, and no per-user data.** Section 18 already cuts these; this section restates it because the landing surface is exactly where the temptation to add them appears.
+
+The reasoning, stated once so it does not have to be relitigated:
+
+- The product is a **demonstration instance**, not a multi-tenant service. Its user is one reviewer at a time.
+- Auth adds real work — sessions, isolation, an account UI, a password reset path — and contributes nothing to either of the two guarantees the project exists to prove.
+- It actively harms the demo. A login wall between a reviewer and the guided demo of §21.4 will lose a meaningful fraction of reviewers outright, and every one lost is a total loss.
+- The engineering hours it would consume are the same hours phases 4 and 5 need, and §15 already warns those will overrun.
+
+If per-visitor continuity is ever wanted, the cheap version is `localStorage` holding the ids of runs this browser submitted, so the runs list can offer a "runs you started" filter. **No server-side identity, no database column, no auth.** This is a nice-to-have well below the §18 add-only-if-finished-early line.
+
+---
+
+## 22. The visual system
+
+Design tokens and mark specifications, so that the interface reads as one system rather than as a sequence of independently styled pages. **The palette below was validated with a colorblind-safety and contrast validator before being written down; the measured numbers are quoted inline, and three of them changed the design.** Where a value is a deliberate exception to a general rule, the exception and its mitigation are stated together.
+
+### 22.1 Surfaces, ink, and mode
+
+**Dark-first**, because the reference class is systems tooling and because the timeline's colored segments carry more separation against a dark surface. A light mode is optional; if built, it is a **selected** set of values validated against the light surface, never an automatic inversion.
+
+| Role | Dark (primary) | Light (if built) |
+|---|---|---|
+| Page plane | `#0d0d0d` | `#f9f9f7` |
+| Panel / chart surface | `#1a1a19` | `#fcfcfb` |
+| Primary ink | `#ffffff` | `#0b0b0b` |
+| Secondary ink | `#c3c2b7` | `#52514e` |
+| Muted — axis, labels, pending | `#898781` | `#898781` |
+| Gridline — hairline, solid, never dashed | `#2c2c2a` | `#e1e0d9` |
+| Baseline / axis | `#383835` | `#c3c2b7` |
+| Hairline ring | `rgba(255,255,255,0.10)` | `rgba(11,11,11,0.10)` |
+
+Every contrast and colorblind-separation figure in this section was measured against the `#1a1a19` panel surface. **If the surface changes, the palette must be re-validated** — these numbers are only meaningful against the surface the interface actually renders on.
+
+### 22.2 Typography
+
+Two families, no more. A third reads as decoration and is the fastest way to make a console look amateur.
+
+| Use | Family | Notes |
+|---|---|---|
+| UI — labels, prose, headings, stat values, the hero figure | `system-ui, -apple-system, "Segoe UI", sans-serif` | Including the hero figure. A display or serif face on the big number reads as off-brand decoration. |
+| Data — run ids, worker ids, epochs, sequence numbers, event payloads, the raw log | A monospace stack | Per §13.1: monospaced **where alignment carries meaning**. An id is compared character by character; a label is not. |
+
+- **Proportional figures for large standalone numbers** — the hero figure and stat-tile values. `tabular-nums` gives every digit the width of a zero, which makes a number like `121` look loose at 48px.
+- **`tabular-nums` only in columns that must align vertically** — table rows, axis ticks, the elapsed-time column of the runs list.
+- **Never color text with a data color.** Marks carry hue; labels, values, legends, and axis text wear ink tokens. Identity comes from a colored dot or swatch *beside* the text. The one exception is a label set inside a filled segment, where white or ink is chosen by the fill's luminance so it always clears contrast.
+
+### 22.3 The two color channels
+
+The timeline encodes two independent things at once, and conflating them is the mistake to avoid. **Separate them by visual property, not by hue alone.**
+
+```
+CHANNEL 1 — WHO   (worker identity)   →  carried by HUE
+CHANNEL 2 — WHAT  (step state)        →  carried by FILL WEIGHT + ICON + LABEL
+```
+
+**Channel 1 — worker identity.** Three hues, in fixed order, never cycled:
+
+| Worker slot | Hue | Dark |
+|---|---|---|
+| 1 | blue | `#3987e5` |
+| 2 | orange | `#d95926` |
+| 3 | aqua | `#199e70` |
+
+**Three slots is not an arbitrary choice — it is the validated ceiling and it happens to match the deployment.** Validated as a set against `#1a1a19` under an all-pairs comparison: worst colorblind separation ΔE 9.4 (deuteranopia), worst normal-vision separation ΔE 20.9, all three ≥ 3:1 contrast against the surface. **All checks pass.** A fourth hue does not clear the all-pairs floors, which is exactly why §4 specifies three always-on workers.
+
+For chaos runs with more than three workers: **do not extend the hue set.** Worker ids are already direct-labelled on every segment (§13.2), so identity never depends on color. Past three workers, color by *emphasis* instead — the run's current owner in slot 1, all prior owners in muted gray — which also happens to make the handoff read more clearly than eight competing hues would.
+
+**Channel 2 — step and run state.** Status colors, fixed, never themed, never reused as a series color:
+
+| State | Color | Icon | Fill treatment |
+|---|---|---|---|
+| pending / queued | muted `#898781` | — | hollow, hairline only |
+| executing | accent `#3987e5` | — | solid + slow pulse |
+| completed | good `#0ca30c` | check | solid |
+| **replayed from log** | worker hue @ ~10% | log glyph | **ghosted wash + hairline** |
+| retried | warning `#fab219` | circular arrow | solid, repeated segment |
+| failed / fenced | critical `#d03b3b` | ✕ / shield | solid |
+| needs review | warning `#fab219` | question | solid, hatched edge |
+| orphaned | **no fill** | — | **gap + pulsing hairline** |
+
+Four decisions in that table came out of validation rather than taste:
+
+**Status must always be icon + label + color, never a colored dot alone.** Measured: completed-green `#0ca30c` against failed-red `#d03b3b` is **colorblind separation ΔE 4.1 (deuteranopia)** — far below the ≥ 8 target, despite an ΔE of 33.9 for normal vision. This is the classic red/green trap, and it means **the two most important states in the product are indistinguishable by hue for a substantial fraction of readers.** The mitigation is not a different green: it is that hue is never the only channel. Every status in the runs list, the timeline, and the fleet view ships with its icon and its text label. This costs nothing and is non-negotiable.
+
+**`serious` was removed from the state vocabulary.** The status ramp offers a fourth role between warning and critical, but measured against warning `#fab219` it is **normal-vision ΔE 13.6, below the 15 floor** — a pair that full-color readers cannot reliably tell apart. Three status levels plus muted plus the accent covers every state in §7 without asking the reader to distinguish two oranges. Removing a color that does not survive measurement is the correct response to a failed check.
+
+**`needs_review` and `retried` share the warning hue deliberately.** They never appear in the same encoding channel — `retried` is a *step* state inside the timeline track, `needs_review` is a *run* state in the runs list and dead-letter view — and their icons differ. Both mean "a human should look at this," so the shared hue is semantically honest rather than a collision.
+
+**`orphaned` is the absence of fill, not a color.** The most persuasive moment in the product (§13.4) is a gap where work should be happening. Filling it with a color would be a lie about what is occurring: nothing is executing. A gap with a pulsing hairline and the lease countdown of §21.4 states the truth, and the truth is more dramatic than any color.
+
+### 22.4 The replayed-step encoding — the product's central claim, rendered
+
+Section 13.2 requires that "the tool did not run twice" be **visible rather than asserted.** This is the mark specification that carries it.
+
+```
+      ┌──────┬──────┬──────┬──────┬──────┐░░░░░░┌──────┬──────┐
+      │ ▓▓▓▓ │ ▓▓▓▓ │ ▓▓▓▓ │ ▓▓▓▓ │ ▓▓▓▓ │ gap  │ ████ │ ████ │
+      └──────┴──────┴──────┴──────┴──────┘░░░░░░└──────┴──────┘
+        1      2      3      4      5     orphan   6      7
+      └────────── worker-a ─────────────┘        └── worker-c ──┘
+      └───── ghosted: read from log ─────┘       └── solid: ────┘
+             replayed, NOT re-executed              executed now
+```
+
+**Solid fill means "this executed." Ghosted fill means "this was read back from the log."** The distinction is carried by fill weight and opacity, not by hue — which means it survives grayscale, survives every form of color blindness, survives a screen recording compressed by a video codec, and survives being viewed on a bad projector in an interview room. Given that this single distinction is the visual expression of the project's headline guarantee, it must not depend on the most fragile channel available.
+
+Rules for the track:
+
+- **A 2px gap in the surface color separates adjacent segments** — the same width throughout. Never a border stroke around a segment; a stroke adds ink that isn't data.
+- Segment width is proportional to step duration, with a floor so a 200ms step stays clickable.
+- **Tool calls and model calls are shape-distinct**, not just hue-distinct — tool segments carry a notched leading edge, model segments do not.
+- **A fencing event is a full-height marker on the track**, labelled, with the stale and current epoch both shown. Per §13.2 it is never a buried log line.
+- The worker id rides every segment as a direct label. When segments are too narrow for it, the label moves to a continuous rail beneath the track that spans each ownership range — **never clipped with `overflow: hidden`**, which crops characters and is worse than no label.
+- Hovering any segment gives a tooltip with the step index, action, duration, epoch, worker, and — for tool calls — the idempotency key and whether it was executed or replayed.
+
+### 22.5 Figures and the metrics views
+
+The metrics of §12 and §14 need forms. The form follows the data's job, and for several of these the right answer is not a chart.
+
+| Data | Form | Color job |
+|---|---|---|
+| Duplicate tool executions | **Hero figure**, ≥48px — exactly one per view, on the chaos console and landing band 4 | status good |
+| Runs, steps, kills, stranded runs, recovery median | **KPI row of stat tiles** — label, value, optional 12-point sparkline | de-emphasis gray + accent on current period |
+| Run state distribution over time | **Stacked area**, states as series | the §22.3 status colors — semantic, not decorative |
+| Recovery latency distribution | **Histogram** | sequential blue, one hue |
+| Lease renewal latency distribution | **Histogram** | sequential blue, one hue |
+| Throughput vs worker count | **Line, single series**, plus a dashed muted reference line for ideal-linear | one hue + gray — the emphasis form |
+| Fencing events over time | **Sparkline** inside a stat tile | accent |
+| Uncertainty-window resolutions by policy | **Horizontal stacked bar** — three policies only | three categorical slots |
+| Dead-letter failure reasons | **Table**, not a chart | — |
+
+Applying the general rules to these specifically:
+
+- **The zero is the hero figure, and there is exactly one hero figure per view.** Competing 48px numbers cancel each other out. On the chaos console, the zero wins; everything else is a stat tile.
+- **Never a dual-axis chart.** Recovery latency and throughput are different scales and get separate charts. This is the most common charting mistake and the easiest to avoid by rule.
+- **The throughput chart is the emphasis form on purpose.** One measured line against a dashed ideal-linear reference makes the divergence point self-evident, which is precisely the §14 conversation about the single Postgres writer being the ceiling. The chart asks the interview question for you.
+- **Sequential ramps on dark must not go darker than the mid-dark step**, or the low bins recede into the surface and read as empty rather than as small.
+- **Stacked segments get the same 2px surface gap** as timeline segments.
+- **A legend is present for every chart with two or more series**, and single-series charts get none — the title already names what is plotted, and a one-swatch legend restates it.
+- **Every chart has a table view**, reachable, with the same numbers. This is the accessibility floor and it is also genuinely useful.
+- **Label selectively.** A number on every point is chaos and goes unread. Label the endpoint, the extreme, or the one series the story is about; the axis and the tooltip carry the rest.
+- Gridlines are hairline, solid, one step off the surface, and recessive. Never dashed.
+
+### 22.6 Motion
+
+Section 13.4 stands: functional only. What that means concretely, given that the persuasion layer is permitted more than the instrument layer:
+
+| Motion | Permitted where | Duration |
+|---|---|---|
+| New event sliding into the timeline | Everywhere | 150–200ms |
+| Executing-segment pulse | Everywhere | ~2s loop, low amplitude |
+| Orphaned-gap pulse + lease countdown | Everywhere — **never suppressed** | 1s loop |
+| Invariant counter tick | Only on an actual change | 300ms |
+| Worker handoff — new owner's first segment | Everywhere | 250ms, the one place a slightly emphatic ease is earned |
+| Mechanism explainer loop | Landing band 2 only | ~6s loop, pausing on the handoff |
+| Anything on scroll | **Nowhere** | — |
+| Anything on page load for effect | **Nowhere** | — |
+
+**`prefers-reduced-motion` must be honored throughout**, and honoring it must not remove information: the explainer falls back to a static third-beat frame with the transition labelled, the pulse becomes a static state color, and the orphaned gap keeps its countdown as plain changing text. A reviewer with reduced motion enabled must still be able to reach conclusion 2 of §21.1.
+
+### 22.7 Before calling the interface done
+
+- Every status is icon + label + color. **No bare colored dots anywhere.** This is the red/green measurement of §22.3 and it is the one that breaks silently.
+- The palette was re-validated against the surfaces actually shipped, not the ones specified here, if they differ.
+- Replayed and executed segments are distinguishable **with the display in grayscale.** Check it.
+- Every chart has a table view and — for two or more series — a legend.
+- No chart has two y-axes.
+- `prefers-reduced-motion` loses no information.
+- The landing page reaches conclusion 2 of §21.1 **with no scrolling on a laptop viewport** and with prose unread.
+- The guided demo of §21.4 works on a first visit in a private window, with three workers freshly respawned.
+- **Render it and look at it.** Validation covers color, not layout — open every view and check for label collisions, overflow, and a timeline that still reads at 40 steps.
+
+---
+
+## 23. What this addendum changes about the build order
+
+Section 15 sequences the console at phase 7 and warns, correctly, against building it before phase 4. **That warning stands and this addendum does not relax it.** A landing page over an unproven runtime is worse than no landing page, because it invites scrutiny the system cannot yet survive.
+
+The revision is only to what phase 7 contains, and to one small item that moves earlier:
+
+| Phase | Addition |
+|---|---|
+| 5 | **The `demo_effects` table** and the demo agent of §21.5. It costs almost nothing and it is the ground truth the tool journal is tested against — useful during phase 5 development, not just in the UI. |
+| 7 | The design tokens of §22 first, then the instrument layer of §13.3 — runs list, timeline, fleet, dead letter. The timeline's replayed-step encoding (§22.4) is the priority within phase 7. |
+| 8 | The chaos console, and **only then** the landing surface of §21 — because bands 1 and 4 quote live metrics and harness output that do not exist until phase 8. |
+
+Building the landing page last is not a deprioritization. It is a dependency: **the landing page's entire job is to present numbers the chaos harness produces**, and it cannot be honestly built before those numbers exist. A landing page written first would necessarily contain placeholder figures, and placeholder figures have a way of shipping.
+
+**One addition to §16, definition of done:** a reviewer who has never heard of this project reaches the deployed URL, and within sixty seconds — without reading the README, without an account, and without navigating away from the landing page — has watched a worker die mid-run and another resume it, and has seen the evidence that nothing ran twice.
+
+Item six of §16 remains the real bar. This is the bar for whether anyone gets far enough to ask you about it.
+
+---
+---
+
+# Addendum B — The run-detail component
+
+**Addendum version:** 1.2
+**Status:** Additive. Specifies a required component. **Contains two deliberate departures from §22, both flagged in §24.7 with the measurements behind them, plus one open question in §24.8 that must be answered before phase 7 begins.**
+**Scope note:** This is the primary screen for a single run. It supersedes the §13.2 description of the run-detail page — not by contradicting it, but by specifying it concretely. Every §13.2 requirement (worker id on every segment, fencing markers on the track, replayed steps rendered distinctly) must still be satisfied by what is built here.
+
+---
+
+## 24. `RunDetail` and `RunThread`
+
+### 24.0 Design intent
+
+Anchor runs agent tasks as a sequence of steps executed by worker processes. When a worker dies mid-run, another resumes from where it stopped without re-executing completed steps. **This component exists to make that handoff visually obvious and provable**, because it is the core value proposition of the product.
+
+**Build what is described here.** Do not substitute a generic timeline library, a Gantt chart, or a kanban-style layout. The specific form is the point — a generic timeline component renders this data as a project schedule, which communicates nothing about ownership handoff.
+
+### 24.1 Data shape
+
+Delivered by a WebSocket subscription keyed on run id. **The component accepts this as props** — it does not open the connection itself (§24.6).
+
+```
+Run
+  id                      string
+  agent_type              string
+  status                  "pending" | "running" | "completed"
+                          | "failed" | "needs_review"
+  started_at              timestamp
+  step_count              int
+
+  segments[]              one per worker that has touched this run,
+                          in chronological order
+    worker_id             string
+    started_at            timestamp
+    ended_at              timestamp | null      ← null ⇒ current owner
+    steps[]
+      name                string
+      status              "done" | "active" | "pending"
+      started_at          timestamp
+      completed_at        timestamp | null
+    log[]                 the monospace lines rendered under this
+                          worker's bar
+      timestamp           string
+      text                string
+      level               "info" | "success" | "warning"
+
+  summary
+    duplicate_side_effects  int      ← renders 0; the headline number
+    handoff_count           int
+    recovery_seconds        float    ← meaningful only when
+                                       handoff_count > 0
+```
+
+`ended_at === null` identifies the current owner. That single field drives the kill button's target, the active-step styling, and which strand segment is still growing — so it must be trusted rather than re-derived.
+
+### 24.2 The primary view — stacked worker bars
+
+One horizontal progress bar per worker segment, stacked vertically in chronological order.
+
+```
+┌───────────────────────────────────────────────────────────────────────┐
+│  run_47 · refund-agent                                    ┌─────────┐ │
+│  started 41s ago · 5 steps                                │ running │ │
+│                                                           └─────────┘ │
+│                                                                        │
+│  worker-a  ████████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  │
+│            read ticket    check order    decide                        │
+│            14:02:11  run_claimed worker-a epoch=5                      │
+│            14:02:13  tool_intent fetch_order key=r47:s2:c1e            │
+│            14:02:14  tool_result fetch_order ok                        │
+│                                                                        │
+│  ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┤ worker-a lease expired ├─ ─ ─ ─ ─ ─ ─ ─ ─ ─  │
+│                                                                        │
+│  worker-c  ██████████████████████████████████████████░░░░░░░░░░░░░░░  │
+│            issue refund…    notify customer                            │
+│            14:02:17  run_claimed worker-c epoch=6 reclaimed            │
+│            14:02:17  replayed 3 steps from log                        │
+│            14:02:18  tool_intent send_refund key=r47:s4:9a1           │
+│                                                                        │
+│  ─────────────────────────────────────────────────────────────────────│
+│  0 duplicate side effects · 1 handoff · 3.1s recovery   ┌────────────┐│
+│                                                         │ kill       ││
+│                                                         │ worker-c   ││
+│                                                         └────────────┘│
+└───────────────────────────────────────────────────────────────────────┘
+```
+
+**Card header.** Run id and agent type as the title. `"started {n}s ago · {step_count} steps"` as the subtitle beneath it. A status pill on the right: `running` in warning colors, `completed` in success colors, `needs_review` and `failed` in danger colors.
+
+**Worker id column.** Fixed width, to the left of each bar, monospace, bold, small, **in that worker's §22.3 identity hue**. Fixed width so the bars align to a common left edge — bars that start at different x positions cannot be compared by eye.
+
+**The bar.** A rounded horizontal track. The filled portion represents completed plus active progress for that worker's portion of the run; the unfilled portion is a neutral surface color. **The fill is that worker's §22.3 identity hue** — blue, orange, then aqua in claim order — not a single accent shared across segments. Two stacked bars in different hues is the fastest possible read of "this run changed hands."
+
+**Step labels.** Below each bar, the segment's step names as a row of labels, spaced to align with roughly where each step falls along the bar. The active step's label is **bold in primary ink** with a trailing ellipsis — `issue refund…`.
+
+*(The original brief colored the active label amber. Per §22.2 text never wears a data color — a mid-lightness hue is unreliable as small text on either surface. Bold plus the ellipsis carries "active" unambiguously, and the colored bar directly above supplies the identity.)*
+
+**The log.** Below the step labels, the segment's raw log lines in monospace, 11px, reading exactly as a terminal log would: muted ink for `info`, success color for `success`, warning color for `warning`. This is the §13.2 requirement that the raw event log sit beneath the timeline, satisfied per segment rather than as one block — which is better, because it attributes every line to the worker that wrote it.
+
+**The handoff divider.** Between two worker segments: a horizontal dashed divider with a centered pill reading `{worker_id} lease expired` in danger colors — dark red background, red text. **This is the money moment of §13.4 rendered as a component.** It must never be collapsed, hidden behind a toggle, or animated away.
+
+**The footer.** A thin divider, then a status line on the left in muted small text — `"{duplicate_side_effects} duplicate side effects · {handoff_count} handoff(s) · {recovery_seconds}s recovery"` — and a `kill {current_worker_id}` button on the right in danger styling: dark red background, red text, no border, small padding.
+
+Three constraints on the footer that come from elsewhere in this document:
+
+- **The duplicate count leads the line** because it is the product's guarantee (§10.2, invariant 1). It reads `0`, and a reader who understands the system knows that is the whole claim.
+- **`recovery_seconds` is suppressed entirely when `handoff_count === 0`**, rather than shown as `0.0s`. A zero recovery time on a run that never lost a worker is not a measurement, and printing it invites the reader to distrust the numbers that are real.
+- **The kill button targets the current owner** — the segment with `ended_at === null` — and is disabled with a reason when the run is in a terminal state. Per §8 it is a first-class product feature and should be styled as a deliberate action, not hidden in a menu.
+
+### 24.3 The thread view — `RunThread`
+
+Below the bars, inside the same card, separated by a thin divider and a small muted label reading `thread view`.
+
+**This is a thin animated strand, not the bars again.** If it reads as a second progress bar it has failed; the bars answer *how far*, the strand answers *what happened, in what order, and where ownership changed*.
+
+**Geometry.** Inline SVG, viewBox approximately `0 0 620 70`. One continuous wavy path drawn left to right using smooth bezier curves — never straight line segments. Stroke width 2–2.5px, noticeably thinner than the bars above.
+
+**Color — one gold, not a shade per worker.** The strand is a **single gold** along its whole length (§24.7). Segment boundaries are marked by the enlarged `handoff` marker and its label, **not** by a change of shade.
+
+This is a correction to the original brief, and §24.7 gives the measurement that forces it. The short version: worker identity is already carried by the bars in §22.3's hues, and a second gold shade collides with worker-2's orange badly enough to be indistinguishable. **The two views therefore answer different questions** — the bars answer *who owned what*, the strand answers *what happened, in what order*. Encoding identity twice, in two color languages, one of which is weaker, would make the card harder to read rather than richer.
+
+**Event markers.** A small filled circle on the strand at each key event:
+
+| Event | Color role | Shape | Why the shape matters |
+|---|---|---|---|
+| ordinary step completion | muted neutral | circle | the background case; must not compete |
+| **a real side effect executed** | rust / critical | **square** | the event the product is about |
+| reconciled safely / confirmed no duplicate | green / good | **ring (hollow)** | the proof, and it must not depend on hue |
+
+**Shape is not decoration here — it is required, and §24.7 gives the measurement that forces it.**
+
+At the handoff point specifically, the marker is slightly larger and carries a small text label above it reading `handoff`.
+
+**Marker labels.** Small text, 11–12px, muted, near each circle, briefly identifying the event — `read`, `check`, `sent once`, `done`. Positioned above or below the strand in clear space, **never overlapping the strand**. A label that will not fit is dropped rather than clipped or overlapped; the tooltip and the log lines above carry it.
+
+`sent once` is worth calling out as the single best two words in the interface. It states the guarantee in the reader's own language, right next to the marker proving it.
+
+**The flow animation.** An SVG `stroke-dasharray` / `stroke-dashoffset` technique so the strand appears to gently and continuously flow along its own path, like a subtle current moving through it. A CSS `@keyframes` animation on `stroke-dashoffset`, looping smoothly, 2.5–3.5s per cycle, eased linearly so it reads as continuous flow rather than a pulse. **Keep it subtle** — visible on close inspection, not distracting at a glance.
+
+This is the one exception to §22.6's ban on ambient motion, and it earns the exception on a specific ground: the strand represents *execution in progress*, so continuous motion on an in-progress run is stating a fact. **The flow must therefore stop when the run reaches a terminal state.** A completed run's strand is static. A strand that keeps flowing after the run finished is decoration, and it also lies.
+
+**Reduced motion.** With `prefers-reduced-motion` set, freeze the dashoffset. The static strand keeps its colors, its markers, and its labels — no information is lost, per §22.6.
+
+**Live extension.** When a new step event arrives over the WebSocket on an in-progress run, the strand's path **extends in real time** — grow the path length, reveal more of it — rather than snapping to the new state. This is the §22.6 "new event sliding in" rule applied to a path instead of a rectangle.
+
+**Reusability.** `RunThread` is an independently reusable sub-component:
+
+```
+<RunThread segments={...} compact={boolean} />
+```
+
+`compact` renders the strand alone — no bars, no logs, no labels beyond the handoff marker — at a smaller scale, so it drops into a single row of the §13.3 runs list without duplicating logic. **Structure it this way from the start.** The runs list showing a strand per row means a reviewer sees at a glance which runs changed hands, which is a genuinely strong list view and costs nothing once the component is factored correctly.
+
+### 24.4 Styling constraints
+
+- **Dark, dense, monospace-leaning.** A developer and operator console. Reference tone: closer to a flight recorder or a terminal than a SaaS dashboard. This is §13.1, unchanged.
+- **Tailwind utilities for layout.** The specific gold, red, and green values go in CSS custom properties or a small inline style block, so they render consistently regardless of theme.
+- **Both light and dark mode**, with the strand and bar colors legible and distinguishable in each. Per §22.1 the light values are *selected and validated*, never an inversion — §24.7 gives them.
+- **No decorative gradients, shadows, or glow effects anywhere**, with the single intentional exception of the strand's flow animation.
+- **All text sentence case.** No title case. No exclamation marks. Applies to labels, pills, buttons, and log lines alike.
+- **Monospace where alignment carries meaning** (§22.2): run ids, worker ids, epochs, keys, timestamps, and every log line. Not the prose subtitle, not the step labels.
+
+### 24.5 Deliverable
+
+- A single React and TypeScript component, or a small set — `RunDetail` plus `RunThread` — built against the §24.1 data shape.
+- **Mock data matching the refund-agent example**: 5 steps, 2 workers, 1 handoff, 0 duplicate side effects, 3.1s recovery. It must render meaningfully with no live backend.
+- **Live updates arrive as props**, via a passed-in hook or callback. Connection logic is not hardcoded inside the component, so it is testable in isolation.
+- A preview: Storybook-style if the project has a preview setup, otherwise a simple page route rendering it with the mock data.
+
+**Mock states worth building beyond the happy path**, because they are where the component will actually break: a run with zero handoffs (the footer suppression of §24.2), a run with three or more handoffs (the color rule of §24.7), a `needs_review` run (§21.5's third preset), a run with 40 steps (label collision), and a currently-orphaned run — no segment has `ended_at === null` yet — which is the state the component will be in during the most important two seconds of the demo. **That last one is easy to forget and it is the one a reviewer will see.**
+
+### 24.6 Interface contract
+
+```
+RunDetail
+  run          Run                       ← §24.1, fully controlled
+  onKill       (workerId) => void        ← parent calls the API
+  now?         timestamp                 ← injectable, for stable
+                                           snapshots of "41s ago"
+
+RunThread
+  segments     Segment[]
+  compact?     boolean = false
+  animate?     boolean = true            ← parent may force-freeze
+```
+
+**No data fetching, no WebSocket, no API calls inside either component.** Kill is raised to the parent as a callback; the parent owns the `POST /api/workers/{id}/kill` call and its error handling. Injecting `now` matters more than it looks — relative timestamps make snapshot tests flap, and this component will be snapshot-tested.
+
+### 24.7 Measured palette corrections
+
+**The colors in the original brief were validated against the §22.1 surfaces before being written here. Three failed, and the failures are not cosmetic — each one degrades the specific thing the component exists to prove.** Corrected values below; use these.
+
+**1. A gold shade per worker does not survive contact with the bar hues.** The brief's two golds were too close to each other to begin with — `#F6C453` against `#D68F1F` measures **normal-vision ΔE 14.3, below the 15 floor.** Widening the pair to `#F6C453` / `#B87309` fixes that in isolation (ΔE 23.2). But under the §24.8 decision the bars carry §22.3's hues, so all five colors appear in one card, and measured as a set:
+
+| Pair | Measured | Verdict |
+|---|---|---|
+| strand gold 2 `#B87309` ↔ worker-2 orange `#d95926` | **CVD ΔE 1.2 (deutan), normal-vision ΔE 8.4** | the same color |
+
+A reader could not tell whether a gold path segment meant "worker 2" or "strand segment 2" — the two channels would actively lie about each other. **The fix is one gold, with segment boundaries marked structurally rather than by hue:**
+
+| Mode | Strand gold | Measured against the three bar hues, all-pairs |
+|---|---|---|
+| dark | `#F6C453` | worst CVD ΔE 9.4, worst normal-vision ΔE 20.9, all ≥ 3:1 — **passes** |
+| light | `#7A6300` | worst CVD ΔE 9.2, worst normal-vision ΔE 21.4 — **passes** |
+
+Selected per mode, not inverted: a gold light enough to read on `#1a1a19` is far too light for `#fcfcfb`, and a gold dark enough for the light surface collides with light-mode orange `#eb6834` unless it is pushed toward olive. `#7A6300` is that push.
+
+`#F6C453` sits above the categorical lightness band (L 0.844). That is a **documented exception of the same class as status-yellow in §22.3**: it is a single signature accent rather than a member of a categorical set, it clears contrast on its surface, and nothing else on screen competes with it for the same meaning. Do not add a second gold to "balance" it.
+
+**2. Two of the three event-marker colors were nearly identical.** The brief's amber-brown `#8A5A12` against rust `#B5471F` measures **CVD ΔE 1.7 (protanopia) and normal-vision ΔE 9.1** — effectively the same color. These encode "an ordinary step finished" versus "a real side effect executed," which are the two most consequential marker types in the product. Additionally `#3C6B4A` reads as gray (chroma 0.074) and both it and `#8A5A12` sat below 3:1 against the dark surface.
+
+| Marker | Corrected | Shape |
+|---|---|---|
+| ordinary step | **muted `#898781`** (was `#8A5A12`) | circle |
+| side effect executed | **`#d03b3b`** (was `#B5471F`) | square |
+| reconciled safely | **`#0ca30c`** (was `#3C6B4A`) | ring |
+
+Measured as a set on dark, all-pairs: normal-vision ΔE 18.9 worst pair, **all three now ≥ 3:1 contrast.** Demoting the ordinary-step marker to a neutral is also the semantically correct move — ordinary steps are the background case and should recede so the rust squares and green rings stand out.
+
+**The red-versus-green pair remains at CVD ΔE 4.1 and cannot be fixed with color.** This is the same measurement recorded in §22.3, and it is why **shape coding is mandatory, not optional**: circle, square, and ring are distinguishable under every form of color blindness, in grayscale, and in a compressed screen recording. Combined with the brief's own text labels, the encoding is then carried by three independent channels. Do not ship the markers as three colored circles.
+
+**3. The gold bar fill was illegible on a light surface, and is now moot.** `#EF9F27` measures **2.12:1 against `#fcfcfb`** — below 3:1, so it was never viable in light mode. Under §24.8 the bars no longer use gold at all; each takes its worker's §22.3 identity hue, which is already validated in both modes:
+
+| Worker slot | Dark | Light |
+|---|---|---|
+| 1 | `#3987e5` | `#2a78d6` |
+| 2 | `#d95926` | `#eb6834` |
+| 3 | `#199e70` | `#1baf7a` |
+
+The unfilled portion of the track is a neutral surface step in both modes — never a lighter tint of the worker's hue, which would read as a magnitude ramp and imply the empty portion carried a value.
+
+**One inherited caveat:** light-mode aqua `#1baf7a` measures 2.74:1, just under 3:1. This is pre-existing in the §22.1 palette and carries the documented relief rule — the worker id label beside the bar and the step labels beneath it are the required visible text, and both are already specified in §24.2. No change needed, but do not remove those labels believing them decorative.
+
+**Also carried over from §22.7, and easy to lose in this component specifically:** the status pill is not a bare colored pill. It carries its text label, and the `needs_review` and `failed` states carry an icon, because `completed`-green and `failed`-red are the ΔE 4.1 pair.
+
+### 24.8 Resolved — gold is scoped to the strand
+
+**Decision: gold belongs to `RunThread` alone. Section 22.3 stands unchanged** — blue, orange, and aqua carry worker identity in the bars, the fleet view, the runs list, and the charts. Gold is the strand's signature and appears nowhere else in the product.
+
+The decision is settled; the rest of this section records what it implies, because two of the implications are not obvious and one of them corrects the original brief.
+
+**The two views are assigned different questions, and neither answers the other's.**
+
+```
+   THE BARS          →   WHO owned WHAT
+                         §22.3 identity hues, one per worker
+                         read vertically: two hues stacked = a handoff
+
+   THE STRAND        →   WHAT happened, in WHAT ORDER
+                         one gold, always
+                         read horizontally: markers = events,
+                         enlarged marker = the handoff point
+```
+
+This separation is what makes two color languages in one card legible rather than inconsistent. **The failure mode to avoid is the strand also encoding identity** — that is what the original brief specified with a shade per worker, and §24.7 records the measurement that kills it: strand-gold-2 and worker-2 orange are the same color to a colorblind reader (CVD ΔE 1.2) and near-identical to everyone else (ΔE 8.4). Two channels asserting the same fact in different languages, one of them unreliable, is worse than one channel asserting it well.
+
+**What changed in this document as a result:**
+
+| Section | Change |
+|---|---|
+| §24.2 | Bar fill and worker id label take the worker's §22.3 hue, not amber. Active step label is bold primary ink, not amber (§22.2: text never wears a data color). |
+| §24.3 | One gold for the whole strand; segment boundaries marked by the enlarged `handoff` marker, not a shade change. |
+| §24.7 | Correction 1 rewritten around the strand-versus-bar collision. Correction 3 moot — bars no longer use gold. |
+| §22 | **Unchanged.** No token rework required. |
+
+**What this costs, stated plainly:** the strand no longer shows ownership on its own, so the `compact` variant in a runs list row (§24.3) cannot communicate *which* workers touched a run — only that a handoff occurred, via the enlarged marker. That is the right trade for a list row, where "did this run change hands?" is the question a reader actually has and the worker ids are one click away. But it means **the compact strand is not a substitute for the runs-list owning-worker column of §13.3.** Keep that column.
+
+**What this buys:** §22 needs no rework, the stronger identity channel stays where identity is read most often, and gold remains distinctive precisely because it is used for exactly one thing. A single mark used once is what a reviewer remembers; an accent applied everywhere is wallpaper.
+
+### 24.9 Build constraint
+
+**Ask before making structural changes to the file layout beyond adding this component and its preview page.** New top-level directories, changes to the §5.1 repository structure, routing reorganizations, and added dependencies are all discussed first. Adding the component, its sub-component, its mock data, and one preview route needs no further approval.
+
+---
+---
+
+# Addendum C — Protocol decisions
+
+**Addendum version:** 1.3
+**Status:** Resolves all four decisions left open before phase 1. **§25.5 supersedes the first subtlety in §6.1 and replaces the recovery figure in §10.3** — both changes are recorded there explicitly, with the arithmetic that forced them.
+**Basis:** Decided against the engineering standard (`CLAUDE.md`), not by preference. Each decision below names the rule that determines it. Where the standard does not determine the answer, that is stated rather than papered over.
+
+---
+
+## 25. Resolved protocol decisions
+
+### 25.0 How these were decided
+
+Three of the four open decisions turned out not to be judgment calls at all — the engineering standard's invariants and architecture rules determine them, and the work was tracing the implication rather than choosing. That is worth recording, because a decision derived from a stated rule is defensible under questioning in a way that a preference is not.
+
+| Decision | Determined by | Status |
+|---|---|---|
+| Sequence allocation | I2, I3, and "failing loudly beats failing silently" | Resolved, §25.1 |
+| Epoch write-gate | I3, §4.2 "constraints over conventions", §5.4 anti-pattern 1 | Resolved, §25.2 |
+| Determinism API | I6, §4.1 module boundary | Resolved, §25.3 |
+| Configuration values | **Not determined by the standard.** Confirmed per §3.2, then derived from §4.4's assertion | Resolved, §25.5 |
+
+### 25.1 Sequence number allocation
+
+**Decision: a `last_seq` counter column on `runs`, incremented in the same transaction as the append. `UNIQUE (run_id, seq)` is retained as the backstop, not the allocator.**
+
+The reasoning turns on a consequence of I3 that is easy to miss. **I3 guarantees exactly one worker may write to a run at a time.** Therefore, under correct operation, there is never contention for a sequence number within a run. Contention is not a normal condition to be handled — it is evidence that fencing has failed.
+
+That reframes the choice. The allocator's job is to make collision *impossible* when the system is behaving, and the constraint's job is to make collision *loud* when it is not.
+
+| Candidate | Verdict |
+|---|---|
+| `SELECT MAX(seq)+1`, insert, catch the unique violation, retry | **Rejected.** It makes collision a routine, silently-retried condition — which converts a fencing bug into invisible retry noise. That inverts "failing loudly beats failing silently" and would mask a violation of the system's most important invariant. |
+| A Postgres `SEQUENCE` per run | **Rejected.** Sequences are non-transactional: a rolled-back append consumes a number and leaves a gap. Invariant 2 of §10.2 asserts no gaps, so this breaks a published guarantee. |
+| **`runs.last_seq`, incremented in the append transaction** | **Adopted.** The append transaction already holds the `runs` row (§25.4), so the counter costs no additional lock. A rollback un-increments it, so there are no gaps. Collision becomes structurally impossible rather than caught-and-retried. |
+
+**Crash behaviour.** The counter increment, the epoch check, and the event insert are one transaction. If the process vanishes at any point, all three roll back together: the counter is not advanced, no event is written, no gap is created. There is no interleaving that produces a partially-applied append.
+
+**Schema note:** this adds one column to `runs` in §7. Per §3.2 of the standard, schema changes are normally raised before being made — it is recorded here as part of a spec revision rather than applied to a live database, but flag it if you would rather `last_seq` live elsewhere.
+
+**Required test** (§5.3, concurrency): append under N concurrent workers against one run with only one legitimate epoch holder, then assert the sequence is contiguous from 1 with no duplicates and no gaps.
+
+### 25.2 Epoch write-gate enforcement
+
+**Decision: a `BEFORE INSERT` trigger on `run_events` that compares `NEW.epoch` to the run's current epoch and raises. Not a conditional `UPDATE … WHERE epoch = $1` with a rowcount check in the worker.**
+
+Three rules in the standard converge on this and none of them permit the alternative:
+
+- **I3** states that *the database* rejects any write whose epoch is below the run's current epoch.
+- **§4.2** — "constraints over conventions. If a property must hold, express it as a database constraint. Application-level checks do not survive concurrency."
+- **§5.4**, first listed anti-pattern — "application-level enforcement of a property a constraint could enforce."
+
+A conditional `UPDATE` with a rowcount check is application-level enforcement. It is correct only for as long as every write path remembers to perform it, and §4.1 is explicit about where that ends: a safety property enforced outside `core/` "will eventually be bypassed by a code path that doesn't go through it." A trigger holds for every writer without exception — including a future code path, a migration script, and a `psql` session at three in the morning.
+
+**Why not a `CHECK` constraint:** a `CHECK` cannot reference another table's row, and the current epoch lives on `runs`. The trigger is the least-powerful mechanism that can actually express the property.
+
+**Error surface.** The trigger raises a dedicated `SQLSTATE`, which `core/leases/` maps to a typed `LeaseFencedError` (§5.2). On catching it the worker discards all in-memory state, writes nothing further — including no error event through that run's log — and returns to the idle pool. **It does not retry**, per I3 and §5.4's "retrying a fenced write."
+
+**Crash behaviour.** The check and the insert are the same statement, so there is no window between validation and write. If the process dies before commit, nothing is written and the run is reclaimed on lease expiry as normal.
+
+**Required tests** (§5.3, failure injection): construct a zombie worker holding a stale epoch and assert its append is rejected by the database with the specific error, that no partial write landed, and that the worker performs no subsequent write. This is the §9 failure-matrix row for a stalled-but-alive worker.
+
+### 25.3 The agent contract — the determinism API
+
+**Decision: agent code receives a `StepContext` and may reach the outside world only through it.** I6 forbids agent code from calling the clock or a random source directly; this is the surface that replaces those calls.
+
+| Call | Journaled as | On replay |
+|---|---|---|
+| `ctx.now()` | `NONDET_RECORDED` | returns the recorded timestamp |
+| `ctx.random()` | `NONDET_RECORDED` | returns the recorded value |
+| `ctx.new_id()` | `NONDET_RECORDED` | returns the recorded identifier |
+| `ctx.call_model(...)` | `LLM_CALLED` | returns the recorded completion, no provider call |
+| `ctx.call_tool(name, args)` | `TOOL_INTENT` → `TOOL_RESULT` | returns the recorded result, or applies the tool's uncertainty policy |
+
+`ctx.new_id()` is named separately from `ctx.random()` deliberately, per §5.1's precision rule: §3.2 of the spec identifies a generated identifier differing across replay as the specific failure that defeats deduplication, so the call that produces one should be individually visible in the log and individually greppable in agent code.
+
+**This is a contract, not a sandbox — and the standard's "explicit beats clever" says to leave it that way.** Sandboxing Python's `datetime` and `random` from agent code would be substantial machinery guarding against a mistake that a much cheaper mechanism catches:
+
+**Required test** (§5.3): a test that imports every module under `runtime/agents/` and fails if any of them references `datetime`, `time`, `random`, or `uuid` directly. It is three lines, it runs in milliseconds, and it catches the I6 violation at commit time instead of as a replay divergence that the chaos harness reports days later as an unrelated-looking invariant failure.
+
+**Crash behaviour.** Each `ctx` call is journaled before its value is returned to agent code, so a crash between the external call and the journal write lands in the uncertainty window and is resolved by I8's declared policy — identically to any other side effect. **`ctx.now()` and `ctx.random()` are the exception worth naming:** they have no external effect, so a crash before journaling is safely re-derivable on the next attempt, because nothing in the world observed the discarded value.
+
+### 25.4 Why §25.1 and §25.2 compose — the `runs` row is the serialization point
+
+The two decisions above are independent in motivation and share one mechanism, which is worth stating explicitly because it is the load-bearing detail in both.
+
+**Every append transaction takes the run's row in `runs` and holds it to commit.** That single lock does three jobs at once:
+
+```
+  BEGIN
+    lock the runs row                     ← the serialization point
+      · read current epoch                → §25.2's check reads a stable value,
+                                            not one a concurrent claim can move
+      · increment last_seq                → §25.1's allocation is uncontended
+      · renew lease if due                → I5, evaluated on the database clock
+    insert into run_events                → trigger validates against the
+                                            epoch just read under the lock
+  COMMIT
+```
+
+Because a claim (I4) also locks that same row to increment the epoch, a claim and an append can never interleave. The epoch the trigger validates against cannot change between being read and being enforced. **One lock, and I2, I3, I4, and I5 all hold across it** — which is the §4.2 instinct of putting the atomic unit in one transaction, applied to the append path rather than only the claim path.
+
+This is also the answer to "what serializes the log?" in an interview, and it is a better answer than naming the unique constraint, because the constraint detects a problem the lock prevents.
+
+### 25.5 Configuration — background renewal, two profiles
+
+**This is the one decision the standard does not determine, and §3.2 explicitly requires it be confirmed rather than assumed.** Deriving the values surfaced a conflict inside the existing spec, recorded below because the resolution only makes sense against it.
+
+**The constraint, from §4.4 of the standard:**
+
+```
+lease_duration > max_step_timeout + renewal_interval + margin
+```
+
+with the worker refusing to start and naming the violated relationship if configuration breaks it.
+
+**The contradiction.** That constraint exists because §6 renews the lease *between* steps — the worker loop checks "if the renewal interval has elapsed, renew" inside the step loop, so no renewal happens during a long step. The consequence is unavoidable arithmetic:
+
+```
+  recovery time from a hard kill  ≈  lease_duration − (time since last renewal)
+                                  ≈  lease_duration − renewal_interval/2
+
+  and since   lease_duration > max_step_timeout + renewal_interval + margin
+
+  therefore   recovery time  >  max_step_timeout
+```
+
+**Recovery can never be faster than the longest permitted step.** But §10.3 publishes "median recovery 1.8 seconds" as the headline number, and §21.4 promises the reviewer a roughly two-second stall. With a step timeout anywhere near a real model call — §1.1 shows a 22-second step — recovery is tens of seconds, not 1.8. **The headline number and the lease architecture as specified cannot both be true.**
+
+This matters beyond the demo: §17.3 commits to preempting weaknesses rather than hiding them, and a reviewer who does this arithmetic while looking at the README will find it. Better to have decided it deliberately.
+
+**Three ways out, with the honest cost of each:**
+
+| Option | Mechanism | Cost |
+|---|---|---|
+| **A — Renew from a background task** | A concurrent renewer extends the lease on its own timer regardless of step progress. The constraint becomes `lease > renewal_interval + margin`, independent of step duration, so a short lease and long steps coexist. | Adds concurrency inside the worker. A hung step no longer expires its own lease, so `step_timeout` becomes the only thing bounding a stuck run — it must be enforced rigorously. Still does not reach 1.8s: that needs `lease ≈ 3s`, which risks spurious fencing on a 1s GC pause, the bug §6.1 warns is hardest to diagnose. |
+| **B — Accept slower recovery and republish the number** | Keep renewal between steps. Set the lease honestly and report the recovery time it actually produces — single-digit to low tens of seconds. | The headline number gets less impressive. It also gets *true*, and a defensible 8s beats an indefensible 1.8s under questioning. |
+| **C — Two profiles, reported separately** | A demo and chaos profile with short steps (§21.5 stubs model calls at 2–5s) and a correspondingly short lease; a production profile sized for real model calls. Publish recovery per profile and state the lease each was measured under. | Two configurations to keep honest. But it is the only option that gives a fast live demo *and* a configuration that could run a real agent — and stating "recovery is bounded by lease duration, here is the tradeoff, here are both points on it" is a stronger interview answer than either number alone. |
+
+**Decision: C, with A as the mechanism underneath it.** A background renewer decouples the lease from step duration, which is what makes two sensible profiles possible at all; C is then the reporting discipline that keeps the published number honest.
+
+#### The revised constraint
+
+Renewal moves out of the step loop into a **concurrent task that extends the lease on its own timer**, regardless of step progress. The §4.4 relationship therefore loses its dependence on step duration:
+
+```
+  was:   lease_duration > max_step_timeout + renewal_interval + margin
+  now:   lease_duration > renewal_interval + margin
+```
+
+**This supersedes the first of the four subtleties in §6.1**, which required lease duration to exceed maximum step duration plus renewal interval. That was correct for renewal-between-steps and is no longer the binding constraint. The warning attached to it stands and in fact sharpens: a lease too short relative to *renewal latency* still spuriously fences a healthy worker, and §12's fencing-rate metric is still the detector — read it as "too short relative to renewal latency" rather than to step duration.
+
+**It does not introduce a second liveness signal.** Section 3.4 insists extension *is* the heartbeat and that there is deliberately no separate signal, because two signals can disagree. A background renewer is still lease extension; only its timer changed, not its meaning.
+
+Concrete rule adopted: **`lease_duration = 4 × renewal_interval`**, tolerating three consecutively missed renewals before ownership is lost. One relationship, asserted at startup, holding identically in both profiles.
+
+#### The two profiles
+
+| Setting | Demo / chaos | Production | Constraint that produced it |
+|---|---|---|---|
+| `renewal_interval` | 1s | 5s | short enough that expiry is prompt after a kill |
+| `lease_duration` | 4s | 20s | `= 4 × renewal_interval`; tolerates 3 missed renewals |
+| `margin` | 3s | 15s | `= lease_duration − renewal_interval`; the assertion's slack |
+| `step_timeout` | 10s | 60s | bounds a hung step only — **no longer tied to the lease** |
+| `max_attempts_per_step` | 3 | 3 | §6 attempt cap before dead-lettering |
+| `backoff_base` | 1s | 1s | |
+| `backoff_factor` | 2 | 2 | |
+| `backoff_jitter` | ±25% | ±25% | prevents retry convoys forming across workers |
+| `backoff_cap` | 30s | 30s | |
+| `per_worker_concurrency` | 10 | 10 | §6 admission control, per worker |
+| `global_concurrency_cap` | 100 | 100 | §5 admission control, fleet-wide |
+| `reclaim_poll_interval` | 0.5s + jitter | 2s + jitter | the tail on observed recovery |
+
+**Derived recovery**, since this is the number that gets published:
+
+```
+  recovery ≈ lease_duration − renewal_interval/2 + reclaim_poll_interval/2
+
+  demo:         4 − 0.5 + 0.25  ≈  3.75s
+  production:  20 − 2.5 + 1.0   ≈  18.5s
+```
+
+**Section 10.3's "median recovery 1.8 seconds" is not achievable at any safe lease and is replaced.** The honest headline is the demo-profile figure with its lease stated — approximately 3.5 to 4 seconds at a 4-second lease. **Section 14 must report the profile alongside the number**, because a recovery time without the lease it was measured under is not a measurement. Reporting both profiles is the stronger move regardless: it shows recovery is a tuned tradeoff that was understood, rather than a number that happened.
+
+Section 21.4's "roughly two-second stall" becomes roughly four. The lease countdown specified there consequently does more work than anticipated — four seconds of unexplained pause reads as a broken page, whereas four seconds of visible countdown reads as the mechanism working.
+
+#### What the background renewer costs, and how each cost is contained
+
+**`step_timeout` becomes the only bound on a hung step.** Previously a hung step eventually lost its own lease. Now the renewer keeps extending it, so the step timeout is no longer a convenience — it is the sole mechanism preventing a stuck run from being held indefinitely. Per §4.3 it must wrap every external call without exception. **When a step exceeds its timeout the renewer stops**, so that if the failure path itself cannot proceed, the lease lapses and the run is reclaimed rather than held by a worker that is no longer making progress.
+
+**The renewer becomes the fencing detector**, which makes it the most safety-critical concurrency in the worker. When a renewal is rejected because the epoch advanced (§25.2), the renewer cancels the run's task, and that task must write nothing after cancellation. Per I3 the worker then discards state, writes nothing further, and returns to the idle pool. The material change is that discovery now happens on a *different task* than the one doing the work — so the cancellation path is real code with a real race, and it needs a test rather than an argument.
+
+**A blocked event loop is still fenced correctly**, which is worth confirming rather than assuming. If the process stalls on a GC pause, a CPU-bound section, or a suspended VM, the renewer task cannot run either — so the lease expires and the run is reclaimed. **The zombie-worker path of §3.4 is preserved, not bypassed:** the renewer is incapable of signalling liveness that outlives a stalled process, which is precisely why it is safe to move renewal off the step loop.
+
+**Accepted risk, stated plainly.** At a 1-second renewal and a 4-second lease, a three-second stall spuriously fences a healthy worker. That is a genuine exposure on the demo profile and it is the price being paid for a demonstrable recovery time. The production profile has the same proportional tolerance with far more absolute headroom. Watch §12's fencing rate; a rising rate on the demo profile means the lease is too tight for the environment, not that workers are unhealthy.
+
+#### Startup assertion
+
+Per §4.4, in one config module, checked before the worker accepts any work:
+
+```
+  assert lease_duration >= 4 × renewal_interval
+  assert margin == lease_duration − renewal_interval
+  assert step_timeout > 0
+```
+
+On violation the worker **refuses to start** and names the violated relationship together with the offending values.
+
+**This interacts with §13.3's Environment page, which makes these editable live.** The assertion must therefore run on every applied change and **reject the change**, not the worker — a running fleet must not be configurable into a state where every worker spuriously fences itself. An operator who sets the lease equal to the renewal interval gets a rejected edit explaining the relationship, not an outage.
+
+**Required tests** (§5.3, failure injection and concurrency):
+
+- renewal continues across a step longer than the lease duration; the run is **not** fenced
+- a step exceeding `step_timeout` fails, the renewer stops, and the lease lapses
+- a renewal rejected on epoch advance cancels the run's task, and **no write follows the cancellation**
+- a simulated blocked event loop results in lease expiry and reclaim, not in continued renewal
+- the startup assertion rejects `lease_duration == renewal_interval`, both at boot and when applied through the Environment page
+
+**One further note, independent of the choice above.** The kill endpoint of §8 is a *cooperative* shutdown, so it could release the lease explicitly on the way out and make reclaim near-instant — but that is not how a crash behaves, and presenting it as one would violate §6.1 of the standard, which forbids the interface from misrepresenting system state. If it is implemented, the demo should offer both paths and label them: a graceful kill that releases the lease, and a hard kill that waits for expiry. **Showing a reviewer both, and explaining why they differ, is worth more than hiding the slower one** — it demonstrates that the recovery path is understood rather than merely observed.
