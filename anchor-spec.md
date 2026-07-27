@@ -1039,12 +1039,12 @@ Two sentences. The first states the outcome in language requiring no distributed
 ║                                                                    ║
 ║        worker-a                              worker-c              ║
 ║       ┌────────┐                            ┌────────┐             ║
-║       │  ▓▓▓   │  ✕ killed at step 6        │        │             ║
+║       │  ▓▓▓   │  ✕ killed at step 6        │        │            ║
 ║       └────┬───┘                            └───▲────┘             ║
 ║            │ appends each step                  │ reads the log    ║
 ║            ▼                                    │ resumes at 6     ║
 ║       ┌────────────────────────────────────────────────┐           ║
-║       │  ▓▓ ▓▓ ▓▓ ▓▓ ▓▓ ░░ ░░ ░░ ░░ ░░   run_47 log   │           ║
+║       │  ▓▓ ▓▓ ▓▓ ▓▓ ▓▓ ░░ ░░ ░░ ░░ ░░   run_47 log   │            ║
 ║       │   1  2  3  4  5  6  7  8  9 10                 │           ║
 ║       └────────────────────────────────────────────────┘           ║
 ║                     Postgres — the source of truth                 ║
