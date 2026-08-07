@@ -1,7 +1,7 @@
 # Anchor — Technical Specification & Build Audit
 
 **Document type:** Standalone product and engineering specification, written for spec-driven development.
-**Version:** 1.0
+**Version:** 1.2 — adds Addendum D (developer adoption path, authoring surface, recorded cuts) and Addendum E (canonical page inventory, deployment-mode capability matrix, outbound surface).
 **Format note:** No implementation code. Architecture, protocols, and flow are expressed as text diagrams and procedures. Every section is written to be handed directly to an AI coding agent or used as a personal build spec.
 **Scope note:** This document is complete in itself. It assumes no other project and references none.
 
@@ -577,6 +577,18 @@ GET    /api/metrics                   throughput, recovery, replay overhead
 GET    /api/health                    db reachable, fleet size, lag
 WS     /ws/runs/{id}                  live event stream for one run
 WS     /ws/fleet                      live worker state
+
+GET    /api/agents                    registered agents and their contracts
+GET    /api/tools                     tool registry with safety categories
+GET    /api/runs/{id}/effects         demo_effects rows for this run (§21.5)
+
+                                      — authoring surface, §27 —
+POST   /api/authoring/validate        static-check a draft against the
+                                      agent contract; ALWAYS available
+POST   /api/authoring/generate        LLM draft from a description;
+                                      ALWAYS available, returns text only
+POST   /api/authoring/register        load a draft into the live registry;
+                                      LOCAL DEPLOYMENT MODE ONLY (§27.3)
 ```
 
 The kill endpoint is a **first-class product feature**, not a debug affordance. It is how the system demonstrates its central claim, and it should be documented and presented as such.
@@ -757,6 +769,8 @@ This is the console's landing page. **It is not the same page as the public land
 
 **Test run.** Submit a one-off synthetic task through a simple form, without writing code. Useful for manual verification during development, and for demos where a specific step count or tool mix is wanted rather than whatever the preset produces.
 
+**Authoring.** The editor and draft generator of §27. On the public instance this page is author-and-validate only — it teaches the agent contract and proves the validator works, but cannot execute. On a local instance it additionally registers and runs. The page states which mode it is in, in the header, at all times.
+
 #### Observability
 
 **Metrics.** The §12 metrics visualized rather than merely tracked: throughput, recovery latency, replay overhead, and fencing rate over time. Chart forms, color assignment, and the no-dual-axis rule per §22.5.
@@ -830,6 +844,7 @@ Functional only, and almost invisible except where it conveys a state change.
 | 6 | Retry with backoff, dead-lettering, cooperative cancellation, admission control | Production-shaped behaviour |
 | 7 | Operator console — runs list, run timeline, worker fleet, kill control | Makes it demonstrable |
 | 8 | Chaos harness with invariant assertions; generate the headline numbers | The proof |
+| 9 | *(stretch)* The authoring surface of §27 — contract editor, validator, draft generator | Strictly additive. It improves the developer story; it proves nothing the runtime does not already prove. Build it only if phases 1–8 are done. |
 
 **Budget generously for phases 4 and 5.** Concurrency bugs are intermittent, resistant to reproduction, and hard to reason about. That difficulty is precisely why the project is impressive, and precisely why it will take longer than the phase count suggests. Plan for it rather than being surprised by it.
 
@@ -894,6 +909,10 @@ Every clause names a specific distributed-systems mechanism. A reviewer who know
 - A visual workflow builder. Enormous effort, no relevance to the guarantee being demonstrated.
 - Kubernetes. A handful of processes on a managed platform is entirely adequate, and reaching for orchestration here reads as resume-driven architecture — the opposite of the signal you want.
 - Distributed tracing integration. Nice, but the run timeline already is your trace.
+- **A consumer-facing storefront** wrapping a single flagship agent. Considered and cut in §28.2. It reframes an infrastructure project as a product project and softens exactly the vocabulary that makes the runtime legible to a technical reviewer.
+- **A no-code agent builder for non-developers.** Considered and cut in §28.2. It puts the project in competition with mature workflow-automation products on their strongest axis while abandoning its own.
+- **Branching / fork-from-checkpoint.** Considered and cut in §28.3 on prior-art grounds. It is a native feature of at least one widely-used agent framework and a shipped commercial product; implementing it buys no differentiation and adds replay-coherence risk.
+- **Executing visitor-authored code on the public instance.** Cut on security grounds in §27.3. This is remote code execution, and the mitigation is deployment-mode gating, not sandboxing.
 
 **Add only if you finish early:**
 
@@ -1879,3 +1898,449 @@ On violation the worker **refuses to start** and names the violated relationship
 - the startup assertion rejects `lease_duration == renewal_interval`, both at boot and when applied through the Environment page
 
 **One further note, independent of the choice above.** The kill endpoint of §8 is a *cooperative* shutdown, so it could release the lease explicitly on the way out and make reclaim near-instant — but that is not how a crash behaves, and presenting it as one would violate §6.1 of the standard, which forbids the interface from misrepresenting system state. If it is implemented, the demo should offer both paths and label them: a graceful kill that releases the lease, and a hard kill that waits for expiry. **Showing a reviewer both, and explaining why they differ, is worth more than hiding the slower one** — it demonstrates that the recovery path is understood rather than merely observed.
+
+---
+---
+
+# Addendum D — Developer adoption, the authoring surface, and recorded cuts
+
+**Addendum version:** 1.0
+**Status:** Additive. Fills one real gap in the base document (§26), specifies one stretch subsystem (§27), and records four decisions so they are not relitigated (§28).
+**Relationship to §21.7:** This addendum introduces no authentication, no accounts, and no per-user state. §21.7 stands unmodified. Where §27 needs to restrict a capability, it binds that capability to **deployment mode**, not to identity — see §27.3 for why that is the stronger choice and not merely the cheaper one.
+
+---
+
+## 26. The developer adoption path
+
+### 26.1 The gap this section closes
+
+Section 2.1 states that Anchor's user is a developer running agents. Sections 21.4 through 21.6 then specify, in detail, the experience of a **reviewer** who lands on the deployed instance and watches a demo. Section 13.3 specifies the experience of an **operator** watching runs execute.
+
+Nothing in the base document specifies the experience of the person §2.1 names: **a developer who wants to run their own agent on Anchor.** That path exists — the agent contract of §25.3 and the tool registry of §7 are exactly the surfaces it uses — but it has never been written down as a path, which means it has never been designed as one.
+
+This matters for two reasons. It is the difference between a project that demonstrates a capability and a tool that has one. And it is the section a technical reviewer reads to answer the question *"could I actually use this?"* — a question the guided demo of §21.4 deliberately does not answer, because the demo is about the guarantee, not the interface to it.
+
+### 26.2 The distribution model, stated plainly
+
+**Anchor is self-hosted. It is not a service.** A developer runs their own instance; there is no multi-tenant hosted offering, no signup, and no API key issued by anyone.
+
+State this in the README's first paragraph. It is the same model as most open infrastructure, it is the correct scope for this project, and being explicit about it prevents the reasonable-but-wrong assumption that the deployed demo instance is something a developer would point production traffic at.
+
+The deployed instance at the public URL is a **demonstration instance** (§21.6). It exists to be watched. It is not the product's distribution channel; the repository is.
+
+### 26.3 The quickstart — eight steps, and the README leads with it
+
+The README's structure per §16 is: screen recording, chaos numbers, architecture. **This quickstart goes immediately after the architecture diagram**, because a reviewer who is convinced by the numbers will next want to know what using it costs them.
+
+```
+1  clone and start
+       git clone <repo> && cd anchor && docker compose up
+   Brings up Postgres, Redis, the API, and three workers.
+   Console at localhost:3000. No configuration required.
+
+2  write the agent
+       runtime/agents/my_agent.py
+   One function, the §25.3 contract:
+       decide_next_step(ctx) -> ToolCall | ModelCall | Done
+   It receives the reconstructed run state and returns ONE action.
+
+3  write any tools it needs
+       runtime/tools/my_tool.py
+   A plain function. Anchor does not care what is inside it.
+
+4  declare each tool's safety category
+       register_tool(name=..., fn=..., safety=...)
+   retry_safe | reconcilable | unsafe  (§3.3)
+   For reconcilable tools, also supply reconcile_fn.
+   THIS IS THE ONLY ANCHOR-SPECIFIC CONCEPT TO LEARN.
+
+5  register the agent
+       agent_registry.register("my_agent", my_agent.decide_next_step)
+
+6  rebuild
+       docker compose up --build
+   Agent and tools now live inside every worker.
+
+7  submit a run
+       POST /api/runs  { "agent_type": "my_agent", "input": {...} }
+   Or use the Test run form in the console.
+
+8  watch it, then break it
+       Open the run. Kill a worker from the fleet page.
+       Watch it resume. Check that the tool ran once.
+```
+
+**Steps 2 through 5 are the entire integration surface.** Everything else is `docker compose`. A developer who follows this path writes zero durability code and receives crash-resilience, resumability, a complete audit trail, and effectively-once side effects.
+
+### 26.4 The one constraint that must be taught, not discovered
+
+Every other part of the contract is mechanical. This one is conceptual, and if it is not stated in the first paragraph of the authoring documentation, developers will get it wrong and their agents will replay incorrectly.
+
+> **The agent function returns one action and then returns control. It does not loop, and it does not hold state in variables across steps.** All state is read from `ctx`, which the runtime reconstructs from the log on every attempt.
+
+The reason, stated for the developer rather than for the runtime author: an agent that loops internally is opaque to the runtime, and a crash inside that loop has nothing to resume from. Yielding control at each step is what converts a fragile in-memory process into a resumable one.
+
+**Concretely, in the professor-outreach shape** — the loop is expressed as a function of journaled history, not as a `for` statement:
+
+```
+def decide_next_step(ctx):
+    if not ctx.has_result("search_professors"):
+        return ToolCall("search_professors", {...})
+
+    professors = ctx.result_of("search_professors")
+    done = ctx.completed_tool_args("send_email")     # from the log
+    remaining = [p for p in professors if p.email not in done]
+
+    if not remaining:
+        return Done({"contacted": len(done)})
+
+    p = remaining[0]
+    if not ctx.has_result("fetch_page", {"url": p.url}):
+        return ToolCall("fetch_page", {"url": p.url})
+    ...
+```
+
+The loop's progress lives in the journal, so "which professors have already been emailed" survives any number of crashes, on any worker, without the agent tracking it. **This example belongs in the README verbatim** — it is the clearest possible demonstration that the constraint buys something rather than merely costing something.
+
+### 26.5 Framework adapters
+
+Section 18 cuts support for multiple agent frameworks, and that cut stands. But the contract's shape should make an adapter obviously possible, because a reviewer familiar with LangGraph will ask.
+
+**The answer to have ready:** a graph-based framework is driven one node per `decide_next_step` invocation rather than by calling its own end-to-end execution method, with the framework's state object rehydrated from `ctx` on each call. That is an adapter of perhaps fifty lines, and it is not in scope to write. **Say the shape, do not build it.** Claiming framework-agnosticism and demonstrating it once is stronger than demonstrating it twice and having spent the time.
+
+---
+
+## 27. The authoring surface *(phase 9, stretch)*
+
+### 27.1 What it is and what it is for
+
+A page in the console — **Tools → Authoring** — containing a code editor preloaded with the agent contract, the three demo agents as worked examples, live validation against the contract, and an optional LLM-backed draft generator.
+
+**Its purpose is pedagogical before it is functional.** A reviewer who has watched the guided demo and now wants to know what authoring costs can read the contract and see the validator reject a deliberately wrong draft, without cloning anything. For a developer running locally, it removes a context switch during the most annoying part of integration.
+
+**It proves nothing the runtime does not already prove.** It is in phase 9 for that reason, and it must not be built before phase 8 is complete.
+
+### 27.2 The validator is the interesting part, not the editor
+
+An editor is a dependency someone else wrote. The validator is a small piece of original engineering that makes the contract enforceable rather than merely documented, and it reuses machinery the project already needs.
+
+Static checks, run on every keystroke pause and on every submission:
+
+| Check | Rejects | Why it matters |
+|---|---|---|
+| **Determinism imports** | Any reference to `datetime`, `time`, `random`, or `uuid` | This is I6. **It is the same check as the required test in §25.3** — the test that runs at commit time here runs interactively, against a draft, before the code has ever executed. |
+| **Return shape** | Anything not a `ToolCall`, `ModelCall`, or `Done` | An agent that returns an unrecognised action stalls the worker loop |
+| **Module-level mutable state** | Globals mutated across invocations | Violates §26.4. State held outside `ctx` does not survive a handoff and is the most likely authoring mistake. |
+| **Unregistered tool names** | `ToolCall` naming a tool absent from the registry | Fails fast in the editor rather than at step 3 of a live run |
+| **Missing safety declaration** | A registered tool with no declared category | Forces the §3.3 decision to be made deliberately |
+| **Unbounded self-recursion** | A step that can only return itself | Catches the trivial infinite-run case; the attempt cap of §6 catches the rest |
+
+**The validator's error messages are product surface, not developer output.** Per the standard, they state what is wrong and what to do: *"line 14 calls `datetime.now()`. Agent code must use `ctx.now()` so the value is journaled and replay returns the same timestamp — see the determinism boundary."* An error that teaches the invariant is worth more than the feature that produced it.
+
+### 27.3 Execution is bound to deployment mode, not to identity
+
+**The problem, stated without softening: accepting arbitrary Python from a public endpoint and executing it on the host is remote code execution.** Not a theoretical concern. The code that reads the process environment and exfiltrates the database URL is three lines, the endpoint would be found by automated scanning, and the host in question also runs the Postgres instance holding the chaos-harness history that §21.6 identifies as the project's published evidence.
+
+**The rejected mitigation: sandboxing.** Doing this properly means a container-per-execution boundary, a microVM, or a WASM runtime, plus egress control and resource limits. That is a substantial subsystem, it is entirely orthogonal to durable execution, and building it would consume the hours §15 already warns phases 4 and 5 will overrun.
+
+**The rejected mitigation: authentication.** Gating execution behind a login would work, and it is what most projects would do. It is rejected because §21.7 cuts accounts for good reasons that have not changed, and because introducing an auth system to guard one stretch feature inverts the cost-benefit completely.
+
+**The decision: the capability is compiled out of the public deployment.**
+
+| Deployment | `/authoring/validate` | `/authoring/generate` | `/authoring/register` |
+|---|---|---|---|
+| Local (`docker compose`) | enabled | enabled | **enabled** |
+| Public demonstration instance | enabled | enabled | **not mounted** |
+
+The register route is mounted only when `ANCHOR_AUTHORING_EXECUTE=true`, which is set exclusively in the local compose file. **Absent configuration, it is disabled** — fail-closed, consistent with I7, and the same posture the runtime takes toward the database.
+
+Three properties make this stronger than an auth check rather than merely cheaper:
+
+- **There is no code path to attack.** An unmounted route cannot be reached by a credential-stuffing attempt, a session bug, or a misconfigured middleware ordering. The public instance does not contain the capability.
+- **It matches the actual trust boundary.** A developer running locally is executing their own code on their own machine — the normal case, requiring no permission from anyone. The restriction is not about *who* is asking; it is about *whose machine* is at risk. Binding it to identity would model the situation incorrectly.
+- **It is one line to explain in an interview**, and the explanation demonstrates that the RCE was recognised rather than missed.
+
+**The page states its mode in the header at all times.** On the public instance: *"Author-and-validate mode. This instance does not execute submitted code. Run locally to register and execute."* Silently disabling the button would read as a bug.
+
+### 27.4 The draft generator, and why it does not violate the governing rule
+
+The governing rule appears in §0 and throughout: **deterministic core, LLM explanation layer — the model never produces output the system presents as fact.**
+
+A code generator appears to contradict it and does not. The rule governs **runtime**: a value the system computes, displays, and acts upon without a human in the loop. Generation here is **authoring-time**: it produces a draft that a human reads, edits, and explicitly registers before a single step of it ever executes. The distinction is the same one that makes an editor's code completion compatible with a codebase's invariants.
+
+**State this distinction in the spec and in the README**, because a reviewer who has absorbed the governing rule will notice the generator and should find the reconciliation already written down rather than have to raise it.
+
+Four requirements, all of which follow from the distinction rather than being bolted on:
+
+**It is seeded with the contract.** The system prompt carries the §25.3 contract table, the §26.4 constraint, the registered tool list with safety categories, and the three demo agents as worked examples. An ungrounded generator emits plausible Python that does not fit the runtime, which is strictly worse than no generator — the developer now has to find the mismatch rather than write correct code from a template.
+
+**Its output is always routed through the validator before display.** The draft arrives in the editor with validation already run and any violations already marked. The generator does not get to produce something the validator would reject and have that pass without comment.
+
+**It never registers, and never executes.** Output lands in the editor. Registration is always a separate, explicit human action — and on the public instance, per §27.3, is not available at all.
+
+**It degrades honestly.** No API key configured, or the provider is unreachable: the page works, the editor works, the validator works, and the generate control is disabled with a plain statement of why. The generator is a convenience on top of the authoring surface, never a dependency of it.
+
+### 27.5 What this section deliberately does not become
+
+**It is not a no-code builder.** There is no visual step composer, no dropdown-driven agent construction, and no attempt to make agent authoring accessible to non-programmers. §18 cuts that, §28.2 records why, and the editor is the boundary — it lowers the friction of writing the contract, it does not remove the requirement to write code.
+
+**It is not a hosted authoring environment.** No saved drafts, no per-user workspaces, no draft persistence across sessions beyond the browser. §21.7 stands: no accounts, no server-side per-user state. A draft lives in the editor and in the developer's clipboard.
+
+---
+
+## 28. Recorded decisions — prior art and cuts
+
+These four are written down so they are not reopened. Each was considered seriously, and each was cut for a stated reason.
+
+### 28.1 Prior art, and the positioning that follows from it
+
+Durable execution is a solved and actively contested category. Temporal is the mature reference implementation; Restate, Inngest, Trigger.dev, and DBOS occupy adjacent positions, several of them marketing specifically to agent workloads. Event sourcing, leases, fencing tokens, and idempotency keys are textbook distributed-systems patterns with decades of literature.
+
+**Anchor is not novel, and the specification does not claim it is.** §17.3 already commits to naming Temporal and Restate unprompted; this section states the underlying position so that commitment has something to rest on.
+
+> **Anchor is a durable execution engine in the Temporal lineage, specialized for agent workloads and built to be demonstrated rather than deployed at scale.**
+
+Say that sentence first, in the README and in conversation. A reviewer who knows the field will think of Temporal within ten seconds regardless; getting there first converts a potential gap in your awareness into evidence of it. **The claim the project makes is measured correctness under adversarial failure, which is a claim about rigour and not about invention** — and that claim is unaffected by the category's maturity.
+
+### 28.2 Cut: the consumer storefront and the no-code builder
+
+Both were considered as ways to give Anchor a user-facing entry point comparable to a consumer product.
+
+**The storefront** — a polished single-purpose page wrapping one flagship agent, hiding all runtime vocabulary — was cut because the guided demo of §21.4 already solves the underlying problem. A reviewer lands, clicks once, and watches a real run recover from a real kill, in sixty seconds, with no jargon required to understand what happened. A second consumer-framed surface would duplicate that work while softening the operator vocabulary that makes the runtime legible to the audience that matters.
+
+**The no-code builder** — visual composition of agents from a tool palette — was cut on positioning grounds. It moves the project into competition with mature workflow-automation products on their strongest axis, integration breadth, while abandoning its own, which is correctness under failure. The authoring surface of §27 is the deliberate middle position: it lowers the cost of writing an agent without pretending the requirement to write one away.
+
+### 28.3 Cut: branching and fork-from-checkpoint
+
+Forking a run at step N, altering an input, and re-executing forward on the journaled prefix is a natural extension of an event-sourced runtime, and it would render beautifully in the thread visualization of §24.3.
+
+**It is cut on prior-art grounds.** Checkpoint-based time travel with forking is a native, documented feature of at least one widely-used agent framework, and at least one commercial debugging product ships the cached-prefix version specifically. Implementing it buys no differentiation.
+
+It also carries real cost that is easy to underestimate: a fork produces two run histories sharing a prefix, which complicates the §10.2 invariants — particularly log monotonicity and single-writer-per-epoch, both of which currently assume one linear history per run. **Adding branching means revisiting the invariants that constitute the project's proof.** That is the wrong trade for a feature whose value is exploratory rather than load-bearing.
+
+### 28.4 Cut: the research-flavoured extensions
+
+Four ideas were raised as potential sources of genuine novelty, evaluated, and cut:
+
+| Idea | Why it is interesting | Why it is cut |
+|---|---|---|
+| **Divergence-aware replay** — deciding per step whether to replay a journaled decision or re-derive it when the world has moved on | The most genuinely open problem here. Literal replay of a stale search result, or of a decision made from a transient failure, is a real weakness of the current model. | No known-good answer. Getting it wrong produces a runtime whose replay semantics are unclear, which is worse than one whose semantics are simple and stated. |
+| **Cost-aware recovery** — optimizing replay-versus-re-derive against token cost | Agent replay is not free the way deterministic workflow replay is; nobody models the economics. | Requires the divergence work above as a prerequisite. |
+| **Generic reconciliation protocol** — a declarative way to express "check whether this effect landed" across arbitrary tools | Would generalize §3.3's per-tool policies into something reusable. Real and unsolved. | Genuinely interesting and genuinely out of scope. Worth a paragraph in the design document as future work. |
+| **Semantic compensation** — generating compensating actions with a model when a run fails partway | Sagas require hand-written compensations; generating them is unexplored. | Directly contradicts the governing rule at runtime, unlike §27.4's authoring-time generation. Also alarming. |
+
+**Recorded here rather than pursued.** Each is a legitimate paragraph in a "future work" section, and a reviewer who asks "what would you do next" gets a better answer for having thought about them than for having half-built one.
+
+---
+
+## 29. What this addendum changes about the build order and the definition of done
+
+### 29.1 Build order
+
+Section 15 gains phase 9 and nothing else. **Phases 1 through 8 are unchanged, and the §23 warning against building the console before phase 4 stands.**
+
+| Phase | Change |
+|---|---|
+| 5 | No change, but note: the demo agents registered here are the same ones §27.4 uses as few-shot examples. Write them well enough to serve as documentation. |
+| 8 | Unchanged. **The definition of the project is complete at the end of phase 8.** |
+| 9 | *(stretch)* Authoring surface. Order within the phase: validator first, editor second, generator last. The validator is the part with engineering content; the editor is a dependency; the generator is a convenience. If phase 9 is only half-built, the half worth having is the validator. |
+
+**Phase 9 is genuinely optional and should be treated as such.** If it is not built, nothing in §26 becomes untrue — the quickstart path works entirely from the command line, which is how developers integrate infrastructure anyway.
+
+### 29.2 Definition of done
+
+Section 16 gains one item, and §23 already added one. Both are about whether anyone gets far enough to evaluate the runtime.
+
+**New item:** the README's quickstart (§26.3) has been followed end to end, from a clean clone on a machine that has never run the project, by someone who is not you. Every step works as written, or the step is corrected. A quickstart that has only ever been executed by its author is a quickstart that does not work.
+
+This is cheap to satisfy and it is the single most common failure in developer-facing repositories.
+
+### 29.3 What this addendum does not change
+
+- **No authentication, no accounts, no per-user state.** §21.7 stands. §27.3 achieves its restriction through deployment mode specifically to avoid reopening this.
+- **No change to the eight invariants**, the worker loop, the data model, or the chaos harness.
+- **No change to the claim.** The project's headline remains the measured chaos-harness result. Everything in this addendum is about the surfaces around that claim, not the claim itself.
+
+---
+---
+
+# Addendum E — Canonical page inventory, deployment-mode capabilities, and the outbound surface
+
+**Addendum version:** 1.0
+**Status:** Consolidating and additive. §30 restates the console's pages as one canonical table, superseding no prior text but replacing the need to reconstruct the list from §13.3, §21, and §27. §31 is new and normative: it is the single authoritative statement of what each deployment mode permits. §32 is new and specifies the page's outbound links.
+**Why §31 exists as its own section.** The public/local capability split is currently derivable from §21.6, §21.7, and §27.3, but it is never stated in one place. A security boundary that must be reconstructed from three sections is a security boundary that will eventually be implemented wrong. **When any part of this document appears to conflict with §31, §31 governs.**
+
+---
+
+## 30. The canonical page inventory
+
+Every page in the console, in sidebar order. This table is the build checklist for phase 7 and the completeness check for §16.
+
+| Group | Page | Contents | Phase |
+|---|---|---|---|
+| **Overview** | Dashboard | Active runs, live worker count, steps/sec, duplicate-effect counter (reads zero), throughput sparkline | 7 |
+| **Runs** | All runs | Every run, newest first; per-row `RunThread` in compact mode (§24.3); status, current step, owning worker; filterable; rows update in place over the WebSocket | 7 |
+| | Run detail | The `RunDetail` component of Addendum B — stacked worker bars, per-segment logs, handoff dividers, thread view, replayed-step encoding (§22.4), raw event log, kill control, effect counters | 7 |
+| | Needs review | Runs halted in the uncertainty window (§3.3). Each shows the specific ambiguous call, the tool's declared policy, and the resolution actions. **Its own page, not a filter** — per §13.3, failures must not be reachable only by narrowing a list. | 7 |
+| | Scheduled | Recurring and delayed runs. **Only if the §18 add-if-early item is built.** Absent otherwise; do not ship an empty page. | — |
+| **Workers** | Fleet | Card per worker: id, uptime, current run count, last heartbeat age, code version, kill control | 7 |
+| | Deployments | Code version per worker, as a history. Populated from the `workers.version` column already in §7. Answers "which build is actually running." | 7 |
+| **Chaos** | Console | Configure worker count, kill rate, latency injection, failure injection, duration. Launch. Live invariant panel: duplicate executions, stranded runs, recovery distribution, replay overhead. **Per §23, built at phase 8, before the landing surface.** | 8 |
+| | History | Every past chaos run with its final invariant report, retained permanently. §21.6 forbids the reset affordance from touching this table. | 8 |
+| **Tools** | Registry | Every row of `tool_registry` (§7): name, declared safety category, reconciliation function presence, last used | 7 |
+| | Test run | Submit a one-off run through a form. **Pre-registered agents only in every deployment mode** — this page selects, it does not author. | 7 |
+| | Authoring | The editor, validator, and draft generator of §27. Header states the deployment mode at all times. | 9 |
+| **Observability** | Metrics | §12 metrics as charts over time: throughput, recovery latency, replay overhead, fencing rate. Chart rules per §22.5. | 7 |
+| | Logs | Search across `run_events` for all runs. Distinct from the per-run log on the run-detail page. | 7 |
+| **Settings** | Environment | Lease duration, renewal interval, step timeout, retry caps, concurrency caps. Live-editable, subject to the §25.5 startup assertion re-running on every applied change and rejecting the change rather than the fleet. | 7 |
+| | API keys | Present only where programmatic submission is gated. **On the public demonstration instance there is no gate, therefore no keys, therefore no page.** See §31. | — |
+| | Webhooks | Run-completion and failure notification targets. §18 add-if-early. | — |
+
+**Three pages in this table are conditional and must not ship as empty shells:** Scheduled, API keys, and Webhooks. An empty settings page reads as an unfinished product; an absent one reads as a scoped one.
+
+---
+
+## 31. Deployment-mode capabilities — normative
+
+Anchor runs in exactly two modes. Mode is determined at process start by configuration, never by a request, a session, or a user.
+
+| Mode | How it is entered | Trust model |
+|---|---|---|
+| **Demonstration** | Default. `ANCHOR_AUTHORING_EXECUTE` unset or false. | Anonymous public visitors. The host is yours; the code is yours. |
+| **Local** | `docker compose up` sets `ANCHOR_AUTHORING_EXECUTE=true`. | The operator is running their own code on their own machine. |
+
+**Fail-closed, per I7:** absent configuration is demonstration mode. A deployment that fails to set anything is the safe one.
+
+### 31.1 The capability matrix
+
+| Capability | Demonstration (public) | Local | Rationale |
+|---|---|---|---|
+| Landing page and guided demo (§21.4) | Yes | Yes | The entire point of the public instance |
+| Watch any run's timeline live | Yes | Yes | Read-only |
+| Runs list, thread previews, run detail | Yes | Yes | Read-only |
+| Raw event log, per run and global | Yes | Yes | Read-only. The log contains no secrets; demo tool args are synthetic. |
+| Submit a **pre-registered** agent | Yes, IP rate-limited and hourly-capped (§21.6) | Yes, uncapped | Bounded compute, stubbed model calls, no financial exposure |
+| Kill a worker | **Yes** | Yes | This is the product. Workers self-heal (§21.6); a visitor cannot permanently degrade the fleet. Rate-limited only so the fleet view stays readable. |
+| Launch a chaos run | Yes, bounded duration and worker count | Yes, unbounded | Same reasoning as submission. Cap the parameters, not the capability. |
+| View chaos history | Yes | Yes | This is the published evidence; it is meant to be read |
+| Tool registry, metrics, logs | Yes | Yes | Read-only |
+| Cancel a run | Yes, **scoped to demo runs** | Yes, all runs | §21.6 |
+| Resolve a `needs_review` run | Yes, **scoped to demo runs** | Yes, all runs | The resolution UI is worth demonstrating; scoping prevents interference |
+| Clear demo runs | Yes | Yes | Never touches chaos history (§21.6) |
+| **Authoring: edit and validate** | **Yes** | Yes | Static analysis only. Nothing executes. This is what makes the contract legible to a reviewer without a clone. |
+| **Authoring: generate a draft** | **Yes** | Yes | Returns text into the editor. Never registers, never runs (§27.4). |
+| **Authoring: register an agent** | **No — route not mounted** | Yes | §27.3. This is the RCE boundary. |
+| **Execute visitor-authored code** | **No — no code path exists** | Yes | §27.3 |
+| Edit Environment settings | **No** | Yes | Lease misconfiguration can render the fleet non-functional (§25.5). Not a security boundary — an availability one. |
+| Delete or alter chaos history | **No** | **No** | Immutable in both modes. It is evidence. |
+| Mutate another visitor's run | **No** | n/a | No cross-run write paths exist at all |
+
+### 31.2 The four properties this matrix must preserve
+
+**Nothing in demonstration mode can execute code the visitor supplied.** Not sandboxed, not filtered, not permission-checked — the route is not mounted. An unmounted route survives a middleware ordering bug, a session-handling error, and a credential-stuffing attempt, because there is nothing behind it.
+
+**Everything a visitor *can* do is either read-only or designed to be abused.** Killing workers is not a vulnerability here; it is the demonstration. The self-healing property that makes it safe is the same property the product claims, which is why exposing it strengthens rather than weakens the instance.
+
+**No capability is gated by identity.** §21.7 stands: no accounts, no auth, no sessions, no per-user state. Every restriction in §31.1 is a function of deployment mode alone. This is why there is no API keys page on the public instance — there is nothing to key.
+
+**The two availability-only restrictions are labelled as such.** Environment editing and unbounded chaos parameters are withheld from the public instance to keep the demonstration functional, not because they are dangerous. Conflating availability restrictions with security boundaries makes both harder to reason about.
+
+### 31.3 Required tests
+
+Per §5.3, the boundary is asserted, not assumed:
+
+- With `ANCHOR_AUTHORING_EXECUTE` unset, `POST /api/authoring/register` returns 404, **not 401 or 403** — the route does not exist, and the response should not imply that a credential would help
+- With it unset, no import path in the API package reaches the registry-mutation code
+- `/api/authoring/validate` and `/api/authoring/generate` succeed in both modes
+- Submission and kill endpoints enforce their rate limits under concurrent load
+- The reset affordance leaves `chaos_events` and chaos reports untouched
+
+---
+
+## 32. The outbound surface — links, attribution, and footer
+
+The landing page of §21.3 is a demonstration, but it is also a public artifact that a reviewer arrives at from a resume link. It needs the ordinary furniture of a developer-tool page. That furniture is small, and specifying it prevents both omission and bloat.
+
+### 32.1 Header
+
+Persistent, quiet, three items:
+
+- **Wordmark** — returns to the landing page
+- **GitHub** — the repository. **This is the single most important outbound link on the site**, because the quickstart of §26.3 lives there and it is what converts a curious reviewer into one who understands the integration cost.
+- **Console** — enters the instrument layer of §30 for anyone who wants depth past the guided demo
+
+### 32.2 The live evidence badge
+
+A small element in the header or immediately beneath the headline, reading the current headline result — for example `0 duplicates / 500 kills`.
+
+**It must be read live from the most recent chaos report, never hardcoded.** Its value is that a technical visitor sees a measured claim before reading a single sentence of description; that value is entirely destroyed if the number is stale or invented. If no chaos run has completed, the badge is absent rather than showing a placeholder.
+
+### 32.3 Attribution strip
+
+One line beneath the demo, not a biography section:
+
+- Author name, linked to a portfolio or professional profile
+- Optionally a resume link
+- Optionally a single cross-link to another project
+
+**One line.** A project page that spends more vertical space on its author than on its evidence inverts the thing it is trying to demonstrate.
+
+### 32.4 Footer
+
+Small, quiet, at the bottom:
+
+- Repository link, repeated — header links are missed more often than assumed
+- License
+- **The self-hosting statement, verbatim from §26.2:** this is a demonstration instance, not a hosted service
+- A link to the design document in the repository, if the §18 add-if-early item was written. Per §18 it is the artifact a senior reviewer is most likely to actually read, which makes it worth one line of footer.
+
+### 32.5 Explicitly excluded
+
+Each of these is a default that a project page accumulates without anyone deciding to add it:
+
+| Excluded | Why |
+|---|---|
+| Newsletter signup, social share buttons, notification prompts | The page has one job (§21.4) and every additional call to action competes with it |
+| Analytics-driven modals or cookie banners beyond legal minimum | A modal between a reviewer and the demo costs reviewers, and every one lost is a total loss (§21.7's reasoning) |
+| Pricing, plans, or a "get started free" CTA | Directly contradicts §26.2. Implying a hosted offering that does not exist is the one dishonest thing this page could do. |
+| A features grid | The demo is the feature list, demonstrated rather than claimed |
+| Testimonials or logos | There are no users. Manufacturing social proof for a demonstration instance is worse than having none. |
+
+---
+
+## 33. What Addendum E does not change
+
+- **No change to the eight invariants, the worker loop, the data model, the protocol decisions of Addendum C, or the chaos harness.**
+- **No authentication.** §31 achieves every restriction through deployment mode specifically so that §21.7 stands unmodified.
+- **No change to build order** beyond the phase column in §30, which restates §15 and §23 rather than revising them. The landing surface and its outbound links remain last, after phase 8, because §23's dependency argument is unchanged: the evidence badge cannot be honestly built before the evidence exists.
+- **No change to the claim.** Everything here is surface around the measured chaos-harness result.
+
+---
+---
+
+# Addendum F — Agent authoring boilerplate *(post-launch, do not build now)*
+
+**Addendum version:** 0.1 — placeholder
+**Status:** Deferred. Nothing in this addendum is scheduled into the build order of §15 or §29. It is recorded here so the idea isn't lost, not so it gets built early. **Do not implement any part of this until the end product from phases 1–8 is working and demoed.**
+
+## 34. The gap, stated for later
+
+A developer writing `decide_next_step` can make a correctness mistake Anchor cannot catch — forgetting to filter already-completed items from a loop, forgetting a terminal `Done(...)` branch, holding state in a variable instead of reading it from `ctx`. The §27 validator catches mechanical contract violations (wrong return type, direct clock access, unregistered tools). It does not and cannot catch wrong business logic — no static analysis can verify intent it was never told.
+
+## 35. What to build, once there's time
+
+**A `_template.py` scaffold** in `runtime/agents/`, with the four-step shape (check first action → branch on result → check terminal condition → return next action) and TODO markers, so a new agent starts from a correct skeleton rather than a blank file.
+
+**The three §21.5 demo agents, explicitly repurposed as reference implementations** — not just chaos-testing fixtures. The "long run" agent in particular should be the canonical worked example of the already-done filter pattern, and the README should point developers at it directly.
+
+**A four-item pre-registration checklist**, cheap to write, catching exactly the mistakes surfaced by building this project:
+```
+[ ] Every branch reads state from ctx, never a variable held across calls
+[ ] Every loop filters using ctx.completed_tool_args(...), not a counter
+[ ] There is a reachable Done(...) branch once the loop's work is exhausted
+[ ] Every ctx.call_tool(...) checks ctx.has_result(...) first
+```
+
+## 36. Why this is correctly sequenced last
+
+None of this makes the runtime more correct — it makes *writing agents for* the runtime less error-prone, which is a different axis entirely. Per §15 and §29, the chaos harness and its measured invariants are the project's actual claim. This addendum is polish on the developer experience around that claim, and it should only be spent time on after the claim itself exists and is proven.

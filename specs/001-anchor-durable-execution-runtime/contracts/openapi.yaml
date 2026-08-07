@@ -1,0 +1,1317 @@
+openapi: 3.1.0
+
+info:
+  title: Anchor — durable execution runtime for AI agents
+  version: 1.0.0
+  description: >-
+    Target HTTP contract. Authority is anchor-spec.md §8 for the surface and §31 for what each
+    deployment mode exposes. Mode is determined at process start by configuration, never by a
+    request, a session, or a user — there is no authentication anywhere in this API, and no
+    endpoint accepts or returns a credential.
+
+    Two rules govern the whole document. First, the agent-registration route is NOT MOUNTED in
+    demonstration mode and returns 404 rather than 401 or 403, because a response implying that a
+    credential would help is a lie about the security model (§27.3). Second, every write endpoint
+    that could affect another visitor's data is either absent or scoped to demo runs.
+
+servers:
+  - url: http://localhost:8000
+    description: Local mode (docker compose; ANCHOR_AUTHORING_EXECUTE=true)
+  - url: https://anchor.example.com
+    description: Demonstration mode (public; variable unset)
+
+tags:
+  - name: runs
+  - name: workers
+  - name: chaos
+  - name: registry
+  - name: observability
+  - name: configuration
+    description: Local mode only. Withheld publicly as an availability restriction, not a security one.
+  - name: authoring
+    description: Phase 9, stretch. validate and generate are available in both modes; register is local only.
+
+paths:
+
+  /api/runs:
+    post:
+      tags: [runs]
+      summary: Submit a run
+      description: >-
+        Deduplicated on client_request_key. Rate-limited by IP and capped hourly in demonstration
+        mode. Appends RUN_SUBMITTED so that submission itself is recoverable from the log.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RunSubmission' }
+      responses:
+        '201':
+          description: Run accepted and queued as pending
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Run' }
+        '200':
+          description: >-
+            Existing run returned because client_request_key matched a prior submission. Not an
+            error, and deliberately distinguished from 201 so a caller can tell.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Run' }
+        '404': { $ref: '#/components/responses/UnknownAgent' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503': { $ref: '#/components/responses/FailClosed' }
+    get:
+      tags: [runs]
+      summary: List runs
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: array
+            items: { $ref: '#/components/schemas/RunStatus' }
+          style: form
+          explode: true
+        - name: agent_type
+          in: query
+          schema: { type: string }
+        - name: is_demo
+          in: query
+          schema: { type: boolean }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+        - name: cursor
+          in: query
+          description: Opaque cursor; keyset pagination on (created_at, id).
+          schema: { type: string }
+      responses:
+        '200':
+          description: >-
+            Active runs first, then newest first. Each item carries the thread summary the compact
+            strand renders from, and the owning-worker column stays populated because the compact
+            strand cannot identify which workers touched a run (§24.8).
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/RunListItem' }
+                  next_cursor: { type: [string, 'null'] }
+        '503': { $ref: '#/components/responses/FailClosed' }
+
+  /api/runs/{run_id}:
+    get:
+      tags: [runs]
+      summary: Run status, current step, and owning worker
+      parameters: [{ $ref: '#/components/parameters/RunId' }]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Run' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/runs/{run_id}/timeline:
+    get:
+      tags: [runs]
+      summary: Step-level view for the run detail component
+      description: >-
+        Returns exactly the shape RunDetail consumes (§24.1) — one segment per worker that has
+        touched the run, in chronological order, with ended_at null identifying the current owner.
+        Server-derived so the component stays a pure function of props.
+      parameters: [{ $ref: '#/components/parameters/RunId' }]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RunTimeline' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/runs/{run_id}/events:
+    get:
+      tags: [runs]
+      summary: Raw event log for one run, paginated
+      description: >-
+        after_seq is how a WebSocket client backfills exactly what it missed after being dropped
+        for exceeding its buffer (§9).
+      parameters:
+        - { $ref: '#/components/parameters/RunId' }
+        - name: after_seq
+          in: query
+          schema: { type: integer, minimum: 0 }
+        - name: type
+          in: query
+          schema:
+            type: array
+            items: { $ref: '#/components/schemas/EventType' }
+          style: form
+          explode: true
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 1000, default: 200 }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, run_id]
+                properties:
+                  run_id: { type: integer }
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/RunEvent' }
+                  next_after_seq: { type: [integer, 'null'] }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/runs/{run_id}/effects:
+    get:
+      tags: [runs]
+      summary: demo_effects rows for this run
+      description: >-
+        The proof surface (§21.5). One row per side-effect execution. A count of 1 beside a timeline
+        showing an interruption is a claim a reviewer can verify without trusting the log.
+      parameters: [{ $ref: '#/components/parameters/RunId' }]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, total]
+                properties:
+                  total: { type: integer }
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/DemoEffect' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /api/runs/{run_id}/cancel:
+    post:
+      tags: [runs]
+      summary: Set the cooperative cancellation flag
+      description: >-
+        Cooperative only. Checked between steps, never mid-step. Scoped to demo runs in
+        demonstration mode (§31).
+      parameters: [{ $ref: '#/components/parameters/RunId' }]
+      responses:
+        '202':
+          description: Flag set. The run finalizes as cancelled at its next step boundary.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Run' }
+        '403':
+          description: Non-demo run in demonstration mode.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Run already terminal.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+
+  /api/runs/{run_id}/resolve:
+    post:
+      tags: [runs]
+      summary: Resolve a needs_review run
+      description: >-
+        Permitted only while status is needs_review, which is leaseless, so this write can never
+        race a worker. The write is attributed to worker_id 'operator' at the run's current epoch,
+        because a human decision in the uncertainty window belongs in the log, attributably (I8).
+      parameters: [{ $ref: '#/components/parameters/RunId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [resolution]
+              properties:
+                resolution:
+                  type: string
+                  enum: [mark_executed, mark_not_executed, abandon]
+                  description: >-
+                    mark_executed writes the missing TOOL_RESULT and resumes. mark_not_executed
+                    clears the intent and returns the run to pending. abandon finalizes as
+                    cancelled. There is no 'guess' option, by design.
+                note: { type: string, description: Recorded on the event. }
+      responses:
+        '202':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Run' }
+        '403':
+          description: Non-demo run in demonstration mode.
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+        '409':
+          description: Run is not in needs_review.
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+
+  /api/runs/demo/reset:
+    post:
+      tags: [runs]
+      summary: Prune completed demo runs
+      description: >-
+        Keeps the runs list legible on a shared instance. MUST NOT touch chaos_runs, chaos_reports,
+        or chaos_events — that history is the published evidence (§21.6), and it is immutable in both
+        modes at the database level regardless of what this endpoint attempts.
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [runs_deleted]
+                properties:
+                  runs_deleted: { type: integer }
+
+  /api/workers:
+    get:
+      tags: [workers]
+      summary: Fleet state
+      description: >-
+        Also backs the Deployments page, which groups by code_version — no new schema and no new
+        instrumentation, because workers.code_version already exists (§13.3).
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Worker' }
+
+  /api/workers/{worker_id}/kill:
+    post:
+      tags: [workers]
+      summary: Kill a worker
+      description: >-
+        A first-class product feature, not a debug affordance — it is how the system demonstrates
+        itself, and it is available in demonstration mode because workers self-heal. Delivered over
+        Redis pub/sub; the worker calls os._exit immediately, skipping every cleanup path, because
+        that is what a crash does. Rate-limited only so the fleet view stays readable.
+      parameters:
+        - name: worker_id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: mode
+          in: query
+          description: >-
+            hard (default) waits for lease expiry, exactly as a crash does. graceful releases the
+            lease on the way out, making reclaim near-instant. Both are offered and labelled
+            differently, because showing a reviewer why they differ is worth more than hiding the
+            slower one (Addendum C §25.5).
+          schema: { type: string, enum: [hard, graceful], default: hard }
+      responses:
+        '202':
+          description: Kill published.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [worker_id, mode, chaos_event_id]
+                properties:
+                  worker_id: { type: string }
+                  mode: { type: string }
+                  chaos_event_id: { type: integer }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/RateLimited' }
+        '503':
+          description: >-
+            Redis unreachable, so kill delivery is unavailable. Stated honestly, and execution is
+            entirely unaffected because Redis is non-authoritative.
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+
+  /api/chaos/start:
+    post:
+      tags: [chaos]
+      summary: Launch a configured chaos run
+      description: Parameters are bounded in demonstration mode; the capability is not withheld.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ChaosParams' }
+      responses:
+        '202':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ChaosRun' }
+        '422':
+          description: Parameters exceed the bounds in force for this deployment mode.
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+
+  /api/chaos:
+    get:
+      tags: [chaos]
+      summary: Chaos history
+      description: >-
+        Every past run with its final report, retained permanently. This is what converts the
+        harness from a demonstration into an accumulating body of evidence (§13.3).
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 25 }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: '#/components/schemas/ChaosRun'
+                        - type: object
+                          properties:
+                            report: { $ref: '#/components/schemas/ChaosReport' }
+
+  /api/chaos/latest:
+    get:
+      tags: [chaos]
+      summary: The most recent completed report
+      description: >-
+        Read by the landing page's evidence band and the live evidence badge. When no report
+        exists this returns 404 and the badge is ABSENT rather than showing a placeholder (§32.2).
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ChaosRun'
+                  - type: object
+                    required: [report]
+                    properties:
+                      report: { $ref: '#/components/schemas/ChaosReport' }
+        '404':
+          description: No completed chaos run yet.
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+
+  /api/chaos/{chaos_run_id}/report:
+    get:
+      tags: [chaos]
+      summary: Invariant results and metrics for one chaos run
+      parameters:
+        - name: chaos_run_id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ChaosReport' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Chaos run has not completed; no report exists yet.
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+
+  /api/agents:
+    get:
+      tags: [registry]
+      summary: Registered agents and their contracts
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/AgentDescriptor' }
+
+  /api/tools:
+    get:
+      tags: [registry]
+      summary: Tool registry with safety categories
+      description: >-
+        Makes the per-tool policy decision visible rather than buried in configuration — one of the
+        design choices §3.3 says is most worth highlighting.
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/ToolDescriptor' }
+
+  /api/events:
+    get:
+      tags: [observability]
+      summary: Search the event log across all runs
+      description: Distinct from the per-run log; backs the Logs page.
+      parameters:
+        - name: type
+          in: query
+          schema: { type: array, items: { $ref: '#/components/schemas/EventType' } }
+          style: form
+          explode: true
+        - name: worker_id
+          in: query
+          schema: { type: string }
+        - name: epoch
+          in: query
+          schema: { type: integer }
+        - name: since
+          in: query
+          schema: { type: string, format: date-time }
+        - name: until
+          in: query
+          schema: { type: string, format: date-time }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 500, default: 100 }
+        - name: cursor
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/RunEvent' }
+                  next_cursor: { type: [string, 'null'] }
+
+  /api/metrics:
+    get:
+      tags: [observability]
+      summary: Throughput, recovery, replay overhead, fencing rate
+      description: >-
+        Two tiers, and the boundary is deliberate. duplicate_side_effects and stranded_runs are
+        CORRECTNESS READS, computed live from tool_journal and run_events on every request — never
+        cached, never rolled up, because a stale zero on the duplicate-effect counter would be the most
+        damaging thing this API could return. The time series are DISPLAY ONLY and are served from a
+        derived, watermarked rollup that is rebuildable from the log, because full aggregation per poll
+        does not survive one chaos corpus. The rollup is maintained by a periodic job, never by a
+        trigger on the append path — a trigger would make every worker contend on the same bucket row
+        and serialize appends across runs that currently never contend at all.
+      parameters:
+        - name: window
+          in: query
+          schema: { type: string, enum: [1h, 24h, 7d, 30d], default: 24h }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Metrics' }
+
+  /api/health:
+    get:
+      tags: [observability]
+      summary: Database reachability, fleet size, lag
+      description: >-
+        Read by the landing page's live status strip. Reports degradation honestly — a strip that
+        can report bad news is the reason to believe it when it reports good news (§21.3).
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+        '503':
+          description: Database unreachable. Nothing is executing, which is correct (I7).
+          content: { application/json: { schema: { $ref: '#/components/schemas/Health' } } }
+
+  /api/config:
+    get:
+      tags: [configuration]
+      summary: Effective runtime configuration
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RuntimeConfig' }
+    patch:
+      tags: [configuration]
+      summary: Edit runtime configuration live
+      description: >-
+        LOCAL MODE ONLY — 404 in demonstration mode. The startup assertion re-runs on every applied
+        change and REJECTS THE CHANGE, never the fleet: a running fleet must not be configurable
+        into a state where every worker spuriously fences itself (Addendum C §25.5).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              example:
+                lease_duration_ms: 20000
+                renewal_interval_ms: 5000
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RuntimeConfig' }
+        '404':
+          description: Not mounted in demonstration mode.
+        '422':
+          description: >-
+            The relationship assertion failed. The response names the violated relationship and the
+            offending values, and the configuration is unchanged.
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+
+  /api/authoring/validate:
+    post:
+      tags: [authoring]
+      summary: Static-check a draft against the agent contract
+      description: >-
+        ALWAYS available, in both modes. Static analysis only; nothing executes. No draft is
+        persisted server-side — no table, no cache, no filesystem path holds the source after the
+        response is written (§27.5, FR-136).
+
+
+        The six checks are MECHANICAL and CANNOT detect incorrect business logic — a loop filtered
+        on the wrong key, or a terminal branch unreachable for the inputs that will actually arrive
+        (§34, FR-134). An empty `findings` array means no contract violation was found; it does NOT
+        mean the agent is correct, and no consumer of this endpoint may present it as such. The
+        `unchecked` field carries the pre-registration checklist so that the boundary travels with
+        the response rather than living only in the console.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [source]
+              properties:
+                source: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ValidationReport' }
+
+  /api/authoring/generate:
+    post:
+      tags: [authoring]
+      summary: Draft an agent from a description
+      description: >-
+        ALWAYS available. Returns text into the editor and nothing else — it never registers and
+        never executes, and its output is routed through the validator before display. Authoring-time
+        generation does not violate the governing rule, which governs runtime values the system
+        presents as fact (§27.4). Degrades honestly: with no provider key the endpoint reports
+        unavailable and the editor and validator keep working.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [description]
+              properties:
+                description: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [source, validation]
+                properties:
+                  source: { type: string }
+                  validation: { $ref: '#/components/schemas/ValidationReport' }
+        '503':
+          description: No provider configured or provider unreachable, stated plainly.
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+
+  /api/authoring/register:
+    post:
+      tags: [authoring]
+      summary: Load a draft into the live registry
+      description: >-
+        LOCAL MODE ONLY. In demonstration mode this route IS NOT MOUNTED and returns 404 — not 401,
+        not 403 — because the response must not imply that a credential would help. This is the RCE
+        boundary: an unmounted route survives a middleware ordering bug, a session-handling error,
+        and a credential-stuffing attempt, because there is nothing behind it (§27.3).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [source, agent_type]
+              properties:
+                source: { type: string }
+                agent_type: { type: string }
+      responses:
+        '201':
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AgentDescriptor' }
+        '404':
+          description: Route not mounted (demonstration mode).
+        '422':
+          description: Validation failed; nothing was registered.
+          content: { application/json: { schema: { $ref: '#/components/schemas/ValidationReport' } } }
+
+components:
+
+  parameters:
+    RunId:
+      name: run_id
+      in: path
+      required: true
+      schema: { type: integer }
+
+  responses:
+    NotFound:
+      description: No such resource.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    UnknownAgent:
+      description: agent_type is not registered.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    ValidationError:
+      description: Malformed request.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    RateLimited:
+      description: Per-IP rate limit or hourly demo cap exceeded.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    FailClosed:
+      description: >-
+        Database unreachable. Nothing executes and nothing is queued, because a side effect that
+        cannot be recorded must not happen (I7). This is a design choice, not a limitation.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+
+  schemas:
+
+    Error:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          description: Stable machine code, e.g. unknown_agent, rate_limited, config_assertion_failed.
+        message:
+          type: string
+          description: >-
+            States what happened and what to do. No apologies, no vagueness, and never a raw
+            exception string.
+        detail: { type: object, additionalProperties: true }
+
+    RunStatus:
+      type: string
+      enum: [pending, running, completed, failed, cancelled, needs_review]
+
+    EventType:
+      type: string
+      enum:
+        - RUN_SUBMITTED
+        - RUN_CLAIMED
+        - REPLAY_COMPLETED
+        - STEP_STARTED
+        - LLM_CALLED
+        - TOOL_INTENT
+        - TOOL_RESULT
+        - NONDET_RECORDED
+        - STEP_COMPLETED
+        - STEP_SKIPPED_ON_REPLAY
+        - STEP_FAILED
+        - LEASE_RENEWED
+        - WORKER_FENCED
+        - RUN_COMPLETED
+        - RUN_FAILED
+        - RUN_CANCELLED
+        - RUN_NEEDS_REVIEW
+
+    ToolSafety:
+      type: string
+      enum: [retry_safe, reconcilable, unsafe]
+
+    RunSubmission:
+      type: object
+      required: [agent_type]
+      properties:
+        agent_type: { type: string }
+        input: { type: object, additionalProperties: true, default: {} }
+        client_request_key:
+          type: string
+          description: Submission-deduplication key. A repeat returns 200 with the existing run.
+        priority:
+          type: integer
+          default: 0
+          description: Lower is sooner.
+        is_demo: { type: boolean, default: false }
+
+    Run:
+      type: object
+      required: [id, agent_type, status, epoch, created_at, is_demo]
+      properties:
+        id: { type: integer }
+        display_id: { type: string, example: run_47 }
+        agent_type: { type: string }
+        status: { $ref: '#/components/schemas/RunStatus' }
+        epoch: { type: integer }
+        owner_worker_id: { type: [string, 'null'] }
+        lease_expires_at: { type: [string, 'null'], format: date-time }
+        orphaned:
+          type: boolean
+          description: >-
+            Derived, never stored — status is running and the lease has expired. Stored would
+            require a writer at the exact moment nobody owns the run.
+        current_step_index: { type: [integer, 'null'] }
+        step_count: { type: integer }
+        attempts: { type: integer }
+        priority: { type: integer }
+        is_demo: { type: boolean }
+        cancel_requested_at: { type: [string, 'null'], format: date-time }
+        created_at: { type: string, format: date-time }
+        claimed_at: { type: [string, 'null'], format: date-time }
+        finished_at: { type: [string, 'null'], format: date-time }
+
+    RunListItem:
+      allOf:
+        - $ref: '#/components/schemas/Run'
+        - type: object
+          required: [summary, segments]
+          properties:
+            elapsed_ms: { type: integer }
+            segments:
+              type: array
+              description: Minimal per-owner ranges for the compact thread strand in a list row.
+              items: { $ref: '#/components/schemas/TimelineSegment' }
+            summary: { $ref: '#/components/schemas/RunSummary' }
+
+    RunSummary:
+      type: object
+      required: [duplicate_side_effects, handoff_count]
+      properties:
+        duplicate_side_effects:
+          type: integer
+          description: >-
+            The headline number. Renders 0, explicitly and always — never omitted when zero.
+        handoff_count: { type: integer }
+        recovery_seconds:
+          type: [number, 'null']
+          description: >-
+            Null when handoff_count is 0, and the interface suppresses it entirely rather than
+            printing 0.0s. A zero recovery time on a run that never lost a worker is not a
+            measurement and invites distrust of the numbers that are real.
+        effects_executed: { type: integer }
+        replayed_step_count: { type: integer }
+
+    TimelineStep:
+      type: object
+      required: [step_index, name, status, action_kind, started_at]
+      properties:
+        step_index: { type: integer }
+        name: { type: string }
+        status: { type: string, enum: [done, active, pending, failed, skipped_on_replay] }
+        action_kind: { type: string, enum: [tool, model, nondet, done] }
+        started_at: { type: string, format: date-time }
+        completed_at: { type: [string, 'null'], format: date-time }
+        duration_ms: { type: [integer, 'null'] }
+        attempt: { type: integer, default: 1 }
+        idempotency_key: { type: [string, 'null'] }
+        idempotency_key_display: { type: [string, 'null'], example: 'r47:s1:a91f' }
+        executed:
+          type: boolean
+          description: >-
+            False means the step was read back from the log. The console renders this as fill
+            weight, not hue, so the distinction survives grayscale and video compression.
+
+    TimelineSegment:
+      type: object
+      required: [worker_id, started_at, steps]
+      properties:
+        worker_id: { type: string }
+        epoch: { type: integer }
+        claim_reason: { type: string, enum: [initial, reclaimed_after_lease_expiry] }
+        started_at: { type: string, format: date-time }
+        ended_at:
+          type: [string, 'null']
+          format: date-time
+          description: >-
+            Null identifies the current owner. This single field drives the kill button's target,
+            the active-step styling, and which strand segment is still growing — so it is trusted
+            rather than re-derived.
+        steps:
+          type: array
+          items: { $ref: '#/components/schemas/TimelineStep' }
+        log:
+          type: array
+          items:
+            type: object
+            required: [timestamp, text, level]
+            properties:
+              timestamp: { type: string }
+              text: { type: string }
+              level: { type: string, enum: [info, success, warning] }
+
+    RunTimeline:
+      type: object
+      required: [id, agent_type, status, started_at, step_count, segments, summary]
+      properties:
+        id: { type: integer }
+        display_id: { type: string }
+        agent_type: { type: string }
+        status: { $ref: '#/components/schemas/RunStatus' }
+        started_at: { type: string, format: date-time }
+        step_count: { type: integer }
+        orphaned: { type: boolean }
+        lease_expires_at: { type: [string, 'null'], format: date-time }
+        segments:
+          type: array
+          items: { $ref: '#/components/schemas/TimelineSegment' }
+        fencing_events:
+          type: array
+          description: Rendered as full-height labelled markers on the track, never as buried log lines.
+          items:
+            type: object
+            required: [at, fenced_worker_id, stale_epoch, current_epoch]
+            properties:
+              at: { type: string, format: date-time }
+              fenced_worker_id: { type: string }
+              stale_epoch: { type: integer }
+              current_epoch: { type: integer }
+        needs_review:
+          type: [object, 'null']
+          description: Present when the run halted in the uncertainty window.
+          properties:
+            step_index: { type: integer }
+            tool_name: { type: string }
+            idempotency_key: { type: string }
+            declared_policy: { $ref: '#/components/schemas/ToolSafety' }
+            available_resolutions:
+              type: array
+              items: { type: string, enum: [mark_executed, mark_not_executed, abandon] }
+        summary: { $ref: '#/components/schemas/RunSummary' }
+
+    RunEvent:
+      type: object
+      required: [run_id, seq, type, payload, epoch, worker_id, created_at]
+      properties:
+        run_id: { type: integer }
+        seq: { type: integer }
+        type: { $ref: '#/components/schemas/EventType' }
+        payload: { type: object, additionalProperties: true }
+        epoch: { type: integer }
+        worker_id: { type: string }
+        step_index: { type: [integer, 'null'] }
+        created_at: { type: string, format: date-time }
+
+    DemoEffect:
+      type: object
+      required: [id, run_id, step_index, tool_name, idempotency_key, executed_at]
+      properties:
+        id: { type: integer }
+        run_id: { type: integer }
+        step_index: { type: integer }
+        tool_name: { type: string }
+        idempotency_key: { type: string }
+        payload: { type: object, additionalProperties: true }
+        executed_at: { type: string, format: date-time }
+
+    Worker:
+      type: object
+      required:
+        - id
+        - label
+        - incarnation
+        - hostname
+        - pid
+        - started_at
+        - last_seen_at
+        - current_run_count
+        - capacity
+        - code_version
+        - role
+      properties:
+        id:
+          type: string
+          example: worker-a#3
+          description: >-
+            Unique for this process lifetime and never reused. Hostname plus pid is reused by
+            container platforms, so an identity built from them would alias two different processes
+            and quietly falsify "which worker executed each step".
+        label:
+          type: string
+          example: worker-a
+          description: >-
+            The fleet slot. Survives restarts, and is what the identity hue derives from, so a worker
+            keeps its color across a restart.
+        incarnation:
+          type: integer
+          example: 3
+          description: Process-lifetime counter for this label. A rising value is a restart count.
+        hostname: { type: string }
+        pid: { type: integer }
+        started_at: { type: string, format: date-time }
+        last_seen_at: { type: string, format: date-time }
+        heartbeat_age_ms: { type: integer }
+        stale:
+          type: boolean
+          description: Detects a worker that registered and then died immediately.
+        uptime_ms: { type: integer }
+        current_run_count: { type: integer }
+        capacity: { type: integer }
+        steps_executed: { type: integer }
+        code_version: { type: string }
+        role: { type: string, enum: [runner, chaos] }
+
+    ChaosParams:
+      type: object
+      required: [worker_count, duration_seconds]
+      properties:
+        worker_count: { type: integer, minimum: 1 }
+        run_count: { type: integer, minimum: 1 }
+        duration_seconds: { type: integer, minimum: 10 }
+        kill_rate_per_minute: { type: number, minimum: 0 }
+        latency_injection_ms: { type: integer, minimum: 0 }
+        stall_injection_rate: { type: number, minimum: 0, maximum: 1 }
+        tool_failure_rate: { type: number, minimum: 0, maximum: 1 }
+        uncertainty_crash_rate:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Crashes injected between TOOL_INTENT and TOOL_RESULT, to exercise every declared policy.
+        step_mix: { type: object, additionalProperties: true }
+
+    ChaosRun:
+      type: object
+      required: [id, status, params, deployment_mode, config_profile, started_at]
+      properties:
+        id: { type: integer }
+        status: { type: string, enum: [pending, running, completed, failed, abandoned] }
+        params: { $ref: '#/components/schemas/ChaosParams' }
+        deployment_mode: { type: string, enum: [demonstration, local] }
+        config_profile: { type: string, enum: [demo, production] }
+        lease_duration_ms: { type: integer }
+        renewal_interval_ms: { type: integer }
+        started_at: { type: string, format: date-time }
+        ended_at: { type: [string, 'null'], format: date-time }
+
+    ChaosReport:
+      type: object
+      required:
+        - chaos_run_id
+        - invariants
+        - duplicate_effect_count
+        - stranded_run_count
+        - kills_injected
+        - runs_total
+        - steps_total
+        - config_profile
+        - lease_duration_ms
+        - created_at
+      properties:
+        chaos_run_id: { type: integer }
+        invariants:
+          type: object
+          required:
+            - no_duplicate_effects
+            - log_monotonic
+            - single_writer_per_epoch
+            - terminal_reachability
+            - replay_determinism
+          properties:
+            no_duplicate_effects: { type: boolean }
+            log_monotonic: { type: boolean }
+            single_writer_per_epoch: { type: boolean }
+            terminal_reachability: { type: boolean }
+            replay_determinism: { type: boolean }
+        violations:
+          type: array
+          description: Empty is the expected value and is returned explicitly, never as null.
+          items: { type: object, additionalProperties: true }
+        duplicate_effect_count: { type: integer }
+        stranded_run_count: { type: integer }
+        kills_injected: { type: integer }
+        runs_total: { type: integer }
+        steps_total: { type: integer }
+        recovery_ms:
+          type: [object, 'null']
+          description: Null exactly when kills_injected is 0.
+          properties:
+            p50: { type: integer }
+            p95: { type: integer }
+            p99: { type: integer }
+            max: { type: integer }
+        replay_steps_mean: { type: [number, 'null'] }
+        replay_ms_mean: { type: [number, 'null'] }
+        steps_per_second: { type: [number, 'null'] }
+        fencing_events: { type: integer }
+        uncertainty_entries:
+          type: object
+          additionalProperties: { type: integer }
+        dead_letter_count: { type: integer }
+        duration_seconds: { type: integer }
+        config_profile:
+          type: string
+          description: >-
+            Reported with every figure. A recovery time without the profile and lease it was
+            measured under is not a measurement.
+        lease_duration_ms: { type: integer }
+        created_at: { type: string, format: date-time }
+
+    AgentDescriptor:
+      type: object
+      required: [agent_type, contract_version, tools_used]
+      properties:
+        agent_type: { type: string }
+        description: { type: string }
+        contract_version: { type: string }
+        expected_step_count: { type: [integer, 'null'] }
+        tools_used: { type: array, items: { type: string } }
+        stubbed_model: { type: boolean }
+
+    ToolDescriptor:
+      type: object
+      required: [name, safety, default_policy, has_reconcile_fn, declaration_hash, executable]
+      properties:
+        name: { type: string }
+        safety: { $ref: '#/components/schemas/ToolSafety' }
+        naturally_idempotent: { type: boolean }
+        provider_accepts_key: { type: boolean }
+        has_reconcile_fn: { type: boolean }
+        default_policy: { $ref: '#/components/schemas/ToolSafety' }
+        declaration_hash:
+          type: string
+          description: SHA-256 over the five safety-relevant fields — the identity of the declaration.
+        declared_by_version: { type: string }
+        executable:
+          type: boolean
+          description: >-
+            False when two code versions registered conflicting safety declarations for this tool. The
+            tool is then refused fleet-wide until resolved, because resolving the uncertainty window
+            from an ambiguous declaration would mean the same crash halts on one worker and
+            re-executes on another.
+        conflict:
+          type: [object, 'null']
+          properties:
+            detected_at: { type: string, format: date-time }
+            versions: { type: array, items: { type: string } }
+        description: { type: string }
+        last_used_at: { type: [string, 'null'], format: date-time }
+
+    Metrics:
+      type: object
+      required: [window, duplicate_side_effects, run_state_distribution]
+      properties:
+        window: { type: string }
+        duplicate_side_effects: { type: integer }
+        stranded_runs: { type: integer }
+        runs_total: { type: integer }
+        steps_total: { type: integer }
+        steps_per_second: { type: number }
+        steps_per_second_by_worker:
+          type: object
+          additionalProperties: { type: number }
+        run_state_distribution:
+          type: array
+          items:
+            type: object
+            properties:
+              bucket: { type: string, format: date-time }
+              counts: { type: object, additionalProperties: { type: integer } }
+        recovery_ms_histogram: { $ref: '#/components/schemas/Histogram' }
+        lease_renewal_ms_histogram: { $ref: '#/components/schemas/Histogram' }
+        replay_steps_mean: { type: number }
+        replay_ms_mean: { type: number }
+        fencing_events_series:
+          type: array
+          items:
+            type: object
+            properties:
+              bucket: { type: string, format: date-time }
+              count: { type: integer }
+        uncertainty_by_policy:
+          type: object
+          additionalProperties: { type: integer }
+        dead_letter_reasons:
+          type: array
+          description: Rendered as a table, not a chart.
+          items:
+            type: object
+            properties:
+              error_type: { type: string }
+              count: { type: integer }
+        throughput_by_worker_count:
+          type: array
+          description: Plotted as one measured line against a dashed ideal-linear reference.
+          items:
+            type: object
+            properties:
+              worker_count: { type: integer }
+              steps_per_second: { type: number }
+        active_profile: { type: string }
+        lease_duration_ms: { type: integer }
+
+    Histogram:
+      type: object
+      required: [bins]
+      properties:
+        bins:
+          type: array
+          items:
+            type: object
+            properties:
+              lower_ms: { type: integer }
+              upper_ms: { type: integer }
+              count: { type: integer }
+        p50: { type: [integer, 'null'] }
+        p95: { type: [integer, 'null'] }
+        p99: { type: [integer, 'null'] }
+
+    Health:
+      type: object
+      required: [database_reachable, redis_reachable, worker_count, deployment_mode]
+      properties:
+        database_reachable: { type: boolean }
+        redis_reachable:
+          type: boolean
+          description: >-
+            False degrades the console to polling and affects nothing about execution, because
+            Redis is non-authoritative.
+        worker_count: { type: integer }
+        healthy_worker_count: { type: integer }
+        stale_worker_count: { type: integer }
+        pending_run_count: { type: integer }
+        running_run_count: { type: integer }
+        global_concurrency_cap:
+          type: integer
+          description: >-
+            Reported here, enforced inside the claim transaction. The API never rejects a submission
+            because the fleet is saturated — excess runs stay pending, per §9.
+        oldest_pending_age_ms: { type: [integer, 'null'] }
+        deployment_mode: { type: string, enum: [demonstration, local] }
+        active_profile: { type: string }
+        code_version: { type: string }
+        schema_revision:
+          type: string
+          description: >-
+            The applied Alembic revision. Every process refuses to start when this differs from the
+            revision its code was built against, so schema skew across a fleet is a startup refusal
+            rather than a subtle behavioural difference between two workers resuming one run.
+        degraded:
+          type: boolean
+          description: True when the fleet is below its expected complement. Reported, not hidden.
+
+    RuntimeConfig:
+      type: object
+      required: [version, values, active_profile, editable]
+      properties:
+        version: { type: integer }
+        active_profile: { type: string, enum: [demo, production] }
+        editable:
+          type: boolean
+          description: False in demonstration mode. An availability restriction, not a security one.
+        values:
+          type: object
+          required:
+            - renewal_interval_ms
+            - lease_duration_ms
+            - margin_ms
+            - step_timeout_ms
+            - max_attempts_per_step
+            - per_worker_concurrency
+            - global_concurrency_cap
+            - reclaim_poll_interval_ms
+          properties:
+            renewal_interval_ms: { type: integer }
+            lease_duration_ms: { type: integer }
+            margin_ms: { type: integer }
+            step_timeout_ms: { type: integer }
+            max_attempts_per_step: { type: integer }
+            backoff_base_ms: { type: integer }
+            backoff_factor: { type: number }
+            backoff_jitter_pct: { type: number }
+            backoff_cap_ms: { type: integer }
+            per_worker_concurrency: { type: integer }
+            global_concurrency_cap: { type: integer }
+            reclaim_poll_interval_ms: { type: integer }
+            lease_renewed_emit_policy:
+              type: string
+              enum: [boundaries_and_slow, always]
+              description: >-
+                Default boundaries_and_slow: emit LEASE_RENEWED on the first renewal after a claim, on
+                any renewal slower than renewal_latency_warn_pct of the lease, and on the last renewal
+                before a terminal state. Renewal latency is measured in full regardless. Unconditional
+                emission would make roughly four of every five log rows heartbeat.
+            renewal_latency_warn_pct:
+              type: number
+              description: Fraction of the lease above which a renewal is emitted and flagged.
+            max_event_payload_bytes:
+              type: integer
+              description: >-
+                Ceiling for an event payload. Exceeding it fails the step and eventually dead-letters
+                the run; payloads are never truncated, because a truncated payload replays to
+                different messages than the original execution.
+        assertions:
+          type: array
+          description: The relationships checked before any change is applied.
+          items: { type: string }
+          example:
+            - lease_duration_ms >= 4 * renewal_interval_ms
+            - margin_ms == lease_duration_ms - renewal_interval_ms
+            - step_timeout_ms > 0
+
+    ValidationReport:
+      type: object
+      required: [valid, findings, unchecked]
+      properties:
+        valid: { type: boolean }
+        findings:
+          type: array
+          items:
+            type: object
+            required: [check, line, message]
+            properties:
+              check:
+                type: string
+                enum:
+                  - determinism_imports
+                  - return_shape
+                  - module_level_mutable_state
+                  - unregistered_tool
+                  - missing_safety_declaration
+                  - unbounded_self_recursion
+              line: { type: integer }
+              column: { type: [integer, 'null'] }
+              message:
+                type: string
+                description: >-
+                  Teaches the invariant rather than merely reporting the rule, e.g. "line 14 calls
+                  datetime.now(). Agent code must use ctx.now() so the value is journaled and replay
+                  returns the same timestamp — see the determinism boundary."
+              severity: { type: string, enum: [error, warning] }
+        unchecked:
+          type: array
+          description: >-
+            The judgements this endpoint CANNOT make, returned on every response including a clean
+            one (§34, §35, FR-134). Present so that the ceiling travels with the result rather than
+            depending on a console that might render `valid: true` alone. A client MUST surface
+            these alongside a clean result; it MUST NOT treat `valid: true` as a statement that the
+            agent is correct. These are the four pre-registration checklist items, and they are
+            business logic — no static analysis can verify intent it was never told.
+          items: { type: string }
+          example:
+            - Every branch reads state from ctx, never a variable held across calls
+            - Every loop filters using ctx.completed_tool_args(...), not a counter
+            - There is a reachable Done(...) branch once the loop's work is exhausted
+            - Every ctx.call_tool(...) checks ctx.has_result(...) first
