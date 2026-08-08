@@ -195,70 +195,70 @@ history by eye from the log alone.
 
 ### Tests for Phase 1 (MANDATORY) ⚠️
 
-- [ ] T063 [P] [US1] Write the append-contiguity unit test in `tests/unit/test_append_contiguous.py`: `seq` starts at 1 and increases by exactly 1 across many appends, with no gaps (FR-024)
-- [ ] T064 [P] [US1] Write the append-rollback test in `tests/unit/test_append_rollback_leaves_no_gap.py` asserting a transaction that rolls back after appending leaves `runs.last_seq` unchanged and no orphaned `seq` — allocation from the run row is what makes this true rather than a sequence, which would gap
-- [ ] T065 [P] [US1] Write the duplicate-seq test in `tests/unit/test_duplicate_seq_rejected.py` asserting a hand-crafted duplicate `(run_id, seq)` is rejected by the primary key **loudly**, never silently overwritten
-- [ ] T066 [P] [US1] Write the payload-ceiling test in `tests/failure/test_payload_ceiling.py` asserting a payload above `max_event_payload_bytes` raises `PayloadTooLargeError` carrying the event type and the measured size, and that **nothing is truncated** (D-51, FR-132)
-- [ ] T067 [P] [US1] Write the submission-dedupe test in `tests/unit/test_client_request_key_dedupe.py` asserting a second submission with the same `client_request_key` returns the existing run rather than creating a second (FR-002)
-- [ ] T068 [P] [US1] Write the payload-model tests in `tests/unit/test_event_payload_models.py`: each of the 17 event types constructs from a valid payload and **fails at construction** on a missing required field, so a malformed payload never reaches replay
-- [ ] T069 [P] [US1] Write the full-sequence integration test in `tests/contract/test_completed_run_event_sequence.py` asserting `RUN_SUBMITTED` (by `api`) → per step `STEP_STARTED` → (`TOOL_INTENT`→`TOOL_RESULT` | `LLM_CALLED`) → `STEP_COMPLETED` → `RUN_COMPLETED`, all at one epoch by one worker id
-- [ ] T070 [P] [US1] Write the nothing-outside-the-log test in `tests/boundary/test_no_state_outside_log.py` asserting no table other than `run_events`, `tool_journal`, and `demo_effects` records what happened during a run
-- [ ] T071 [P] [US1] Write the keyset-pagination contract test in `tests/contract/test_events_pagination.py` asserting `after_seq` returns exactly the events above that sequence, in order, with a stable page boundary under concurrent appends
-- [ ] T072 [P] [US1] Write the stub-adapter test in `tests/unit/test_stub_model_adapter.py` asserting the stub returns deterministic completions with configured latency and that `LLM_CALLED.stubbed` is `true` (FR-036, D-55)
+- [x] T063 [P] [US1] Write the append-contiguity unit test in `tests/unit/test_append_contiguous.py`: `seq` starts at 1 and increases by exactly 1 across many appends, with no gaps (FR-024)
+- [x] T064 [P] [US1] Write the append-rollback test in `tests/unit/test_append_rollback_leaves_no_gap.py` asserting a transaction that rolls back after appending leaves `runs.last_seq` unchanged and no orphaned `seq` — allocation from the run row is what makes this true rather than a sequence, which would gap
+- [x] T065 [P] [US1] Write the duplicate-seq test in `tests/unit/test_duplicate_seq_rejected.py` asserting a hand-crafted duplicate `(run_id, seq)` is rejected by the primary key **loudly**, never silently overwritten
+- [x] T066 [P] [US1] Write the payload-ceiling test in `tests/failure/test_payload_ceiling.py` asserting a payload above `max_event_payload_bytes` raises `PayloadTooLargeError` carrying the event type and the measured size, and that **nothing is truncated** (D-51, FR-132)
+- [x] T067 [P] [US1] Write the submission-dedupe test in `tests/unit/test_client_request_key_dedupe.py` asserting a second submission with the same `client_request_key` returns the existing run rather than creating a second (FR-002)
+- [x] T068 [P] [US1] Write the payload-model tests in `tests/unit/test_event_payload_models.py`: each of the 17 event types constructs from a valid payload and **fails at construction** on a missing required field, so a malformed payload never reaches replay
+- [x] T069 [P] [US1] Write the full-sequence integration test in `tests/contract/test_completed_run_event_sequence.py` asserting `RUN_SUBMITTED` (by `api`) → per step `STEP_STARTED` → (`TOOL_INTENT`→`TOOL_RESULT` | `LLM_CALLED`) → `STEP_COMPLETED` → `RUN_COMPLETED`, all at one epoch by one worker id
+- [x] T070 [P] [US1] Write the nothing-outside-the-log test in `tests/boundary/test_no_state_outside_log.py` asserting no table other than `run_events`, `tool_journal`, and `demo_effects` records what happened during a run
+- [x] T071 [P] [US1] Write the keyset-pagination contract test in `tests/contract/test_events_pagination.py` asserting `after_seq` returns exactly the events above that sequence, in order, with a stable page boundary under concurrent appends
+- [x] T072 [P] [US1] Write the stub-adapter test in `tests/unit/test_stub_model_adapter.py` asserting the stub returns deterministic completions with configured latency and that `LLM_CALLED.stubbed` is `true` (FR-036, D-55)
 
 ### Implementation for Phase 1
 
 #### P1.1 — Event types and payload models
 
-- [ ] T073 [US1] Define the 17 event types as a `StrEnum` in `anchor/core/events/types.py`, matching the `CHECK` constraint in `ops/migrations/versions/001_foundation.py` exactly, with a test asserting the two lists cannot drift (FR-025)
-- [ ] T074 [US1] Implement the 17 payload models in `anchor/core/events/payloads.py` as pydantic models per data-model.md §11, with every ● field required — **a malformed payload fails at construction rather than at replay**, which is the difference between a loud error now and a divergence later
-- [ ] T075 [US1] Implement the `RunEvent` envelope model in `anchor/core/events/models.py` carrying `run_id`, `seq`, `type`, `payload`, `epoch`, `worker_id`, `step_index`, `created_at`, with the payload discriminated on `type`
+- [x] T073 [US1] Define the 17 event types as a `StrEnum` in `anchor/core/events/types.py`, matching the `CHECK` constraint in `ops/migrations/versions/001_foundation.py` exactly, with a test asserting the two lists cannot drift (FR-025)
+- [x] T074 [US1] Implement the 17 payload models in `anchor/core/events/payloads.py` as pydantic models per data-model.md §11, with every ● field required — **a malformed payload fails at construction rather than at replay**, which is the difference between a loud error now and a divergence later
+- [x] T075 [US1] Implement the `RunEvent` envelope model in `anchor/core/events/models.py` carrying `run_id`, `seq`, `type`, `payload`, `epoch`, `worker_id`, `step_index`, `created_at`, with the payload discriminated on `type`
 
 #### P1.2 — The append protocol
 
-- [ ] T076 [US1] Implement `core.events.append` in `anchor/core/events/append.py` as **one CTE statement** that increments `runs.last_seq` and inserts the event, returning the allocated `seq` (D-07, FR-024)
-- [ ] T077 [US1] Add the transaction comment to `anchor/core/events/append.py` stating what must be atomic and why: the counter increment and the insert must not be separable, because a gap in `seq` is indistinguishable from a lost event to every reader downstream
-- [ ] T078 [US1] Enforce the payload ceiling in `anchor/core/events/append.py`, raising `PayloadTooLargeError` before the statement is issued. Comment states why it is not a `CHECK`: the size test requires a `jsonb→text` cast, that cast is `stable` not `immutable`, and PostgreSQL rejects non-immutable expressions in `CHECK` (D-51)
-- [ ] T079 [US1] Make `anchor/core/events/append.py` the **single append path** for the entire system, and add `tests/boundary/test_single_append_path.py` asserting no module outside it issues an `INSERT INTO run_events`
+- [x] T076 [US1] Implement `core.events.append` in `anchor/core/events/append.py` as **one CTE statement** that increments `runs.last_seq` and inserts the event, returning the allocated `seq` (D-07, FR-024)
+- [x] T077 [US1] Add the transaction comment to `anchor/core/events/append.py` stating what must be atomic and why: the counter increment and the insert must not be separable, because a gap in `seq` is indistinguishable from a lost event to every reader downstream
+- [x] T078 [US1] Enforce the payload ceiling in `anchor/core/events/append.py`, raising `PayloadTooLargeError` before the statement is issued. Comment states why it is not a `CHECK`: the size test requires a `jsonb→text` cast, that cast is `stable` not `immutable`, and PostgreSQL rejects non-immutable expressions in `CHECK` (D-51)
+- [x] T079 [US1] Make `anchor/core/events/append.py` the **single append path** for the entire system, and add `tests/boundary/test_single_append_path.py` asserting no module outside it issues an `INSERT INTO run_events`
 
 #### P1.3 — Run submission
 
-- [ ] T080 [US1] Implement `POST /api/runs` in `anchor/api/routers/runs.py` per `contracts/openapi.yaml`, validating `agent_type` against the agent registry and returning the run identifier (FR-001)
-- [ ] T081 [US1] Implement `client_request_key` deduplication in `anchor/api/routers/runs.py` against the partial unique index, returning the existing run on conflict rather than raising (FR-002)
-- [ ] T082 [US1] Append `RUN_SUBMITTED` attributed to `worker_id: 'api'` inside the submission transaction in `anchor/api/routers/runs.py`, so **even submission is recoverable from the log** (FR-005)
-- [ ] T083 [US1] Read and report the global concurrency cap and the current running count from `GET /api/health` in `anchor/api/routers/health.py` — **reported, not enforced here**; enforcement lands in the claim statement in phase 3 (FR-003, D-44)
+- [x] T080 [US1] Implement `POST /api/runs` in `anchor/api/routers/runs.py` per `contracts/openapi.yaml`, validating `agent_type` against the agent registry and returning the run identifier (FR-001)
+- [x] T081 [US1] Implement `client_request_key` deduplication in `anchor/api/routers/runs.py` against the partial unique index, returning the existing run on conflict rather than raising (FR-002)
+- [x] T082 [US1] Append `RUN_SUBMITTED` attributed to `worker_id: 'api'` inside the submission transaction in `anchor/api/routers/runs.py`, so **even submission is recoverable from the log** (FR-005)
+- [x] T083 [US1] Read and report the global concurrency cap and the current running count from `GET /api/health` in `anchor/api/routers/health.py` — **reported, not enforced here**; enforcement lands in the claim statement in phase 3 (FR-003, D-44)
 
 #### P1.4 — Minimal worker loop
 
-- [ ] T084 [US1] Implement the worker entrypoint in `anchor/worker/__main__.py` wiring configuration, the schema gate, registration, heartbeat, and the kill subscriber, then entering the loop
-- [ ] T085 [US1] Implement the naive claim in `anchor/worker/loop.py` taking one `pending` run under `FOR UPDATE`, with a comment marking it as **deliberately naive** — `SKIP LOCKED` arrives in phase 3 and the interim behaviour is stated rather than assumed
-- [ ] T086 [US1] Implement the step execution loop in `anchor/worker/loop.py` appending `STEP_STARTED` before each action and `STEP_COMPLETED` after, driven by repeated `decide_next_step` invocations
-- [ ] T087 [US1] Implement run finalization in `anchor/worker/loop.py` appending `RUN_COMPLETED` with `output`, `total_steps`, `total_duration_ms`, and `handoff_count`, and transitioning `runs` to `completed` with the lease released in the same transaction
-- [ ] T088 [US1] Record the crash behaviour of every await point added by P1.2 and P1.4 in the module docstrings of `anchor/core/events/append.py` and `anchor/worker/loop.py`: a crash before commit leaves no event and no counter advance; a crash mid-run leaves the run `running` with an expiring lease and **no reclaim path yet**, which is the honest interim state phase 2 fixes
+- [x] T084 [US1] Implement the worker entrypoint in `anchor/worker/__main__.py` wiring configuration, the schema gate, registration, heartbeat, and the kill subscriber, then entering the loop
+- [x] T085 [US1] Implement the naive claim in `anchor/worker/loop.py` taking one `pending` run under `FOR UPDATE`, with a comment marking it as **deliberately naive** — `SKIP LOCKED` arrives in phase 3 and the interim behaviour is stated rather than assumed
+- [x] T086 [US1] Implement the step execution loop in `anchor/worker/loop.py` appending `STEP_STARTED` before each action and `STEP_COMPLETED` after, driven by repeated `decide_next_step` invocations
+- [x] T087 [US1] Implement run finalization in `anchor/worker/loop.py` appending `RUN_COMPLETED` with `output`, `total_steps`, `total_duration_ms`, and `handoff_count`, and transitioning `runs` to `completed` with the lease released in the same transaction
+- [x] T088 [US1] Record the crash behaviour of every await point added by P1.2 and P1.4 in the module docstrings of `anchor/core/events/append.py` and `anchor/worker/loop.py`: a crash before commit leaves no event and no counter advance; a crash mid-run leaves the run `running` with an expiring lease and **no reclaim path yet**, which is the honest interim state phase 2 fixes
 
 #### P1.5 — `StepContext` v1
 
-- [ ] T089 [US1] Implement the `StepContext` v1 surface in `anchor/core/determinism/context.py` exposing `input`, `step_index`, `messages`, and `attempt`, per `contracts/agent-contract.md`
-- [ ] T090 [US1] Implement `ctx.call_tool` in `anchor/core/determinism/context.py` appending `TOOL_INTENT`, **committing it, then invoking** — establishing the ordering that phase 5 will make load-bearing — then appending `TOOL_RESULT` (FR-039, FR-040)
-- [ ] T091 [US1] Implement `ctx.call_model` in `anchor/core/determinism/context.py` appending `LLM_CALLED` with `prompt_hash`, `response`, `model`, `latency_ms`, and `stubbed`
-- [ ] T092 [US1] Implement the `ModelAdapter` protocol and `StubAdapter` in `anchor/runtime/tools/model.py`, selected by configuration, with the stub as the default on **every** path — demo, chaos, and tests (D-55)
-- [ ] T093 [US1] Implement the three action types `ToolCall`, `ModelCall`, `Done` in `anchor/core/determinism/actions.py`, with a runtime rejection of any other return value naming what was returned
-- [ ] T094 [US1] Document in `anchor/core/determinism/context.py` that the journal table and the three-state lookup are **phase 5** — this version records events only and cannot yet deduplicate, so a crash after a tool executes but before `TOOL_RESULT` currently loses the record
+- [x] T089 [US1] Implement the `StepContext` v1 surface in `anchor/core/determinism/context.py` exposing `input`, `step_index`, `messages`, and `attempt`, per `contracts/agent-contract.md`
+- [x] T090 [US1] Implement `ctx.call_tool` in `anchor/core/determinism/context.py` appending `TOOL_INTENT`, **committing it, then invoking** — establishing the ordering that phase 5 will make load-bearing — then appending `TOOL_RESULT` (FR-039, FR-040)
+- [x] T091 [US1] Implement `ctx.call_model` in `anchor/core/determinism/context.py` appending `LLM_CALLED` with `prompt_hash`, `response`, `model`, `latency_ms`, and `stubbed`
+- [x] T092 [US1] Implement the `ModelAdapter` protocol and `StubAdapter` in `anchor/runtime/tools/model.py`, selected by configuration, with the stub as the default on **every** path — demo, chaos, and tests (D-55)
+- [x] T093 [US1] Implement the three action types `ToolCall`, `ModelCall`, `Done` in `anchor/core/determinism/actions.py`, with a runtime rejection of any other return value naming what was returned
+- [x] T094 [US1] Document in `anchor/core/determinism/context.py` that the journal table and the three-state lookup are **phase 5** — this version records events only and cannot yet deduplicate, so a crash after a tool executes but before `TOOL_RESULT` currently loses the record
 
 #### P1.6 — The hardcoded agent
 
-- [ ] T095 [US1] Implement `anchor/runtime/agents/demo_minimal.py` as search → summarize → notify, returning exactly one action per invocation and holding no state across calls
-- [ ] T096 [US1] Implement the agent registry in `anchor/runtime/agents/registry.py` with `register(name, fn)` and resolution at claim time, rejecting an unregistered `agent_type` at submission rather than at execution
-- [ ] T097 [US1] Implement the three placeholder tools used by `demo_minimal` in `anchor/runtime/tools/demo.py` with their configured stub latencies
+- [x] T095 [US1] Implement `anchor/runtime/agents/demo_minimal.py` as search → summarize → notify, returning exactly one action per invocation and holding no state across calls
+- [x] T096 [US1] Implement the agent registry in `anchor/runtime/agents/registry.py` with `register(name, fn)` and resolution at claim time, rejecting an unregistered `agent_type` at submission rather than at execution
+- [x] T097 [US1] Implement the three placeholder tools used by `demo_minimal` in `anchor/runtime/tools/demo.py` with their configured stub latencies
 
 #### P1.7 — Read endpoints
 
 - [ ] T098 [US1] Implement `GET /api/runs` in `anchor/api/routers/runs.py` with status filtering and keyset pagination, newest first, per `contracts/openapi.yaml`
-- [ ] T099 [US1] Implement `GET /api/runs/{id}` in `anchor/api/routers/runs.py` returning the run with `orphaned` **derived** as `status = 'running' AND lease_expires_at < now()` — never stored, because storing it would require a writer at the exact moment nobody owns the run (data-model.md §12)
-- [ ] T100 [US1] Implement `GET /api/runs/{id}/events` in `anchor/api/routers/runs.py` with `after_seq` keyset pagination, ordered by `seq` (FR-026)
+- [x] T099 [US1] Implement `GET /api/runs/{id}` in `anchor/api/routers/runs.py` returning the run with `orphaned` **derived** as `status = 'running' AND lease_expires_at < now()` — never stored, because storing it would require a writer at the exact moment nobody owns the run (data-model.md §12)
+- [x] T100 [US1] Implement `GET /api/runs/{id}/events` in `anchor/api/routers/runs.py` with `after_seq` keyset pagination, ordered by `seq` (FR-026)
 - [ ] T101 [P] [US1] Implement the run serializers in `anchor/api/serializers/runs.py` producing exactly the response schemas in `contracts/openapi.yaml`, with a contract test asserting each response validates against its schema
-- [ ] T102 [P] [US1] Add the FastAPI application factory in `anchor/api/app.py` with router registration, the typed-error exception handlers mapping each database error to its documented status code, and the deployment-mode banner value
-- [ ] T103 [P] [US1] Add request logging middleware in `anchor/api/middleware.py` emitting the structured JSON line with `run_id` where the route carries one
+- [x] T102 [P] [US1] Add the FastAPI application factory in `anchor/api/app.py` with router registration, the typed-error exception handlers mapping each database error to its documented status code, and the deployment-mode banner value
+- [x] T103 [P] [US1] Add request logging middleware in `anchor/api/middleware.py` emitting the structured JSON line with `run_id` where the route carries one
 - [ ] T104 [US1] Run `tests/unit tests/contract tests/boundary` and confirm every phase-1 test now passes that was previously red
 
 **Exit gate**: [V1](./quickstart.md#v1--the-log-is-the-spine-phase-1) — `seq` contiguous from 1, one

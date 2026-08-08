@@ -8,15 +8,36 @@ remaining routers named in `anchor/api/routers/__init__.py`.
 from __future__ import annotations
 
 import logging
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 
 import asyncpg
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 
 from anchor.core.config.loader import BootstrapEnv
+from anchor.core.db.errors import (
+    ConfigAssertionError,
+    ImmutableRecordError,
+    LeaseFencedError,
+    PayloadTooLargeError,
+    ResultOverwriteError,
+)
 from anchor.core.db.pool import create_pool
 from anchor.core.db.schema_gate import SchemaVersionMismatchError, assert_schema_matches
+
+# Every typed database error this API can surface, mapped to the status
+# code that names the problem for a caller (T102). LeaseFencedError should
+# never actually reach the API layer — fenced writes are a worker-internal
+# concern (I3) — but the mapping exists so a bug that lets one leak through
+# fails as a clear 409 rather than an unhandled 500.
+_ERROR_STATUS_CODES: dict[type[Exception], int] = {
+    LeaseFencedError: 409,
+    ConfigAssertionError: 400,
+    ImmutableRecordError: 409,
+    ResultOverwriteError: 409,
+    PayloadTooLargeError: 413,
+}
 
 logger = logging.getLogger(__name__)
 
@@ -63,9 +84,25 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 def create_app() -> FastAPI:
     app = FastAPI(title="Anchor", lifespan=lifespan)
 
-    from anchor.api.routers import health
+    from anchor.api.middleware import log_requests
+    from anchor.api.routers import health, runs
+    from anchor.runtime.agents import register_all
 
+    register_all()
+    app.middleware("http")(log_requests)
     app.include_router(health.router)
+    app.include_router(runs.router)
+
+    for error_type, status_code in _ERROR_STATUS_CODES.items():
+
+        def _make_handler(code: int) -> Callable[[Request, Exception], Awaitable[JSONResponse]]:
+            async def _handler(request: Request, exc: Exception) -> JSONResponse:
+                return JSONResponse(status_code=code, content={"detail": str(exc)})
+
+            return _handler
+
+        app.add_exception_handler(error_type, _make_handler(status_code))
+
     return app
 
 

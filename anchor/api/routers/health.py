@@ -24,6 +24,7 @@ import asyncpg
 from fastapi import APIRouter, Depends, Request, Response
 from pydantic import BaseModel
 
+from anchor.core.config.loader import load_runtime_settings
 from anchor.core.db.schema_gate import built_against_revision
 
 router = APIRouter()
@@ -35,6 +36,8 @@ class HealthReport(BaseModel):
     deployment_mode: str
     degraded: bool
     schema_revision: str | None = None
+    global_concurrency_cap: int | None = None
+    running_count: int | None = None
 
 
 async def get_pool(request: Request) -> asyncpg.Pool:
@@ -58,6 +61,14 @@ async def health(
             schema_revision: str | None = await conn.fetchval(
                 "SELECT version_num FROM alembic_version"
             )
+            running_count = await conn.fetchval(
+                "SELECT count(*) FROM runs WHERE status = 'running'"
+            )
+            # Reported here, not enforced: the cap is enforced inside the
+            # claim statement itself, from phase 3 onward (D-44). A cap
+            # applied at submission would enforce nothing and contradict
+            # "new runs stay pending."
+            settings = await load_runtime_settings(conn)
     except (asyncpg.PostgresError, TimeoutError, OSError):
         response.status_code = 503
         return HealthReport(
@@ -75,4 +86,6 @@ async def health(
         deployment_mode=deployment_mode,
         degraded=schema_mismatch,
         schema_revision=schema_revision,
+        global_concurrency_cap=settings.global_concurrency_cap,
+        running_count=int(running_count),
     )

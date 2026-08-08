@@ -19,6 +19,8 @@ from anchor.core.config.loader import BootstrapEnv, load_runtime_settings
 from anchor.core.db.pool import create_pool
 from anchor.core.db.schema_gate import assert_schema_matches
 from anchor.core.logging import configure_logging
+from anchor.runtime.agents import register_all
+from anchor.worker.loop import poll_and_execute_forever
 from anchor.worker.registry.heartbeat import heartbeat_loop
 from anchor.worker.registry.kill import subscribe_and_wait_for_kill
 from anchor.worker.registry.register import mark_stopped, register
@@ -28,6 +30,7 @@ logger = logging.getLogger(__name__)
 
 async def main() -> None:
     configure_logging()
+    register_all()
     env = BootstrapEnv()  # type: ignore[call-arg]  # see anchor/api/app.py's lifespan
 
     pool = await create_pool(env.database_url)
@@ -93,9 +96,12 @@ async def main() -> None:
                 name="kill-subscriber",
             )
             tg.create_task(_shutdown_waiter(), name="shutdown-waiter")
-            # The claim/execute loop joins this TaskGroup in phase 3
-            # (P3.4); in phase 0 and phase 1 the worker idles between the
-            # tasks above.
+            # Sequential, one run at a time — the per-run TaskGroup with an
+            # independent background renewer is phase 3 (P3.4).
+            tg.create_task(
+                poll_and_execute_forever(pool, worker_id=worker_id, settings=settings),
+                name="claim-execute-loop",
+            )
     except* SystemExit:
         logger.info("worker shut down gracefully", extra={"worker_id": worker_id})
 
