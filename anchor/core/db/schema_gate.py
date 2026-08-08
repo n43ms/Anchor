@@ -56,12 +56,11 @@ async def applied_revision(conn: asyncpg.Connection[Any]) -> str | None:
     """The revision currently applied to the database, or `None` if the
     `alembic_version` table does not exist yet (migrations never ran).
     """
-    exists = await conn.fetchval(
-        "SELECT to_regclass('public.alembic_version') IS NOT NULL"
-    )
+    exists = await conn.fetchval("SELECT to_regclass('public.alembic_version') IS NOT NULL")
     if not exists:
         return None
-    return await conn.fetchval("SELECT version_num FROM alembic_version")
+    revision: str | None = await conn.fetchval("SELECT version_num FROM alembic_version")
+    return revision
 
 
 async def assert_schema_matches(conn: asyncpg.Connection[Any]) -> str:

@@ -22,6 +22,7 @@ dev = [
     "hypothesis>=6.115",
     "ruff>=0.7",
     "mypy>=1.13",
+    "httpx>=0.27",  # required by fastapi.testclient.TestClient
 ]
 
 # No dependency outside this set without maintainer approval (research.md D-04).
@@ -56,7 +57,7 @@ quote-style = "double"
 [tool.mypy]
 python_version = "3.12"
 strict = true
-files = ["anchor"]
+files = ["anchor", "tests"]
 # ops/migrations/ is excluded: Alembic's generated revision modules and the
 # SQLAlchemy Core constructs used only for migration bookkeeping are not
 # type-checked to the same standard as runtime code, which never imports
@@ -66,6 +67,13 @@ exclude = ["ops/migrations/"]
 [[tool.mypy.overrides]]
 module = "anchor.chaos.*"
 disallow_untyped_defs = true
+
+[[tool.mypy.overrides]]
+# asyncpg ships without a py.typed marker recognized by this mypy version;
+# its public API (Pool, Connection, exceptions) is stable enough that
+# ignoring missing stubs is the pragmatic choice over vendoring our own.
+module = "asyncpg.*"
+ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

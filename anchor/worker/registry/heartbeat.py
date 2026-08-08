@@ -21,7 +21,9 @@ import asyncpg
 HEARTBEAT_INTERVAL_S = 5.0
 
 
-async def refresh_once(conn: asyncpg.Connection[Any], worker_id: str, current_run_count: int) -> None:
+async def refresh_once(
+    conn: asyncpg.Connection[Any], worker_id: str, current_run_count: int
+) -> None:
     await conn.execute(
         "UPDATE workers SET last_seen_at = now(), current_run_count = $2 WHERE id = $1",
         worker_id,

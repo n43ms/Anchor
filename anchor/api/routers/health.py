@@ -7,6 +7,13 @@ route is deliberately the one place in the API that does not go through
 cannot be reached does not raise an anchor SQLSTATE — it raises a
 connection-level error, which this handler treats as the health signal
 itself rather than an exception to translate.
+
+Also re-derives the schema-version comparison on every call (cheap: the
+"built against" side is a local file read, no I/O to the database beyond
+one already-open query). This is what surfaces a schema mismatch as
+`degraded` even in the one case the startup gate couldn't refuse to start
+over it — the database was unreachable at boot and became reachable, but
+mismatched, afterward (see anchor/api/app.py's lifespan).
 """
 
 from __future__ import annotations
@@ -16,6 +23,8 @@ from typing import Annotated
 import asyncpg
 from fastapi import APIRouter, Depends, Request, Response
 from pydantic import BaseModel
+
+from anchor.core.db.schema_gate import built_against_revision
 
 router = APIRouter()
 
@@ -59,10 +68,11 @@ async def health(
             schema_revision=None,
         )
 
+    schema_mismatch = schema_revision != built_against_revision()
     return HealthReport(
         database_reachable=True,
         worker_count=int(worker_count),
         deployment_mode=deployment_mode,
-        degraded=False,
+        degraded=schema_mismatch,
         schema_revision=schema_revision,
     )

@@ -13,8 +13,8 @@ declaration of what happens if it is executed twice — and that declaration is
 register_tool(
     name="send_email",
     fn=send_email,
-    safety="unsafe",                    # retry_safe | reconcilable | unsafe
-    reconcile_fn=None,                  # required when safety="reconcilable"
+    safety="unsafe",  # retry_safe | reconcilable | unsafe
+    reconcile_fn=None,  # required when safety="reconcilable"
     naturally_idempotent=False,
     provider_accepts_key=False,
     description="Sends a message to a recipient.",

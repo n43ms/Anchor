@@ -30,7 +30,7 @@ def decide_next_step(ctx):
         return ToolCall("search_professors", {"field": ctx.input["field"]})
 
     professors = ctx.result_of("search_professors")
-    done = ctx.completed_tool_args("send_email")        # from the log
+    done = ctx.completed_tool_args("send_email")  # from the log
     remaining = [p for p in professors if p["email"] not in done]
 
     if not remaining:

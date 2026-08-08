@@ -80,18 +80,18 @@ that lands in a worker loop here is a constant that is still there in phase 6.
 
 ### Tests for Phase 0 (MANDATORY) ⚠️
 
-- [ ] T001 [P] Write the config-assertion test in `tests/unit/test_config_assertion.py`: both named profiles are accepted; `lease_duration_ms == renewal_interval_ms` is rejected; `lease_duration_ms < 4 × renewal_interval_ms` is rejected; `step_timeout_ms == 0` is rejected; each rejection names the violated relationship and both offending values
-- [ ] T002 [P] Write the SQLSTATE round-trip test in `tests/unit/test_sqlstate_error_map.py` asserting `AN001→LeaseFencedError`, `AN002→ConfigAssertionError`, `AN003→ImmutableRecordError`, `AN004→ResultOverwriteError`, and that an unmapped SQLSTATE raises the generic database error rather than being swallowed
-- [ ] T003 [P] Write the dependency-confinement test in `tests/boundary/test_sqlalchemy_confined.py` asserting `sqlalchemy` is imported nowhere outside `ops/migrations/`, by walking the AST of every module under `anchor/`
-- [ ] T004 [P] Write the epoch-gate trigger test in `tests/unit/test_epoch_gate_trigger.py`: an insert with `epoch <` the run's current epoch raises `AN001`; an insert with `epoch >` the current epoch also raises (a writer inventing an epoch); an insert at the current epoch succeeds
-- [ ] T005 [P] Write the log-immutability test in `tests/unit/test_run_events_immutable.py` asserting `UPDATE` and `DELETE` on `run_events` both raise `AN003`
-- [ ] T006 [P] Write the terminal-state constraint test in `tests/unit/test_runs_terminal_check.py`: a row in any terminal status holding `owner_worker_id` or `lease_expires_at` is rejected; a `running` row without both is rejected
-- [ ] T007 [P] Write the worker-identity constraint test in `tests/unit/test_worker_identity_check.py` asserting `id = label || '#' || incarnation` is enforced by the database and that `(label, incarnation)` is unique
-- [ ] T008 [P] Write the config-trigger backstop test in `tests/unit/test_runtime_config_assert_trigger.py` asserting a direct `UPDATE` on `runtime_config` that violates the lease relationship raises `AN002` — proving the property holds even when the API is bypassed
-- [ ] T009 [P] Write the worker-registration test in `tests/unit/test_worker_registration.py`: a worker inserts its row with a fresh `last_seen_at`, a claimed label, and incarnation `1` on an empty slot
-- [ ] T010 [P] Write the incarnation test in `tests/failure/test_worker_incarnation_never_reused.py`: a worker restarted with **the same hostname and pid** receives a new incarnation and a distinct id, and the prior row survives unmodified (D-42, FR-129)
-- [ ] T011 [P] Write the schema-version gate test in `tests/boundary/test_schema_version_gate.py`: a process whose built-against revision differs from the applied revision **refuses to start** and names both revisions; no long-running process invokes `alembic upgrade` (D-45, FR-128)
-- [ ] T012 [P] Write the fail-closed health test in `tests/failure/test_health_db_unreachable.py` asserting `GET /api/health` returns 503 with `database_reachable: false` when PostgreSQL is unreachable, and never reports a cached healthy state
+- [x] T001 [P] Write the config-assertion test in `tests/unit/test_config_assertion.py`: both named profiles are accepted; `lease_duration_ms == renewal_interval_ms` is rejected; `lease_duration_ms < 4 × renewal_interval_ms` is rejected; `step_timeout_ms == 0` is rejected; each rejection names the violated relationship and both offending values
+- [x] T002 [P] Write the SQLSTATE round-trip test in `tests/unit/test_sqlstate_error_map.py` asserting `AN001→LeaseFencedError`, `AN002→ConfigAssertionError`, `AN003→ImmutableRecordError`, `AN004→ResultOverwriteError`, and that an unmapped SQLSTATE raises the generic database error rather than being swallowed
+- [x] T003 [P] Write the dependency-confinement test in `tests/boundary/test_sqlalchemy_confined.py` asserting `sqlalchemy` is imported nowhere outside `ops/migrations/`, by walking the AST of every module under `anchor/`
+- [x] T004 [P] Write the epoch-gate trigger test in `tests/unit/test_epoch_gate_trigger.py`: an insert with `epoch <` the run's current epoch raises `AN001`; an insert with `epoch >` the current epoch also raises (a writer inventing an epoch); an insert at the current epoch succeeds
+- [x] T005 [P] Write the log-immutability test in `tests/unit/test_run_events_immutable.py` asserting `UPDATE` and `DELETE` on `run_events` both raise `AN003`
+- [x] T006 [P] Write the terminal-state constraint test in `tests/unit/test_runs_terminal_check.py`: a row in any terminal status holding `owner_worker_id` or `lease_expires_at` is rejected; a `running` row without both is rejected
+- [x] T007 [P] Write the worker-identity constraint test in `tests/unit/test_worker_identity_check.py` asserting `id = label || '#' || incarnation` is enforced by the database and that `(label, incarnation)` is unique
+- [x] T008 [P] Write the config-trigger backstop test in `tests/unit/test_runtime_config_assert_trigger.py` asserting a direct `UPDATE` on `runtime_config` that violates the lease relationship raises `AN002` — proving the property holds even when the API is bypassed
+- [x] T009 [P] Write the worker-registration test in `tests/unit/test_worker_registration.py`: a worker inserts its row with a fresh `last_seen_at`, a claimed label, and incarnation `1` on an empty slot
+- [x] T010 [P] Write the incarnation test in `tests/failure/test_worker_incarnation_never_reused.py`: a worker restarted with **the same hostname and pid** receives a new incarnation and a distinct id, and the prior row survives unmodified (D-42, FR-129)
+- [x] T011 [P] Write the schema-version gate test in `tests/boundary/test_schema_version_gate.py`: a process whose built-against revision differs from the applied revision **refuses to start** and names both revisions; no long-running process invokes `alembic upgrade` (D-45, FR-128)
+- [x] T012 [P] Write the fail-closed health test in `tests/failure/test_health_db_unreachable.py` asserting `GET /api/health` returns 503 with `database_reachable: false` when PostgreSQL is unreachable, and never reports a cached healthy state
 
 ### Implementation for Phase 0
 
@@ -114,7 +114,7 @@ that lands in a worker loop here is a constant that is still there in phase 6.
 - [x] T024 Implement the three-part startup assertion in `anchor/core/config/assertion.py`: `lease_duration >= 4 × renewal_interval`, `margin == lease_duration − renewal_interval`, `step_timeout > 0` (FR-060)
 - [x] T025 Implement the refuse-to-start path in `anchor/core/config/assertion.py` raising `ConfigAssertionError` that names the violated relationship **and both offending values** — a message that says only "invalid configuration" costs an hour at the worst possible time
 - [x] T026 Implement configuration load precedence in `anchor/core/config/loader.py`: `runtime_config` table is authoritative, environment supplies the profile selection and the bootstrap DSN, and **no timing constant is readable from anywhere else** (FR-059)
-- [ ] T027 Add `tests/boundary/test_no_hardcoded_constants.py` walking the AST of `anchor/` and failing on any numeric literal used as a timeout, interval, or cap outside `anchor/core/config/`
+- [x] T027 Add `tests/boundary/test_no_hardcoded_constants.py` walking the AST of `anchor/` and failing on any numeric literal used as a timeout, interval, or cap outside `anchor/core/config/`
 
 #### P0.3 — Migration 001 and the invariant DDL
 
@@ -134,8 +134,8 @@ that lands in a worker loop here is a constant that is still there in phase 6.
 - [x] T041 Create the `runs` indexes in `ops/migrations/versions/001_foundation.py` — `(status, priority, created_at)` partial on pending, `(lease_expires_at)` partial on running, `(status, created_at DESC)`, `(is_demo, status)` partial, `(chaos_run_id)` partial — each with its serving query and write cost in a SQL comment
 - [x] T042 Create the `run_events` indexes in `ops/migrations/versions/001_foundation.py` — `(type, created_at DESC)`, `(worker_id, created_at DESC)`, `(run_id, epoch)` — with the note that `(type, created_at DESC)` is the most expensive index in the schema and is justified by the Logs page and §12 both being spec-required
 - [x] T043 Seed the fifteen `runtime_config` keys from the active profile in `ops/migrations/versions/001_foundation.py` with `updated_by = 'seed'`
-- [ ] T044 Add the partitioning-prohibition warning as a block comment in `ops/migrations/versions/001_foundation.py`: `run_events` MUST NOT be range-partitioned by `created_at`, because the partition key would have to join the unique constraint and `(run_id, seq, created_at)` **does not enforce uniqueness of `(run_id, seq)`** (D-52)
-- [ ] T045 Add `tests/boundary/test_migrations_forward_only.py` asserting no migration defines a non-empty `downgrade()`
+- [x] T044 Add the partitioning-prohibition warning as a block comment in `ops/migrations/versions/001_foundation.py`: `run_events` MUST NOT be range-partitioned by `created_at`, because the partition key would have to join the unique constraint and `(run_id, seq, created_at)` **does not enforce uniqueness of `(run_id, seq)`** (D-52)
+- [x] T045 Add `tests/boundary/test_migrations_forward_only.py` asserting no migration defines a non-empty `downgrade()`
 
 #### P0.4 — Database access layer
 
@@ -151,7 +151,7 @@ that lands in a worker loop here is a constant that is still there in phase 6.
 - [x] T052 Implement worker self-registration in `anchor/worker/registry/register.py` inserting hostname, pid, capacity, `code_version`, and `role`, as a **new row per process lifetime** — rows are never updated across incarnations, so fleet history is append-only in practice as well as in principle (FR-065)
 - [x] T053 Implement the heartbeat task in `anchor/worker/registry/heartbeat.py` refreshing `last_seen_at` on its own timer, with the crash behaviour stated: a stopped heartbeat is indistinguishable from a dead worker, **which is the intended semantics** (FR-067)
 - [x] T054 Implement the Redis kill subscriber in `anchor/worker/registry/kill.py` that hard-exits the process on message with no cleanup — modelling a crash, not a shutdown (FR-068)
-- [ ] T055 Implement graceful-shutdown handling in `anchor/worker/registry/register.py` setting `stopped_at`, so its **absence** after a hard kill is itself informative
+- [x] T055 Implement graceful-shutdown handling in `anchor/worker/registry/register.py` setting `stopped_at`, so its **absence** after a hard kill is itself informative
 
 #### P0.6 — Compose topology
 

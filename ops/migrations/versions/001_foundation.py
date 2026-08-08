@@ -259,6 +259,26 @@ def _create_run_events() -> None:
         "FOR EACH ROW EXECUTE FUNCTION run_events_immutable()"
     )
 
+    # ------------------------------------------------------------------
+    # WARNING (D-52) — read before ever adding partitioning to this table.
+    #
+    # run_events MUST NOT be range-partitioned by created_at. PostgreSQL
+    # requires every unique constraint on a partitioned table to include
+    # the partition key, so a time-partitioned run_events would force the
+    # primary key to become (run_id, seq, created_at) — which does NOT
+    # enforce uniqueness of (run_id, seq). Two events for the same run
+    # carrying the same sequence number, landing in different time
+    # partitions, would both be silently accepted. That deletes the single
+    # most important constraint in the schema and breaks I2, while looking
+    # like a routine time-series optimization in the diff.
+    #
+    # If this table is ever partitioned, the partition key MUST contain
+    # run_id (e.g. HASH partitioning by run_id), which preserves the
+    # uniqueness constraint and keeps replay reads pruned to one partition.
+    # It is not being done now: partitioning one table on one host does not
+    # move the single-writer ceiling this project measures and publishes.
+    # ------------------------------------------------------------------
+
 
 def _create_runtime_config() -> None:
     op.execute(

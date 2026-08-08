@@ -7,6 +7,15 @@ would test the mock's behaviour rather than the guarantee (research.md D-34).
 Both fixtures read their DSNs from the environment so the same test suite
 runs unmodified against docker-compose locally and against the `postgres:16`
 / `redis:7` service containers in CI (see .github/workflows/ci.yml).
+
+**Reachability is checked, not assumed.** A developer machine without
+Docker running has neither service available, and the pure, no-I/O tests
+(canonical serialization, config assertion, AST boundary checks, ...)
+should still run and pass in that environment. So: a test that explicitly
+requests `db_pool` or `redis_client` skips cleanly with a clear reason when
+the service is unreachable, and the autouse truncation step degrades to a
+no-op rather than failing every test in the suite over a fixture none of
+them asked for.
 """
 
 from __future__ import annotations
@@ -24,6 +33,8 @@ TEST_DATABASE_URL = os.environ.get(
 )
 TEST_REDIS_URL = os.environ.get("ANCHOR_TEST_REDIS_URL", "redis://localhost:6379/1")
 
+CONNECT_TIMEOUT_S = 2.0
+
 # Every table that a test might write to, in FK-safe truncation order.
 # Kept as an explicit list rather than introspected from the catalog so that
 # adding a table is a deliberate one-line change here, matching the
@@ -38,6 +49,7 @@ _ALL_TABLES = (
     "run_events",
     "runs",
     "workers",
+    "worker_label_incarnations",
     "metrics_rollup",
     "metrics_rollup_watermark",
     "runtime_config",
@@ -46,8 +58,19 @@ _ALL_TABLES = (
 
 @pytest.fixture(scope="session")
 async def db_pool() -> AsyncIterator[asyncpg.Pool]:
-    """A session-scoped connection pool against the real test database."""
-    pool = await asyncpg.create_pool(TEST_DATABASE_URL, min_size=1, max_size=10)
+    """A session-scoped connection pool against the real test database.
+
+    Skips every test that requests this fixture — directly or via
+    `_truncate_between_tests` — with a clear reason, rather than erroring,
+    when PostgreSQL is unreachable. A skip is the honest report: these
+    tests were not run, as distinct from run-and-failed.
+    """
+    try:
+        pool = await asyncpg.create_pool(
+            TEST_DATABASE_URL, min_size=1, max_size=10, timeout=CONNECT_TIMEOUT_S
+        )
+    except (OSError, asyncpg.PostgresError, TimeoutError) as exc:
+        pytest.skip(f"PostgreSQL not reachable at {TEST_DATABASE_URL}: {exc}")
     try:
         yield pool
     finally:
@@ -55,29 +78,50 @@ async def db_pool() -> AsyncIterator[asyncpg.Pool]:
 
 
 @pytest.fixture(autouse=True)
-async def _truncate_between_tests(db_pool: asyncpg.Pool) -> AsyncIterator[None]:
+async def _truncate_between_tests() -> AsyncIterator[None]:
     """Truncate every table before each test so tests never depend on order.
 
     Runs before the test rather than after, so a failed test's data is left
     in place for post-mortem inspection until the next test starts.
+
+    Deliberately does **not** depend on the `db_pool` fixture: this fixture
+    is autouse, so it runs for every test in the suite, including the ones
+    that never touch a database at all. If it required `db_pool` directly,
+    an unreachable PostgreSQL would skip the entire suite rather than just
+    the tests that actually need one. Instead it makes its own short-lived
+    connection attempt and degrades to a no-op when that fails — a test
+    that genuinely needs the database will still fail or skip on its own
+    terms, via its own `db_pool` request.
     """
-    async with db_pool.acquire() as conn:
-        existing = await conn.fetch(
-            "SELECT tablename FROM pg_tables WHERE schemaname = 'public'"
-        )
+    try:
+        conn = await asyncpg.connect(TEST_DATABASE_URL, timeout=CONNECT_TIMEOUT_S)
+    except (OSError, asyncpg.PostgresError, TimeoutError):
+        yield
+        return
+
+    try:
+        existing = await conn.fetch("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")
         names = {row["tablename"] for row in existing}
         to_truncate = [t for t in _ALL_TABLES if t in names]
         if to_truncate:
-            await conn.execute(
-                f"TRUNCATE {', '.join(to_truncate)} RESTART IDENTITY CASCADE"
-            )
+            await conn.execute(f"TRUNCATE {', '.join(to_truncate)} RESTART IDENTITY CASCADE")
+    finally:
+        await conn.close()
     yield
 
 
 @pytest.fixture
 async def redis_client() -> AsyncIterator[redis_asyncio.Redis]:
-    """A real Redis client against the test database (db 1, not the dev db 0)."""
-    client = redis_asyncio.from_url(TEST_REDIS_URL)
+    """A real Redis client against the test database (db 1, not the dev db 0).
+
+    Skips, rather than errors, when Redis is unreachable — same reasoning
+    as `db_pool`.
+    """
+    client = redis_asyncio.from_url(TEST_REDIS_URL, socket_connect_timeout=CONNECT_TIMEOUT_S)
+    try:
+        await client.ping()
+    except (OSError, TimeoutError) as exc:
+        pytest.skip(f"Redis not reachable at {TEST_REDIS_URL}: {exc}")
     try:
         await client.flushdb()
         yield client
