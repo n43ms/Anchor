@@ -105,7 +105,7 @@ that lands in a worker loop here is a constant that is still there in phase 6.
 - [x] T018 [P] Create `tests/conftest.py` with the PostgreSQL and Redis fixtures that bind to real service containers, an autouse truncation fixture, and **no database double** — every invariant claimed is enforced by PostgreSQL itself (D-34)
 - [x] T019 [P] Create `ops/` skeleton — `ops/migrations/`, `ops/compose/`, `ops/deploy/` — with a `README.md` in each stating what belongs there
 - [x] T020 [P] Create `web/` as a placeholder directory containing only a `README.md` stating that **no console work may begin before phase 4 completes**, citing the sequencing rule
-- [ ] T021 [P] Create `.gitignore`, `.env.example` documenting every environment variable including `ANCHOR_AUTHORING_EXECUTE` with its fail-closed default, and `.dockerignore`
+- [x] T021 [P] Create `.gitignore`, `.env.example` documenting every environment variable including `ANCHOR_AUTHORING_EXECUTE` with its fail-closed default, and `.dockerignore`
 
 #### P0.2 — Configuration module
 
