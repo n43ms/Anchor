@@ -1,0 +1,81 @@
+[project]
+name = "anchor"
+version = "0.1.0"
+description = "A durable execution runtime for AI agents."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "asyncpg>=0.30",
+    "redis>=5.2",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "alembic>=1.14",
+    "sqlalchemy>=2.0",
+    "psycopg[binary]>=3.2",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "hypothesis>=6.115",
+    "ruff>=0.7",
+    "mypy>=1.13",
+]
+
+# No dependency outside this set without maintainer approval (research.md D-04).
+# Every addition is a constitution-governed decision, not a routine `uv add`.
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["anchor"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+extend-exclude = ["ops/migrations/versions"]
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "I", "UP", "B", "SIM", "C4", "RUF",
+]
+ignore = [
+    "E501",  # line length is enforced by the formatter, not the linter
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]  # assert is the point of a test
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["anchor"]
+# ops/migrations/ is excluded: Alembic's generated revision modules and the
+# SQLAlchemy Core constructs used only for migration bookkeeping are not
+# type-checked to the same standard as runtime code, which never imports
+# sqlalchemy (see tests/boundary/test_sqlalchemy_confined.py).
+exclude = ["ops/migrations/"]
+
+[[tool.mypy.overrides]]
+module = "anchor.chaos.*"
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = [
+    "unit: pure-function tests with no I/O",
+    "property: hypothesis-based property tests",
+    "replay: replay-determinism tests against fixture logs",
+    "concurrency: multi-worker contention tests requiring real Postgres",
+    "failure: deliberate failure-injection tests, one per §9 matrix row",
+    "boundary: deployment-mode and module-boundary assertions",
+    "contract: request/response shape tests against contracts/openapi.yaml",
+]

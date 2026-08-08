@@ -1,3 +1,37 @@
 /.specify
 /.claude
 /engineers
+
+# --- Python (anchor/) ---
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+uv.lock.bak
+
+# --- Node / Next.js (web/) ---
+web/node_modules/
+web/.next/
+web/out/
+web/.turbo/
+*.tsbuildinfo
+
+# --- Environment and secrets ---
+.env
+.env.local
+.env.*.local
+
+# --- Universal ---
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp

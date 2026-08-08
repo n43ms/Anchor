@@ -1,0 +1,112 @@
+name: anchor
+
+x-python-env: &python-env
+  ANCHOR_DATABASE_URL: postgresql://anchor:anchor@postgres:5432/anchor
+  ANCHOR_REDIS_URL: redis://redis:6379/0
+  ANCHOR_CONFIG_PROFILE: demo
+  # This is the ONE place ANCHOR_AUTHORING_EXECUTE is set to true. Every other
+  # deployment (the CI service containers, a bare `uv run`, the hosted
+  # instance) leaves it unset and is therefore demonstration mode by default
+  # — fail-closed, per constitution Principle VII / research.md §31.
+  ANCHOR_AUTHORING_EXECUTE: "true"
+  ANCHOR_WORKER_LABEL_POOL: worker-a,worker-b,worker-c
+  ANCHOR_CODE_VERSION: ${ANCHOR_CODE_VERSION:-dev}
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: anchor
+      POSTGRES_PASSWORD: anchor
+      POSTGRES_DB: anchor
+    ports:
+      - "5432:5432"
+    volumes:
+      - anchor-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U anchor -d anchor"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 20
+
+  migrate:
+    build:
+      context: ../..
+      dockerfile: ops/compose/Dockerfile.python
+      args:
+        CODE_VERSION: ${ANCHOR_CODE_VERSION:-dev}
+    environment:
+      <<: *python-env
+    command: ["alembic", "-c", "ops/migrations/alembic.ini", "upgrade", "head"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build:
+      context: ../..
+      dockerfile: ops/compose/Dockerfile.python
+      args:
+        CODE_VERSION: ${ANCHOR_CODE_VERSION:-dev}
+    environment:
+      <<: *python-env
+    command: ["uvicorn", "anchor.api.app:app", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8000:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: ops/compose/Dockerfile.python
+      args:
+        CODE_VERSION: ${ANCHOR_CODE_VERSION:-dev}
+    environment:
+      <<: *python-env
+    command: ["python", "-m", "anchor.worker"]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    deploy:
+      replicas: 3
+    restart: always
+
+  # Inert until phase 7 scaffolds the Next.js app (constitution Principle VI:
+  # no console work before phase 4). Gated behind a profile so a bare
+  # `docker compose up` — which phase 0 through phase 6 rely on — does not
+  # try to build a project that does not exist yet. From phase 7 onward,
+  # `docker compose --profile web up` brings it in.
+  web:
+    profiles: ["web"]
+    build:
+      context: ../../web
+    ports:
+      - "3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  anchor-postgres-data:

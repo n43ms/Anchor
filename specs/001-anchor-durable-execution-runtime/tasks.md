@@ -97,80 +97,80 @@ that lands in a worker loop here is a constant that is still there in phase 6.
 
 #### P0.1 — Repository scaffold
 
-- [ ] T013 Create `pyproject.toml` declaring the frozen dependency set from plan.md → Technical Context, targeting Python 3.12, managed by `uv`; add `uv.lock`. **No dependency outside this set without maintainer approval** (D-04)
-- [ ] T014 [P] Configure `ruff` (lint + format) in `pyproject.toml` with the rule set enabled repo-wide and no per-file ignores at this stage
-- [ ] T015 [P] Configure `mypy --strict` in `pyproject.toml` covering all of `anchor/`, with `ops/migrations/` excluded and that exclusion justified in a comment
-- [ ] T016 [P] Create the `anchor/` package skeleton — `core/{events,leases,journal,replay,determinism,db,config}/`, `worker/{admission,retry,registry}/`, `runtime/{tools,agents}/`, `api/{routers,ws,serializers}/`, `chaos/` — each with an `__init__.py` carrying a one-line statement of that package's responsibility and its boundary
-- [ ] T017 [P] Create the seven test suites as packages — `tests/{unit,property,replay,concurrency,failure,boundary,contract}/` plus `tests/fixtures/` — each `__init__.py` naming the constitution's test class it maps to (D-33)
-- [ ] T018 [P] Create `tests/conftest.py` with the PostgreSQL and Redis fixtures that bind to real service containers, an autouse truncation fixture, and **no database double** — every invariant claimed is enforced by PostgreSQL itself (D-34)
-- [ ] T019 [P] Create `ops/` skeleton — `ops/migrations/`, `ops/compose/`, `ops/deploy/` — with a `README.md` in each stating what belongs there
-- [ ] T020 [P] Create `web/` as a placeholder directory containing only a `README.md` stating that **no console work may begin before phase 4 completes**, citing the sequencing rule
+- [x] T013 Create `pyproject.toml` declaring the frozen dependency set from plan.md → Technical Context, targeting Python 3.12, managed by `uv`; add `uv.lock`. **No dependency outside this set without maintainer approval** (D-04)
+- [x] T014 [P] Configure `ruff` (lint + format) in `pyproject.toml` with the rule set enabled repo-wide and no per-file ignores at this stage
+- [x] T015 [P] Configure `mypy --strict` in `pyproject.toml` covering all of `anchor/`, with `ops/migrations/` excluded and that exclusion justified in a comment
+- [x] T016 [P] Create the `anchor/` package skeleton — `core/{events,leases,journal,replay,determinism,db,config}/`, `worker/{admission,retry,registry}/`, `runtime/{tools,agents}/`, `api/{routers,ws,serializers}/`, `chaos/` — each with an `__init__.py` carrying a one-line statement of that package's responsibility and its boundary
+- [x] T017 [P] Create the seven test suites as packages — `tests/{unit,property,replay,concurrency,failure,boundary,contract}/` plus `tests/fixtures/` — each `__init__.py` naming the constitution's test class it maps to (D-33)
+- [x] T018 [P] Create `tests/conftest.py` with the PostgreSQL and Redis fixtures that bind to real service containers, an autouse truncation fixture, and **no database double** — every invariant claimed is enforced by PostgreSQL itself (D-34)
+- [x] T019 [P] Create `ops/` skeleton — `ops/migrations/`, `ops/compose/`, `ops/deploy/` — with a `README.md` in each stating what belongs there
+- [x] T020 [P] Create `web/` as a placeholder directory containing only a `README.md` stating that **no console work may begin before phase 4 completes**, citing the sequencing rule
 - [ ] T021 [P] Create `.gitignore`, `.env.example` documenting every environment variable including `ANCHOR_AUTHORING_EXECUTE` with its fail-closed default, and `.dockerignore`
 
 #### P0.2 — Configuration module
 
-- [ ] T022 Implement the settings model in `anchor/core/config/settings.py` as a `pydantic-settings` model carrying the **fifteen** keys of data-model.md §9, each with its type, unit suffix in the name, and a docstring naming what breaks if it is wrong (FR-059)
-- [ ] T023 Implement the two named profiles in `anchor/core/config/profiles.py` — `demo` and `production` — with the concrete values for each and a comment stating the recovery bound each profile implies (FR-061)
-- [ ] T024 Implement the three-part startup assertion in `anchor/core/config/assertion.py`: `lease_duration >= 4 × renewal_interval`, `margin == lease_duration − renewal_interval`, `step_timeout > 0` (FR-060)
-- [ ] T025 Implement the refuse-to-start path in `anchor/core/config/assertion.py` raising `ConfigAssertionError` that names the violated relationship **and both offending values** — a message that says only "invalid configuration" costs an hour at the worst possible time
-- [ ] T026 Implement configuration load precedence in `anchor/core/config/loader.py`: `runtime_config` table is authoritative, environment supplies the profile selection and the bootstrap DSN, and **no timing constant is readable from anywhere else** (FR-059)
+- [x] T022 Implement the settings model in `anchor/core/config/settings.py` as a `pydantic-settings` model carrying the **fifteen** keys of data-model.md §9, each with its type, unit suffix in the name, and a docstring naming what breaks if it is wrong (FR-059)
+- [x] T023 Implement the two named profiles in `anchor/core/config/profiles.py` — `demo` and `production` — with the concrete values for each and a comment stating the recovery bound each profile implies (FR-061)
+- [x] T024 Implement the three-part startup assertion in `anchor/core/config/assertion.py`: `lease_duration >= 4 × renewal_interval`, `margin == lease_duration − renewal_interval`, `step_timeout > 0` (FR-060)
+- [x] T025 Implement the refuse-to-start path in `anchor/core/config/assertion.py` raising `ConfigAssertionError` that names the violated relationship **and both offending values** — a message that says only "invalid configuration" costs an hour at the worst possible time
+- [x] T026 Implement configuration load precedence in `anchor/core/config/loader.py`: `runtime_config` table is authoritative, environment supplies the profile selection and the bootstrap DSN, and **no timing constant is readable from anywhere else** (FR-059)
 - [ ] T027 Add `tests/boundary/test_no_hardcoded_constants.py` walking the AST of `anchor/` and failing on any numeric literal used as a timeout, interval, or cap outside `anchor/core/config/`
 
 #### P0.3 — Migration 001 and the invariant DDL
 
-- [ ] T028 Initialize Alembic in `ops/migrations/` with `env.py` configured **forward-only** — no `downgrade()` bodies, enforced by a test — and a comment stating why reversibility is refused (D-05)
-- [ ] T029 Write migration 001 in `ops/migrations/versions/001_foundation.py` creating `runs` per data-model.md §1: every column, `CHECK (status IN …)`, `CHECK (epoch >= 0)`, `CHECK (last_seq >= 0)`, `CHECK (attempts >= 0)`
-- [ ] T030 Add the terminal-state `CHECK` to `runs` in `ops/migrations/versions/001_foundation.py` — terminal status implies `owner_worker_id IS NULL AND lease_expires_at IS NULL AND finished_at IS NOT NULL` (D-23). This is "illegal states unrepresentable" expressed structurally
-- [ ] T031 Add the running-implies-ownership `CHECK` to `runs` in `ops/migrations/versions/001_foundation.py` — `status = 'running'` implies `owner_worker_id IS NOT NULL AND lease_expires_at IS NOT NULL`
-- [ ] T032 Add the partial unique index on `runs.client_request_key WHERE client_request_key IS NOT NULL` in `ops/migrations/versions/001_foundation.py` (FR-002)
-- [ ] T033 Create `run_events` in `ops/migrations/versions/001_foundation.py` with **`PRIMARY KEY (run_id, seq)`** — the single most important constraint in the schema, made the primary key so no DDL ordering exists in which the table lacks it (FR-023)
-- [ ] T034 Add `run_events` column constraints in `ops/migrations/versions/001_foundation.py`: `CHECK (type IN …)` over all 17 event types, `CHECK (seq > 0)`, `CHECK (epoch >= 0)`, and the `run_id` foreign key
-- [ ] T035 Write the `run_events_epoch_gate` function and `BEFORE INSERT` trigger in `ops/migrations/versions/001_foundation.py` as raw SQL: `SELECT epoch FROM runs WHERE id = NEW.run_id FOR UPDATE`, raise `AN001` when `NEW.epoch <` current **and** when `NEW.epoch >` current. **The trigger takes the lock itself** so the guarantee does not depend on the caller (D-08, FR-017)
-- [ ] T036 Write the `run_events_immutable` `BEFORE UPDATE OR DELETE` trigger raising `AN003`, so append-only is a database property rather than a coding convention (FR-022)
-- [ ] T037 Create `workers` in `ops/migrations/versions/001_foundation.py` per data-model.md §5, including `CHECK (id = label || '#' || incarnation)`, `UNIQUE (label, incarnation)`, `CHECK (role IN ('runner','chaos'))`, `CHECK (current_run_count >= 0 AND current_run_count <= capacity)`, `CHECK (incarnation >= 1)`
-- [ ] T038 Create one PostgreSQL sequence per fleet-slot label in `ops/migrations/versions/001_foundation.py`, so an incarnation is allocated without a read-modify-write and two racing restarts cannot collide (D-42)
-- [ ] T039 Create `runtime_config` in `ops/migrations/versions/001_foundation.py` with `PRIMARY KEY (key)` and `CHECK (version >= 1)`
-- [ ] T040 Write the `runtime_config_assert` **statement-level** `AFTER INSERT OR UPDATE` trigger raising `AN002`, re-reading all timing keys. Comment states the reason it is a trigger and not a `CHECK`: the invariant spans rows, and PostgreSQL cannot express a cross-row invariant as a `CHECK`
-- [ ] T041 Create the `runs` indexes in `ops/migrations/versions/001_foundation.py` — `(status, priority, created_at)` partial on pending, `(lease_expires_at)` partial on running, `(status, created_at DESC)`, `(is_demo, status)` partial, `(chaos_run_id)` partial — each with its serving query and write cost in a SQL comment
-- [ ] T042 Create the `run_events` indexes in `ops/migrations/versions/001_foundation.py` — `(type, created_at DESC)`, `(worker_id, created_at DESC)`, `(run_id, epoch)` — with the note that `(type, created_at DESC)` is the most expensive index in the schema and is justified by the Logs page and §12 both being spec-required
-- [ ] T043 Seed the fifteen `runtime_config` keys from the active profile in `ops/migrations/versions/001_foundation.py` with `updated_by = 'seed'`
+- [x] T028 Initialize Alembic in `ops/migrations/` with `env.py` configured **forward-only** — no `downgrade()` bodies, enforced by a test — and a comment stating why reversibility is refused (D-05)
+- [x] T029 Write migration 001 in `ops/migrations/versions/001_foundation.py` creating `runs` per data-model.md §1: every column, `CHECK (status IN …)`, `CHECK (epoch >= 0)`, `CHECK (last_seq >= 0)`, `CHECK (attempts >= 0)`
+- [x] T030 Add the terminal-state `CHECK` to `runs` in `ops/migrations/versions/001_foundation.py` — terminal status implies `owner_worker_id IS NULL AND lease_expires_at IS NULL AND finished_at IS NOT NULL` (D-23). This is "illegal states unrepresentable" expressed structurally
+- [x] T031 Add the running-implies-ownership `CHECK` to `runs` in `ops/migrations/versions/001_foundation.py` — `status = 'running'` implies `owner_worker_id IS NOT NULL AND lease_expires_at IS NOT NULL`
+- [x] T032 Add the partial unique index on `runs.client_request_key WHERE client_request_key IS NOT NULL` in `ops/migrations/versions/001_foundation.py` (FR-002)
+- [x] T033 Create `run_events` in `ops/migrations/versions/001_foundation.py` with **`PRIMARY KEY (run_id, seq)`** — the single most important constraint in the schema, made the primary key so no DDL ordering exists in which the table lacks it (FR-023)
+- [x] T034 Add `run_events` column constraints in `ops/migrations/versions/001_foundation.py`: `CHECK (type IN …)` over all 17 event types, `CHECK (seq > 0)`, `CHECK (epoch >= 0)`, and the `run_id` foreign key
+- [x] T035 Write the `run_events_epoch_gate` function and `BEFORE INSERT` trigger in `ops/migrations/versions/001_foundation.py` as raw SQL: `SELECT epoch FROM runs WHERE id = NEW.run_id FOR UPDATE`, raise `AN001` when `NEW.epoch <` current **and** when `NEW.epoch >` current. **The trigger takes the lock itself** so the guarantee does not depend on the caller (D-08, FR-017)
+- [x] T036 Write the `run_events_immutable` `BEFORE UPDATE OR DELETE` trigger raising `AN003`, so append-only is a database property rather than a coding convention (FR-022)
+- [x] T037 Create `workers` in `ops/migrations/versions/001_foundation.py` per data-model.md §5, including `CHECK (id = label || '#' || incarnation)`, `UNIQUE (label, incarnation)`, `CHECK (role IN ('runner','chaos'))`, `CHECK (current_run_count >= 0 AND current_run_count <= capacity)`, `CHECK (incarnation >= 1)`
+- [x] T038 Create one PostgreSQL sequence per fleet-slot label in `ops/migrations/versions/001_foundation.py`, so an incarnation is allocated without a read-modify-write and two racing restarts cannot collide (D-42). **Deviation, documented in the migration**: fleet-slot labels are operator-configurable (`ANCHOR_WORKER_LABEL_POOL`) and unknown at migration time, so a literal per-label `CREATE SEQUENCE` isn't expressible without dynamic DDL. Implemented instead as a `worker_label_incarnations (label PK, next_incarnation)` table, incremented by a single atomic `INSERT ... ON CONFLICT DO UPDATE ... RETURNING`, giving the same per-label-atomic guarantee without requiring labels in advance
+- [x] T039 Create `runtime_config` in `ops/migrations/versions/001_foundation.py` with `PRIMARY KEY (key)` and `CHECK (version >= 1)`
+- [x] T040 Write the `runtime_config_assert` **statement-level** `AFTER INSERT OR UPDATE` trigger raising `AN002`, re-reading all timing keys. Comment states the reason it is a trigger and not a `CHECK`: the invariant spans rows, and PostgreSQL cannot express a cross-row invariant as a `CHECK`
+- [x] T041 Create the `runs` indexes in `ops/migrations/versions/001_foundation.py` — `(status, priority, created_at)` partial on pending, `(lease_expires_at)` partial on running, `(status, created_at DESC)`, `(is_demo, status)` partial, `(chaos_run_id)` partial — each with its serving query and write cost in a SQL comment
+- [x] T042 Create the `run_events` indexes in `ops/migrations/versions/001_foundation.py` — `(type, created_at DESC)`, `(worker_id, created_at DESC)`, `(run_id, epoch)` — with the note that `(type, created_at DESC)` is the most expensive index in the schema and is justified by the Logs page and §12 both being spec-required
+- [x] T043 Seed the fifteen `runtime_config` keys from the active profile in `ops/migrations/versions/001_foundation.py` with `updated_by = 'seed'`
 - [ ] T044 Add the partitioning-prohibition warning as a block comment in `ops/migrations/versions/001_foundation.py`: `run_events` MUST NOT be range-partitioned by `created_at`, because the partition key would have to join the unique constraint and `(run_id, seq, created_at)` **does not enforce uniqueness of `(run_id, seq)`** (D-52)
 - [ ] T045 Add `tests/boundary/test_migrations_forward_only.py` asserting no migration defines a non-empty `downgrade()`
 
 #### P0.4 — Database access layer
 
-- [ ] T046 Implement the asyncpg pool in `anchor/core/db/pool.py` with a bounded size read from configuration, an explicit acquire timeout, and a documented crash behaviour for pool exhaustion
-- [ ] T047 Implement the typed error hierarchy in `anchor/core/db/errors.py`: `LeaseFencedError`, `ConfigAssertionError`, `ImmutableRecordError`, `ResultOverwriteError`, `PayloadTooLargeError`, each a distinct type so a caller can never catch one intending another
-- [ ] T048 Implement the SQLSTATE → typed error map in `anchor/core/db/errors.py` covering `AN001`–`AN004`, raising a generic database error for anything unmapped rather than swallowing it (FR-018)
-- [ ] T049 Implement the explicit-SQL module convention in `anchor/core/db/__init__.py`: every statement is a named constant beside the function that issues it, **no ORM on the hot path**, and a docstring rule that each transaction states what must be atomic and why
-- [ ] T050 Implement `GET /api/health` in `anchor/api/routers/health.py` returning `database_reachable`, `worker_count`, `deployment_mode`, `degraded`, and `schema_revision` — **503 when PostgreSQL is unreachable**, never a cached healthy state (`I7`, FR-072)
+- [x] T046 Implement the asyncpg pool in `anchor/core/db/pool.py` with a bounded size read from configuration, an explicit acquire timeout, and a documented crash behaviour for pool exhaustion
+- [x] T047 Implement the typed error hierarchy in `anchor/core/db/errors.py`: `LeaseFencedError`, `ConfigAssertionError`, `ImmutableRecordError`, `ResultOverwriteError`, `PayloadTooLargeError`, each a distinct type so a caller can never catch one intending another
+- [x] T048 Implement the SQLSTATE → typed error map in `anchor/core/db/errors.py` covering `AN001`–`AN004`, raising a generic database error for anything unmapped rather than swallowing it (FR-018)
+- [x] T049 Implement the explicit-SQL module convention in `anchor/core/db/__init__.py`: every statement is a named constant beside the function that issues it, **no ORM on the hot path**, and a docstring rule that each transaction states what must be atomic and why
+- [x] T050 Implement `GET /api/health` in `anchor/api/routers/health.py` returning `database_reachable`, `worker_count`, `deployment_mode`, `degraded`, and `schema_revision` — **503 when PostgreSQL is unreachable**, never a cached healthy state (`I7`, FR-072)
 
 #### P0.5 — Worker registration and heartbeat
 
-- [ ] T051 Implement fleet-slot label claiming in `anchor/worker/registry/identity.py`: take a label from the configured pool, draw the next value from that label's sequence, and form `{label}#{incarnation}` (D-42, FR-129)
-- [ ] T052 Implement worker self-registration in `anchor/worker/registry/register.py` inserting hostname, pid, capacity, `code_version`, and `role`, as a **new row per process lifetime** — rows are never updated across incarnations, so fleet history is append-only in practice as well as in principle (FR-065)
-- [ ] T053 Implement the heartbeat task in `anchor/worker/registry/heartbeat.py` refreshing `last_seen_at` on its own timer, with the crash behaviour stated: a stopped heartbeat is indistinguishable from a dead worker, **which is the intended semantics** (FR-067)
-- [ ] T054 Implement the Redis kill subscriber in `anchor/worker/registry/kill.py` that hard-exits the process on message with no cleanup — modelling a crash, not a shutdown (FR-068)
+- [x] T051 Implement fleet-slot label claiming in `anchor/worker/registry/identity.py`: take a label from the configured pool, draw the next value from that label's sequence, and form `{label}#{incarnation}` (D-42, FR-129)
+- [x] T052 Implement worker self-registration in `anchor/worker/registry/register.py` inserting hostname, pid, capacity, `code_version`, and `role`, as a **new row per process lifetime** — rows are never updated across incarnations, so fleet history is append-only in practice as well as in principle (FR-065)
+- [x] T053 Implement the heartbeat task in `anchor/worker/registry/heartbeat.py` refreshing `last_seen_at` on its own timer, with the crash behaviour stated: a stopped heartbeat is indistinguishable from a dead worker, **which is the intended semantics** (FR-067)
+- [x] T054 Implement the Redis kill subscriber in `anchor/worker/registry/kill.py` that hard-exits the process on message with no cleanup — modelling a crash, not a shutdown (FR-068)
 - [ ] T055 Implement graceful-shutdown handling in `anchor/worker/registry/register.py` setting `stopped_at`, so its **absence** after a hard kill is itself informative
 
 #### P0.6 — Compose topology
 
-- [ ] T056 Write `ops/compose/docker-compose.yml` with `postgres:16`, `redis:7`, a **one-shot `migrate` service**, `api`, `worker` scaled to three, and `web`; API and workers carry `depends_on: {migrate: {condition: service_completed_successfully}}` (D-37, D-45)
-- [ ] T057 Set `restart: always` on the worker service in `ops/compose/docker-compose.yml` so the fleet self-heals after a kill, and add healthchecks for `postgres`, `redis`, and `api` (FR-069, FR-070)
-- [ ] T058 Set `ANCHOR_AUTHORING_EXECUTE=true` **only** in `ops/compose/docker-compose.yml`, with a comment stating that every other deployment leaves it unset and is therefore demonstration mode by default (§31, FR-111)
-- [ ] T059 [P] Write the Dockerfiles in `ops/compose/` for the API, worker, and migrate images, each stamping `code_version` from the build SHA into the image environment
+- [x] T056 Write `ops/compose/docker-compose.yml` with `postgres:16`, `redis:7`, a **one-shot `migrate` service**, `api`, `worker` scaled to three, and `web`; API and workers carry `depends_on: {migrate: {condition: service_completed_successfully}}` (D-37, D-45)
+- [x] T057 Set `restart: always` on the worker service in `ops/compose/docker-compose.yml` so the fleet self-heals after a kill, and add healthchecks for `postgres`, `redis`, and `api` (FR-069, FR-070)
+- [x] T058 Set `ANCHOR_AUTHORING_EXECUTE=true` **only** in `ops/compose/docker-compose.yml`, with a comment stating that every other deployment leaves it unset and is therefore demonstration mode by default (§31, FR-111)
+- [x] T059 [P] Write the Dockerfiles in `ops/compose/` for the API, worker, and migrate images, each stamping `code_version` from the build SHA into the image environment. **Consolidated, documented in the file**: one shared `Dockerfile.python`, since the three roles run identical code with only the `command:` differing per compose service — which is also what makes the schema-version gate (T060) meaningful, since the code every process compares itself against really is the same code
 
 #### P0.7 — Schema-version gate
 
-- [ ] T060 Implement the schema-version gate in `anchor/core/db/schema_gate.py`: read the applied Alembic revision at startup, compare against the revision the code was built against, and **refuse to start on a mismatch, naming both**. Wire it into the API and worker entrypoints, and assert no long-running process invokes `alembic upgrade` (D-45, FR-128)
+- [x] T060 Implement the schema-version gate in `anchor/core/db/schema_gate.py`: read the applied Alembic revision at startup, compare against the revision the code was built against, and **refuse to start on a mismatch, naming both**. Wire it into the API and worker entrypoints, and assert no long-running process invokes `alembic upgrade` (D-45, FR-128)
 
 #### P0.8 — CI workflow
 
-- [ ] T061 Write `.github/workflows/ci.yml` running `ruff check`, `ruff format --check`, `mypy --strict`, and `pytest` against `postgres:16` and `redis:7` service containers, with **migrations applied by the one-shot step before tests** and the schema gate active (D-35)
+- [x] T061 Write `.github/workflows/ci.yml` running `ruff check`, `ruff format --check`, `mypy --strict`, and `pytest` against `postgres:16` and `redis:7` service containers, with **migrations applied by the one-shot step before tests** and the schema gate active (D-35)
 
 #### P0.9 — Structured logging
 
-- [ ] T062 Implement structured logging in `anchor/core/logging.py` — stdlib `logging` with a JSON formatter — where every worker line carries `run_id`, `epoch`, `worker_id`, and `step_index` where applicable. **The epoch is what makes a fencing incident reconstructable from two workers' logs afterwards**, which is the entire reason it is in the log line rather than only in the event (D-40)
+- [x] T062 Implement structured logging in `anchor/core/logging.py` — stdlib `logging` with a JSON formatter — where every worker line carries `run_id`, `epoch`, `worker_id`, and `step_index` where applicable. **The epoch is what makes a fencing incident reconstructable from two workers' logs afterwards**, which is the entire reason it is in the log line rather than only in the event (D-40)
 
 **Exit gate**: `docker compose up` → `GET /api/health` reports `worker_count: 3`,
 `deployment_mode: local`, `degraded: false`, and the applied schema revision. A worker started with

@@ -1,0 +1,26 @@
+# Shared base for the api, worker, and migrate images. One image, three
+# entrypoints — the code is identical across all three; only the CMD
+# differs, which is exactly what makes the schema-version gate meaningful
+# (the code every process compares itself against is the same code).
+
+FROM python:3.12-slim AS base
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libpq5 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+WORKDIR /app
+
+COPY pyproject.toml uv.lock* ./
+RUN uv sync --frozen --no-dev --no-install-project || uv sync --no-dev --no-install-project
+
+COPY anchor ./anchor
+COPY ops/migrations ./ops/migrations
+
+ARG CODE_VERSION=dev
+ENV ANCHOR_CODE_VERSION=${CODE_VERSION}
+ENV PATH="/app/.venv/bin:${PATH}"
+
+RUN uv sync --frozen --no-dev || uv sync --no-dev
