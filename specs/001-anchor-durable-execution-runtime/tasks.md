@@ -253,10 +253,10 @@ history by eye from the log alone.
 
 #### P1.7 — Read endpoints
 
-- [ ] T098 [US1] Implement `GET /api/runs` in `anchor/api/routers/runs.py` with status filtering and keyset pagination, newest first, per `contracts/openapi.yaml`
+- [x] T098 [US1] Implement `GET /api/runs` in `anchor/api/routers/runs.py` with status filtering and keyset pagination, newest first, per `contracts/openapi.yaml`
 - [x] T099 [US1] Implement `GET /api/runs/{id}` in `anchor/api/routers/runs.py` returning the run with `orphaned` **derived** as `status = 'running' AND lease_expires_at < now()` — never stored, because storing it would require a writer at the exact moment nobody owns the run (data-model.md §12)
 - [x] T100 [US1] Implement `GET /api/runs/{id}/events` in `anchor/api/routers/runs.py` with `after_seq` keyset pagination, ordered by `seq` (FR-026)
-- [ ] T101 [P] [US1] Implement the run serializers in `anchor/api/serializers/runs.py` producing exactly the response schemas in `contracts/openapi.yaml`, with a contract test asserting each response validates against its schema
+- [x] T101 [P] [US1] Implement the run serializers in `anchor/api/serializers/runs.py` producing exactly the response schemas in `contracts/openapi.yaml`, with a contract test asserting each response validates against its schema
 - [x] T102 [P] [US1] Add the FastAPI application factory in `anchor/api/app.py` with router registration, the typed-error exception handlers mapping each database error to its documented status code, and the deployment-mode banner value
 - [x] T103 [P] [US1] Add request logging middleware in `anchor/api/middleware.py` emitting the structured JSON line with `run_id` where the route carries one
 - [ ] T104 [US1] Run `tests/unit tests/contract tests/boundary` and confirm every phase-1 test now passes that was previously red

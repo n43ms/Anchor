@@ -3,13 +3,15 @@ fails at construction on a missing required field."""
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 from pydantic import ValidationError
 
 from anchor.core.events.payloads import PAYLOAD_MODELS
 from anchor.core.events.types import EventType
 
-VALID_PAYLOADS: dict[str, dict] = {
+VALID_PAYLOADS: dict[str, dict[str, Any]] = {
     "RUN_SUBMITTED": {"agent_type": "demo_minimal", "input": {}, "is_demo": False},
     "RUN_CLAIMED": {
         "worker_id": "worker-a#1",

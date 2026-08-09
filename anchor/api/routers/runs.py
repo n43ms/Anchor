@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+import base64
 import json
+from datetime import datetime
 from typing import Annotated, Any
 
 import asyncpg
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
+from anchor.api.serializers.runs import RUN_COLUMNS, RunResponse, serialize_run
 from anchor.core.config.loader import load_runtime_settings
 from anchor.core.events.append import append
 from anchor.core.events.types import EventType
@@ -30,58 +33,25 @@ class RunSubmission(BaseModel):
     is_demo: bool = False
 
 
-class RunResponse(BaseModel):
-    id: int
-    display_id: str
-    agent_type: str
-    status: str
-    epoch: int
-    owner_worker_id: str | None
-    lease_expires_at: str | None
-    orphaned: bool
-    priority: int
-    attempts: int
-    is_demo: bool
-    cancel_requested_at: str | None
-    created_at: str
-    claimed_at: str | None
-    finished_at: str | None
+_RUN_ROW_SQL = f"SELECT {RUN_COLUMNS} FROM runs WHERE id = $1"
 
 
-_RUN_COLUMNS = """
-    id, agent_type, status, epoch, owner_worker_id, lease_expires_at,
-    priority, attempts, is_demo, cancel_requested_at, created_at,
-    claimed_at, finished_at,
-    -- Derived, never stored (data-model.md §12): a run is orphaned exactly
-    -- when it is running and its lease has actually expired against the
-    -- database clock (I5) — not merely when it holds one. Storing this
-    -- would require a writer at the exact moment nobody owns the run.
-    (status = 'running' AND lease_expires_at < now()) AS orphaned
-"""
-
-_RUN_ROW_SQL = f"SELECT {_RUN_COLUMNS} FROM runs WHERE id = $1"
+def _encode_cursor(created_at: datetime, run_id: int) -> str:
+    """Opaque keyset cursor over `(created_at, id)` — the same pair the
+    `ORDER BY` sorts on, so the page boundary is stable even while newer
+    rows are being inserted concurrently (T071/T098).
+    """
+    raw = f"{created_at.isoformat()}|{run_id}"
+    return base64.urlsafe_b64encode(raw.encode("utf-8")).decode("ascii")
 
 
-def _serialize_run(row: asyncpg.Record) -> RunResponse:
-    return RunResponse(
-        id=row["id"],
-        display_id=f"run_{row['id']}",
-        agent_type=row["agent_type"],
-        status=row["status"],
-        epoch=row["epoch"],
-        owner_worker_id=row["owner_worker_id"],
-        lease_expires_at=row["lease_expires_at"].isoformat() if row["lease_expires_at"] else None,
-        orphaned=row["orphaned"],
-        priority=row["priority"],
-        attempts=row["attempts"],
-        is_demo=row["is_demo"],
-        cancel_requested_at=(
-            row["cancel_requested_at"].isoformat() if row["cancel_requested_at"] else None
-        ),
-        created_at=row["created_at"].isoformat(),
-        claimed_at=row["claimed_at"].isoformat() if row["claimed_at"] else None,
-        finished_at=row["finished_at"].isoformat() if row["finished_at"] else None,
-    )
+def _decode_cursor(cursor: str) -> tuple[datetime, int]:
+    try:
+        raw = base64.urlsafe_b64decode(cursor.encode("ascii")).decode("utf-8")
+        created_at_str, run_id_str = raw.rsplit("|", 1)
+        return datetime.fromisoformat(created_at_str), int(run_id_str)
+    except (ValueError, UnicodeDecodeError) as exc:
+        raise HTTPException(status_code=422, detail="malformed cursor") from exc
 
 
 @router.post("/api/runs", response_model=RunResponse, status_code=201)
@@ -103,7 +73,7 @@ async def submit_run(
                 if existing is not None:
                     row = await conn.fetchrow(_RUN_ROW_SQL, existing["id"])
                     assert row is not None
-                    return _serialize_run(row)
+                    return serialize_run(row)
 
             run_row = await conn.fetchrow(
                 """
@@ -137,7 +107,7 @@ async def submit_run(
 
             row = await conn.fetchrow(_RUN_ROW_SQL, run_id)
             assert row is not None
-            return _serialize_run(row)
+            return serialize_run(row)
 
 
 @router.get("/api/runs")
@@ -146,7 +116,13 @@ async def list_runs(
     status: list[str] | None = None,
     agent_type: str | None = None,
     limit: int = 50,
+    cursor: str | None = None,
 ) -> dict[str, Any]:
+    """Newest first, keyset-paginated on `(created_at, id)` — never
+    offset-based, so a page boundary stays correct while runs are being
+    submitted concurrently (contracts/openapi.yaml).
+    """
+    page_size = min(limit, 200)
     async with pool.acquire() as conn:
         clauses = []
         params: list[Any] = []
@@ -156,19 +132,29 @@ async def list_runs(
         if agent_type:
             params.append(agent_type)
             clauses.append(f"agent_type = ${len(params)}")
+        if cursor is not None:
+            cursor_created_at, cursor_id = _decode_cursor(cursor)
+            params.append(cursor_created_at)
+            params.append(cursor_id)
+            clauses.append(f"(created_at, id) < (${len(params) - 1}, ${len(params)})")
         where = f"WHERE {' AND '.join(clauses)}" if clauses else ""
-        params.append(min(limit, 200))
+        params.append(page_size)
         rows = await conn.fetch(
             f"""
-            SELECT {_RUN_COLUMNS}
+            SELECT {RUN_COLUMNS}
             FROM runs
             {where}
-            ORDER BY created_at DESC
+            ORDER BY created_at DESC, id DESC
             LIMIT ${len(params)}
             """,
             *params,
         )
-        return {"items": [_serialize_run(r).model_dump() for r in rows]}
+
+    items = [serialize_run(r).model_dump() for r in rows]
+    next_cursor = (
+        _encode_cursor(rows[-1]["created_at"], rows[-1]["id"]) if len(rows) == page_size else None
+    )
+    return {"items": items, "next_cursor": next_cursor}
 
 
 @router.get("/api/runs/{run_id}", response_model=RunResponse)
@@ -177,7 +163,7 @@ async def get_run(run_id: int, pool: Annotated[asyncpg.Pool, Depends(get_pool)])
         row = await conn.fetchrow(_RUN_ROW_SQL, run_id)
     if row is None:
         raise HTTPException(status_code=404, detail="run not found")
-    return _serialize_run(row)
+    return serialize_run(row)
 
 
 @router.get("/api/runs/{run_id}/events")
@@ -187,6 +173,7 @@ async def get_run_events(
     after_seq: int = 0,
     limit: int = 200,
 ) -> dict[str, Any]:
+    page_size = min(limit, 1000)
     async with pool.acquire() as conn:
         exists = await conn.fetchval("SELECT 1 FROM runs WHERE id = $1", run_id)
         if not exists:
@@ -201,7 +188,7 @@ async def get_run_events(
             """,
             run_id,
             after_seq,
-            min(limit, 1000),
+            page_size,
         )
     items = [
         {
@@ -216,5 +203,5 @@ async def get_run_events(
         }
         for r in rows
     ]
-    next_after_seq = items[-1]["seq"] if len(items) == min(limit, 1000) else None
+    next_after_seq = items[-1]["seq"] if len(items) == page_size else None
     return {"run_id": run_id, "items": items, "next_after_seq": next_after_seq}

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import importlib.util
 from pathlib import Path
+from types import ModuleType
 
 from anchor.core.events.types import EventType
 
@@ -13,7 +14,7 @@ _MIGRATION_PATH = (
 )
 
 
-def _load_migration_module():  # type: ignore[no-untyped-def]
+def _load_migration_module() -> ModuleType:
     spec = importlib.util.spec_from_file_location("_migration_001_foundation", _MIGRATION_PATH)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
