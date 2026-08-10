@@ -1,0 +1,42 @@
+[
+  {
+    "run_id": 2, "seq": 1, "type": "RUN_SUBMITTED", "epoch": 0, "worker_id": "api", "step_index": null,
+    "created_at": "2026-08-08T11:00:00+00:00",
+    "payload": {"agent_type": "demo_minimal", "input": {"query": "durable execution", "recipient": "ops@example.com"}, "is_demo": true, "client_request_key": null, "chaos_run_id": null}
+  },
+  {
+    "run_id": 2, "seq": 2, "type": "RUN_CLAIMED", "epoch": 1, "worker_id": "worker-a#1", "step_index": null,
+    "created_at": "2026-08-08T11:00:01+00:00",
+    "payload": {"worker_id": "worker-a#1", "epoch": 1, "reason": "initial", "lease_expires_at": "2026-08-08T11:00:05+00:00", "previous_worker_id": null}
+  },
+  {
+    "run_id": 2, "seq": 3, "type": "STEP_STARTED", "epoch": 1, "worker_id": "worker-a#1", "step_index": 0,
+    "created_at": "2026-08-08T11:00:01.100000+00:00",
+    "payload": {"step_index": 0, "action_kind": "tool"}
+  },
+  {
+    "run_id": 2, "seq": 4, "type": "TOOL_INTENT", "epoch": 1, "worker_id": "worker-a#1", "step_index": 0,
+    "created_at": "2026-08-08T11:00:01.110000+00:00",
+    "payload": {"step_index": 0, "tool_name": "search", "args_canonical": {"query": "durable execution"}, "idempotency_key": "key-search-0", "args_hash": "hash-search-0", "safety": "retry_safe"}
+  },
+  {
+    "run_id": 2, "seq": 5, "type": "TOOL_RESULT", "epoch": 1, "worker_id": "worker-a#1", "step_index": 0,
+    "created_at": "2026-08-08T11:00:01.160000+00:00",
+    "payload": {"step_index": 0, "tool_name": "search", "idempotency_key": "key-search-0", "result": {"results": ["result-for-durable execution"]}, "latency_ms": 50.0, "resolution": null}
+  },
+  {
+    "run_id": 2, "seq": 6, "type": "STEP_COMPLETED", "epoch": 1, "worker_id": "worker-a#1", "step_index": 0,
+    "created_at": "2026-08-08T11:00:01.170000+00:00",
+    "payload": {"step_index": 0, "duration_ms": 60.0, "action_kind": "tool"}
+  },
+  {
+    "run_id": 2, "seq": 7, "type": "STEP_STARTED", "epoch": 1, "worker_id": "worker-a#1", "step_index": 1,
+    "created_at": "2026-08-08T11:00:01.180000+00:00",
+    "payload": {"step_index": 1, "action_kind": "tool"}
+  },
+  {
+    "run_id": 2, "seq": 8, "type": "TOOL_INTENT", "epoch": 1, "worker_id": "worker-a#1", "step_index": 1,
+    "created_at": "2026-08-08T11:00:01.190000+00:00",
+    "payload": {"step_index": 1, "tool_name": "notify", "args_canonical": {"recipient": "ops@example.com"}, "idempotency_key": "key-notify-1", "args_hash": "hash-notify-1", "safety": "retry_safe"}
+  }
+]

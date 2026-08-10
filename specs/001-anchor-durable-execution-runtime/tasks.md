@@ -259,7 +259,7 @@ history by eye from the log alone.
 - [x] T101 [P] [US1] Implement the run serializers in `anchor/api/serializers/runs.py` producing exactly the response schemas in `contracts/openapi.yaml`, with a contract test asserting each response validates against its schema
 - [x] T102 [P] [US1] Add the FastAPI application factory in `anchor/api/app.py` with router registration, the typed-error exception handlers mapping each database error to its documented status code, and the deployment-mode banner value
 - [x] T103 [P] [US1] Add request logging middleware in `anchor/api/middleware.py` emitting the structured JSON line with `run_id` where the route carries one
-- [ ] T104 [US1] Run `tests/unit tests/contract tests/boundary` and confirm every phase-1 test now passes that was previously red
+- [x] T104 [US1] Run `tests/unit tests/contract tests/boundary` and confirm every phase-1 test now passes that was previously red
 
 **Exit gate**: [V1](./quickstart.md#v1--the-log-is-the-spine-phase-1) — `seq` contiguous from 1, one
 worker, one epoch, complete history reconstructable by eye from the log.
@@ -281,69 +281,69 @@ correct context. **This is the moment the project becomes real.**
 
 ### Tests for Phase 2 (MANDATORY) ⚠️
 
-- [ ] T105 [P] [US1] Write the replay-determinism test in `tests/replay/test_replay_determinism.py` folding every fixture log and comparing the final state by **canonical-JSON hash**, not by field-by-field assertion — a field-wise comparison silently omits the field someone forgot to add (D-25, FR-030)
-- [ ] T106 [P] [US1] Write the truncated-log replay test in `tests/replay/test_truncated_log_mid_step.py` against a log that ends between `STEP_STARTED` and `STEP_COMPLETED`, asserting the fold produces a context whose `last_completed_step_index` excludes the partial step
-- [ ] T107 [P] [US1] Write the call-ordinal test in `tests/replay/test_nondet_call_ordinal.py`: a step calling `ctx.now()` twice replays the two values **in the order they were originally produced**. Without the ordinal the second call receives the first value and the divergence is invisible
-- [ ] T108 [P] [US1] Write the AST determinism-ban test in `tests/boundary/test_agents_no_direct_nondeterminism.py` walking every module under `anchor/runtime/agents/` and failing on any reference to `datetime`, `time`, `random`, or `uuid`, naming the offending module and line (FR-035)
-- [ ] T109 [P] [US1] Write the kill-and-resume integration test in `tests/failure/test_kill_and_resume.py` asserting a different worker id claims, `REPLAY_COMPLETED.steps_replayed` matches the count that had completed, and execution resumes at `last_completed_step_index + 1` — **not** at step 1
-- [ ] T110 [P] [US1] Write the step-skip test in `tests/replay/test_completed_steps_not_reexecuted.py` asserting a step carrying `STEP_COMPLETED` is not re-executed on the resuming worker
-- [ ] T111 [P] [US1] Write the derived-attempt test in `tests/unit/test_attempts_derived_from_log.py` asserting the per-step attempt count equals the number of `STEP_FAILED` events for that `step_index`, and that `runs.attempts` is never read by the retry path (D-43, FR-130)
-- [ ] T112 [P] [US1] Write the nondet-batching test in `tests/unit/test_nondet_batched_per_step.py` asserting a step emits **one** `NONDET_RECORDED` carrying all its entries, committed in the same transaction as that step's `TOOL_INTENT` — or as `STEP_COMPLETED` when the step has no side effect (D-47, FR-031)
-- [ ] T113 [P] [US1] Write the atomicity test in `tests/failure/test_no_effect_with_unrecorded_inputs.py` asserting there is no interleaving in which a `TOOL_INTENT` exists whose `ctx.new_id()`-derived key inputs are unrecorded — the case the batching decision exists to protect
-- [ ] T114 [P] [US1] Write the model-replay test in `tests/replay/test_model_not_recalled_on_replay.py` asserting a journaled `LLM_CALLED` returns the recorded completion on replay with **no provider call at all** (FR-034)
+- [x] T105 [P] [US1] Write the replay-determinism test in `tests/replay/test_replay_determinism.py` folding every fixture log and comparing the final state by **canonical-JSON hash**, not by field-by-field assertion — a field-wise comparison silently omits the field someone forgot to add (D-25, FR-030)
+- [x] T106 [P] [US1] Write the truncated-log replay test in `tests/replay/test_truncated_log_mid_step.py` against a log that ends between `STEP_STARTED` and `STEP_COMPLETED`, asserting the fold produces a context whose `last_completed_step_index` excludes the partial step
+- [x] T107 [P] [US1] Write the call-ordinal test in `tests/replay/test_nondet_call_ordinal.py`: a step calling `ctx.now()` twice replays the two values **in the order they were originally produced**. Without the ordinal the second call receives the first value and the divergence is invisible
+- [x] T108 [P] [US1] Write the AST determinism-ban test in `tests/boundary/test_agents_no_direct_nondeterminism.py` walking every module under `anchor/runtime/agents/` and failing on any reference to `datetime`, `time`, `random`, or `uuid`, naming the offending module and line (FR-035)
+- [x] T109 [P] [US1] Write the kill-and-resume integration test in `tests/failure/test_kill_and_resume.py` asserting a different worker id claims, `REPLAY_COMPLETED.steps_replayed` matches the count that had completed, and execution resumes at `last_completed_step_index + 1` — **not** at step 1
+- [x] T110 [P] [US1] Write the step-skip test in `tests/replay/test_completed_steps_not_reexecuted.py` asserting a step carrying `STEP_COMPLETED` is not re-executed on the resuming worker
+- [x] T111 [P] [US1] Write the derived-attempt test in `tests/unit/test_attempts_derived_from_log.py` asserting the per-step attempt count equals the number of `STEP_FAILED` events for that `step_index`, and that `runs.attempts` is never read by the retry path (D-43, FR-130)
+- [x] T112 [P] [US1] Write the nondet-batching test in `tests/unit/test_nondet_batched_per_step.py` asserting a step emits **one** `NONDET_RECORDED` carrying all its entries, committed in the same transaction as that step's `TOOL_INTENT` — or as `STEP_COMPLETED` when the step has no side effect (D-47, FR-031)
+- [x] T113 [P] [US1] Write the atomicity test in `tests/failure/test_no_effect_with_unrecorded_inputs.py` asserting there is no interleaving in which a `TOOL_INTENT` exists whose `ctx.new_id()`-derived key inputs are unrecorded — the case the batching decision exists to protect
+- [x] T114 [P] [US1] Write the model-replay test in `tests/replay/test_model_not_recalled_on_replay.py` asserting a journaled `LLM_CALLED` returns the recorded completion on replay with **no provider call at all** (FR-034)
 
 ### Implementation for Phase 2
 
 #### P2.1 — `core/replay.reconstruct`
 
-- [ ] T115 [US1] Implement `RunContext` in `anchor/core/replay/context.py` as the reconstructed-state container: accumulated messages, `last_completed_step_index`, journaled results by idempotency key, journaled non-deterministic values by `(step_index, kind, call_ordinal)`, and per-step attempt counts
-- [ ] T116 [US1] Implement `reconstruct` in `anchor/core/replay/reconstruct.py` as **a pure fold over ordered events with no I/O** — the purity is what makes it unit-testable against fixtures without a database, which is what makes the invariant tests meaningful (FR-027, FR-028)
-- [ ] T117 [US1] Implement the per-event fold handlers in `anchor/core/replay/handlers.py`, one per event type, with an explicit handler for every one of the 17 types so a new type cannot be silently ignored by a default branch
-- [ ] T118 [US1] Derive the per-step attempt count inside the fold in `anchor/core/replay/reconstruct.py` by counting `STEP_FAILED` per `step_index`. Comment states the failure this prevents: an in-memory counter resets on handoff, and a poison step then retries forever (D-43)
-- [ ] T119 [US1] Assert in `anchor/core/replay/reconstruct.py` that `LEASE_RENEWED` contributes **nothing** to the reconstructed state, and add `tests/replay/test_lease_renewed_not_consumed.py` proving it — this is what licenses the conditional emission of D-48
+- [x] T115 [US1] Implement `RunContext` in `anchor/core/replay/context.py` as the reconstructed-state container: accumulated messages, `last_completed_step_index`, journaled results by idempotency key, journaled non-deterministic values by `(step_index, kind, call_ordinal)`, and per-step attempt counts
+- [x] T116 [US1] Implement `reconstruct` in `anchor/core/replay/reconstruct.py` as **a pure fold over ordered events with no I/O** — the purity is what makes it unit-testable against fixtures without a database, which is what makes the invariant tests meaningful (FR-027, FR-028)
+- [x] T117 [US1] Implement the per-event fold handlers in `anchor/core/replay/handlers.py`, one per event type, with an explicit handler for every one of the 17 types so a new type cannot be silently ignored by a default branch
+- [x] T118 [US1] Derive the per-step attempt count inside the fold in `anchor/core/replay/reconstruct.py` by counting `STEP_FAILED` per `step_index`. Comment states the failure this prevents: an in-memory counter resets on handoff, and a poison step then retries forever (D-43)
+- [x] T119 [US1] Assert in `anchor/core/replay/reconstruct.py` that `LEASE_RENEWED` contributes **nothing** to the reconstructed state, and add `tests/replay/test_lease_renewed_not_consumed.py` proving it — this is what licenses the conditional emission of D-48
 
 #### P2.2 — Journaled determinism
 
-- [ ] T120 [US1] Implement the per-step non-determinism buffer in `anchor/core/determinism/buffer.py` accumulating `(kind, value, call_ordinal)` in call order
-- [ ] T121 [US1] Implement `ctx.now()` in `anchor/core/determinism/context.py` recording kind `time`, returning the recorded value on replay (FR-031, FR-032)
-- [ ] T122 [US1] Implement `ctx.random()` in `anchor/core/determinism/context.py` recording kind `random`
-- [ ] T123 [US1] Implement `ctx.new_id()` in `anchor/core/determinism/context.py` recording kind `id`, **named separately from `random` deliberately** — a generated identifier that differs across replay is the specific failure that defeats deduplication, so it is individually visible in the log and individually greppable in agent code (FR-033)
-- [ ] T124 [US1] Implement the buffer flush in `anchor/core/determinism/buffer.py` writing **one** `NONDET_RECORDED` per step in the same transaction as that step's `TOOL_INTENT`, or as `STEP_COMPLETED` when the step has no effect (D-47)
-- [ ] T125 [US1] Implement replay-mode value return in `anchor/core/determinism/context.py` reading back by `(step_index, kind, call_ordinal)` **in original call order**
-- [ ] T126 [US1] Implement `ctx.is_replaying` in `anchor/core/determinism/context.py` as informational only, with a docstring stating that branching on it makes replay non-deterministic and that the validator flags it
-- [ ] T127 [US1] Document the crash behaviour of each `ctx` call in `anchor/core/determinism/context.py` per `contracts/agent-contract.md`: the three nondet calls are safely re-derivable because **nothing in the world observed the discarded value**; `call_model` costs money not correctness; `call_tool` is the only one whose crash behaviour is a correctness question
+- [x] T120 [US1] Implement the per-step non-determinism buffer in `anchor/core/determinism/buffer.py` accumulating `(kind, value, call_ordinal)` in call order
+- [x] T121 [US1] Implement `ctx.now()` in `anchor/core/determinism/context.py` recording kind `time`, returning the recorded value on replay (FR-031, FR-032)
+- [x] T122 [US1] Implement `ctx.random()` in `anchor/core/determinism/context.py` recording kind `random`
+- [x] T123 [US1] Implement `ctx.new_id()` in `anchor/core/determinism/context.py` recording kind `id`, **named separately from `random` deliberately** — a generated identifier that differs across replay is the specific failure that defeats deduplication, so it is individually visible in the log and individually greppable in agent code (FR-033)
+- [x] T124 [US1] Implement the buffer flush in `anchor/core/determinism/buffer.py` writing **one** `NONDET_RECORDED` per step in the same transaction as that step's `TOOL_INTENT`, or as `STEP_COMPLETED` when the step has no effect (D-47)
+- [x] T125 [US1] Implement replay-mode value return in `anchor/core/determinism/context.py` reading back by `(step_index, kind, call_ordinal)` **in original call order**
+- [x] T126 [US1] Implement `ctx.is_replaying` in `anchor/core/determinism/context.py` as informational only, with a docstring stating that branching on it makes replay non-deterministic and that the validator flags it
+- [x] T127 [US1] Document the crash behaviour of each `ctx` call in `anchor/core/determinism/context.py` per `contracts/agent-contract.md`: the three nondet calls are safely re-derivable because **nothing in the world observed the discarded value**; `call_model` costs money not correctness; `call_tool` is the only one whose crash behaviour is a correctness question
 
 #### P2.3 — The AST determinism ban
 
-- [ ] T128 [US1] Implement the shared AST checker in `anchor/core/determinism/ast_check.py` walking a module for references to `datetime`, `time`, `random`, and `uuid`, returning findings with line and column. **Written once here and reused by the phase-9 validator** (D-27)
-- [ ] T129 [US1] Write teaching messages for each finding in `anchor/core/determinism/ast_check.py` naming the line and the step-context call that replaces it, per FR-124's phrasing — the message written now is the message the validator surfaces in phase 9
+- [x] T128 [US1] Implement the shared AST checker in `anchor/core/determinism/ast_check.py` walking a module for references to `datetime`, `time`, `random`, and `uuid`, returning findings with line and column. **Written once here and reused by the phase-9 validator** (D-27)
+- [x] T129 [US1] Write teaching messages for each finding in `anchor/core/determinism/ast_check.py` naming the line and the step-context call that replaces it, per FR-124's phrasing — the message written now is the message the validator surfaces in phase 9
 
 #### P2.4 — Replay on claim
 
-- [ ] T130 [US1] Wire replay into the worker in `anchor/worker/loop.py` so the log is folded **before** any execution on every claim, including the first (FR-027)
-- [ ] T131 [US1] Append `REPLAY_COMPLETED` in `anchor/worker/loop.py` carrying `steps_replayed`, `replay_ms`, `last_completed_step_index`, `journal_entries_loaded`, and `nondet_values_loaded` (FR-029)
-- [ ] T132 [US1] Resume execution at `last_completed_step_index + 1` in `anchor/worker/loop.py`, with an assertion that the resume index is never lower than the highest completed step
+- [x] T130 [US1] Wire replay into the worker in `anchor/worker/loop.py` so the log is folded **before** any execution on every claim, including the first (FR-027)
+- [x] T131 [US1] Append `REPLAY_COMPLETED` in `anchor/worker/loop.py` carrying `steps_replayed`, `replay_ms`, `last_completed_step_index`, `journal_entries_loaded`, and `nondet_values_loaded` (FR-029)
+- [x] T132 [US1] Resume execution at `last_completed_step_index + 1` in `anchor/worker/loop.py`, with an assertion that the resume index is never lower than the highest completed step
 
 #### P2.5 — Step-level skip
 
-- [ ] T133 [US1] Implement step-level skip in `anchor/worker/loop.py` for steps carrying `STEP_COMPLETED`
-- [ ] T134 [US1] Document the interim limitation in `anchor/worker/loop.py`: **step granularity only** — a crash *within* a step, between a tool's execution and its result being recorded, can still double-execute until phase 5. State it in the module docstring so it is not discovered by a reader who assumed otherwise
+- [x] T133 [US1] Implement step-level skip in `anchor/worker/loop.py` for steps carrying `STEP_COMPLETED`
+- [x] T134 [US1] Document the interim limitation in `anchor/worker/loop.py`: **step granularity only** — a crash *within* a step, between a tool's execution and its result being recorded, can still double-execute until phase 5. State it in the module docstring so it is not discovered by a reader who assumed otherwise
 
 #### P2.6 — Recorded-log fixtures
 
-- [ ] T135 [P] [US1] Create the happy-path fixture log in `tests/fixtures/logs/completed_short.json` captured from a real completed run
-- [ ] T136 [P] [US1] Create the truncated-mid-step fixture in `tests/fixtures/logs/truncated_mid_step.json`
-- [ ] T137 [P] [US1] Create the two-owner fixture in `tests/fixtures/logs/reclaimed_after_expiry.json` carrying two `RUN_CLAIMED` events and a handoff
-- [ ] T138 [P] [US1] Create the multi-ordinal fixture in `tests/fixtures/logs/two_nondet_calls_one_step.json` exercising `call_ordinal` ordering
-- [ ] T139 [P] [US1] Create the replayed-step fixture in `tests/fixtures/logs/with_skipped_steps.json` carrying `STEP_SKIPPED_ON_REPLAY` markers
-- [ ] T140 [P] [US1] Implement the fixture loader in `tests/fixtures/__init__.py` returning ordered `RunEvent` lists, with a test asserting every fixture parses against the payload models
-- [ ] T141 [US1] Implement a fixture-capture helper in `tests/fixtures/capture.py` that serializes a live run's log to a fixture file, so future fixtures are captured rather than hand-written
+- [x] T135 [P] [US1] Create the happy-path fixture log in `tests/fixtures/logs/completed_short.json` captured from a real completed run — **deviation, noted here**: hand-authored to the same event shape a real capture would produce (no live worker was available to capture from in this environment); `capture.py` (T141) exists so future fixtures are captured rather than hand-written
+- [x] T136 [P] [US1] Create the truncated-mid-step fixture in `tests/fixtures/logs/truncated_mid_step.json`
+- [x] T137 [P] [US1] Create the two-owner fixture in `tests/fixtures/logs/reclaimed_after_expiry.json` carrying two `RUN_CLAIMED` events and a handoff
+- [x] T138 [P] [US1] Create the multi-ordinal fixture in `tests/fixtures/logs/two_nondet_calls_one_step.json` exercising `call_ordinal` ordering
+- [x] T139 [P] [US1] Create the replayed-step fixture in `tests/fixtures/logs/with_skipped_steps.json` carrying `STEP_SKIPPED_ON_REPLAY` markers
+- [x] T140 [P] [US1] Implement the fixture loader in `tests/fixtures/__init__.py` returning ordered `RunEvent` lists, with a test asserting every fixture parses against the payload models
+- [x] T141 [US1] Implement a fixture-capture helper in `tests/fixtures/capture.py` that serializes a live run's log to a fixture file, so future fixtures are captured rather than hand-written
 
 #### Phase 2 gate work
 
-- [ ] T142 [US1] Run the full replay suite and confirm every fixture replays to an identical canonical hash
-- [ ] T143 [US1] Execute [V2](./quickstart.md#v2--replay-after-death-phase-2--the-hard-gate) end to end against `docker compose`, confirming all six expected outcomes in order
-- [ ] T144 [US1] Record the phase-2 gate result in the PR description, including `steps_replayed` from the observed run and the confirmation that effects show no duplicates on the step-skip path
+- [x] T142 [US1] Run the full replay suite and confirm every fixture replays to an identical canonical hash
+- [ ] T143 [US1] Execute [V2](./quickstart.md#v2--replay-after-death-phase-2--the-hard-gate) end to end against `docker compose`, confirming all six expected outcomes in order — **blocked**: no Docker available in this environment; `tests/failure/test_kill_and_resume.py` (T109) exercises the same claim → complete-one-step → expire → reclaim → replay → resume-and-complete sequence against a real PostgreSQL instance and needs a live `db_pool` to run, but that is not the `docker compose` end-to-end walkthrough itself. Run V2 on a machine with Docker before treating phase 2 as demonstrated.
+- [ ] T144 [US1] Record the phase-2 gate result in the PR description, including `steps_replayed` from the observed run and the confirmation that effects show no duplicates on the step-skip path — depends on T143
 
 **Exit gate**: [V2](./quickstart.md#v2--replay-after-death-phase-2--the-hard-gate), all six outcomes.
 
