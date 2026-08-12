@@ -104,7 +104,7 @@ async def claim_one(
             run_id,
             new_epoch,
             worker_id,
-            lease_duration_ms,
+            str(lease_duration_ms),
         )
         assert updated is not None
         await append(
