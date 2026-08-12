@@ -10,8 +10,9 @@ import pytest
 
 from anchor.api.routers.runs import RunSubmission, submit_run
 from anchor.core.config.loader import load_runtime_settings
+from anchor.core.leases.claim import claim_one
 from anchor.runtime.agents import register_all
-from anchor.worker.loop import claim_one, execute_run
+from anchor.worker.loop import execute_run
 
 
 @pytest.mark.asyncio
@@ -33,10 +34,16 @@ async def test_full_event_sequence_for_a_completed_run(db_pool: asyncpg.Pool) ->
             conn,
             worker_id="worker-a#1",
             lease_duration_ms=settings.lease_duration_ms,
+            global_concurrency_cap=settings.global_concurrency_cap,
             max_payload_bytes=settings.max_event_payload_bytes,
         )
         assert claimed is not None
-        run_id, agent_type, input_payload, epoch = claimed
+        run_id, agent_type, input_payload, epoch = (
+            claimed.run_id,
+            claimed.agent_type,
+            claimed.input,
+            claimed.epoch,
+        )
 
         await execute_run(
             conn,

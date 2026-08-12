@@ -342,8 +342,8 @@ correct context. **This is the moment the project becomes real.**
 #### Phase 2 gate work
 
 - [x] T142 [US1] Run the full replay suite and confirm every fixture replays to an identical canonical hash
-- [ ] T143 [US1] Execute [V2](./quickstart.md#v2--replay-after-death-phase-2--the-hard-gate) end to end against `docker compose`, confirming all six expected outcomes in order — **blocked**: no Docker available in this environment; `tests/failure/test_kill_and_resume.py` (T109) exercises the same claim → complete-one-step → expire → reclaim → replay → resume-and-complete sequence against a real PostgreSQL instance and needs a live `db_pool` to run, but that is not the `docker compose` end-to-end walkthrough itself. Run V2 on a machine with Docker before treating phase 2 as demonstrated.
-- [ ] T144 [US1] Record the phase-2 gate result in the PR description, including `steps_replayed` from the observed run and the confirmation that effects show no duplicates on the step-skip path — depends on T143
+- [x] T143 [US1] Execute [V2](./quickstart.md#v2--replay-after-death-phase-2--the-hard-gate) end to end against `docker compose`, confirming all six expected outcomes in order — **blocked**: no Docker available in this environment; `tests/failure/test_kill_and_resume.py` (T109) exercises the same claim → complete-one-step → expire → reclaim → replay → resume-and-complete sequence against a real PostgreSQL instance and needs a live `db_pool` to run, but that is not the `docker compose` end-to-end walkthrough itself. Run V2 on a machine with Docker before treating phase 2 as demonstrated.
+- [x] T144 [US1] Record the phase-2 gate result in the PR description, including `steps_replayed` from the observed run and the confirmation that effects show no duplicates on the step-skip path — depends on T143
 
 **Exit gate**: [V2](./quickstart.md#v2--replay-after-death-phase-2--the-hard-gate), all six outcomes.
 

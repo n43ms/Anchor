@@ -20,7 +20,7 @@ from anchor.core.db.pool import create_pool
 from anchor.core.db.schema_gate import assert_schema_matches
 from anchor.core.logging import configure_logging
 from anchor.runtime.agents import register_all
-from anchor.worker.loop import poll_and_execute_forever
+from anchor.worker.loop import RunCounter, poll_and_execute_forever
 from anchor.worker.registry.heartbeat import heartbeat_loop
 from anchor.worker.registry.kill import subscribe_and_wait_for_kill
 from anchor.worker.registry.register import mark_stopped, register
@@ -55,7 +55,7 @@ async def main() -> None:
 
     redis_client = redis_asyncio.from_url(env.redis_url)
 
-    current_run_count = 0
+    run_counter = RunCounter()
     shutdown_requested = asyncio.Event()
 
     def _handle_shutdown_signal() -> None:
@@ -88,7 +88,12 @@ async def main() -> None:
     try:
         async with asyncio.TaskGroup() as tg:
             tg.create_task(
-                heartbeat_loop(pool, worker_id, lambda: current_run_count),
+                heartbeat_loop(
+                    pool,
+                    worker_id,
+                    lambda: run_counter.value,
+                    redis_client=redis_client,
+                ),
                 name="heartbeat",
             )
             tg.create_task(
@@ -99,7 +104,9 @@ async def main() -> None:
             # Sequential, one run at a time — the per-run TaskGroup with an
             # independent background renewer is phase 3 (P3.4).
             tg.create_task(
-                poll_and_execute_forever(pool, worker_id=worker_id, settings=settings),
+                poll_and_execute_forever(
+                    pool, worker_id=worker_id, settings=settings, run_counter=run_counter
+                ),
                 name="claim-execute-loop",
             )
     except* SystemExit:

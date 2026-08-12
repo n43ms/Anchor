@@ -14,9 +14,10 @@ from anchor.core.determinism.actions import Action, Done, ToolCall
 from anchor.core.determinism.context import StepContext
 from anchor.core.events.append import append
 from anchor.core.events.types import EventType
+from anchor.core.leases.claim import claim_one
 from anchor.core.replay.load import load_run_events
 from anchor.runtime.agents.registry import register
-from anchor.worker.loop import claim_one, execute_run
+from anchor.worker.loop import execute_run
 
 
 def _two_nondet_calls_then_tool(ctx: StepContext) -> Action:
@@ -58,10 +59,19 @@ async def test_one_nondet_recorded_event_atomic_with_tool_intent(db_pool: asyncp
             "VALUES ('worker-a#1', 'worker-a', 1, 'test', 1, 10, 'dev') ON CONFLICT DO NOTHING"
         )
         claimed = await claim_one(
-            conn, worker_id="worker-a#1", lease_duration_ms=5_000, max_payload_bytes=1_000_000
+            conn,
+            worker_id="worker-a#1",
+            lease_duration_ms=5_000,
+            global_concurrency_cap=50,
+            max_payload_bytes=1_000_000,
         )
         assert claimed is not None
-        run_id_out, agent_type, input_payload, epoch = claimed
+        run_id_out, agent_type, input_payload, epoch = (
+            claimed.run_id,
+            claimed.agent_type,
+            claimed.input,
+            claimed.epoch,
+        )
 
         settings = profile_settings(ConfigProfile.DEMO)
         await execute_run(

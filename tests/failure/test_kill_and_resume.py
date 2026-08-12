@@ -21,8 +21,9 @@ import anchor.runtime.agents  # noqa: F401 - registers "demo_minimal" as a side 
 from anchor.core.config.profiles import ConfigProfile, profile_settings
 from anchor.core.events.append import append
 from anchor.core.events.types import EventType
+from anchor.core.leases.claim import claim_one
 from anchor.core.replay.load import load_run_events
-from anchor.worker.loop import claim_one, execute_run
+from anchor.worker.loop import execute_run
 
 MAX_PAYLOAD = 1_000_000
 
@@ -70,10 +71,14 @@ async def test_different_worker_resumes_after_reclaim(db_pool: asyncpg.Pool) -> 
             """
         )
         claimed = await claim_one(
-            conn, worker_id="worker-a#1", lease_duration_ms=50, max_payload_bytes=MAX_PAYLOAD
+            conn,
+            worker_id="worker-a#1",
+            lease_duration_ms=50,
+            global_concurrency_cap=50,
+            max_payload_bytes=MAX_PAYLOAD,
         )
         assert claimed is not None
-        _, _, _, epoch_a = claimed
+        epoch_a = claimed.epoch
         assert epoch_a == 1
 
         # worker-a#1 completes exactly step 0 ("search"), then dies — no
@@ -138,10 +143,17 @@ async def test_different_worker_resumes_after_reclaim(db_pool: asyncpg.Pool) -> 
         await asyncio.sleep(0.2)
 
         claimed_2 = await claim_one(
-            conn, worker_id="worker-b#1", lease_duration_ms=5_000, max_payload_bytes=MAX_PAYLOAD
+            conn,
+            worker_id="worker-b#1",
+            lease_duration_ms=5_000,
+            global_concurrency_cap=50,
+            max_payload_bytes=MAX_PAYLOAD,
         )
         assert claimed_2 is not None
-        run_id_2, agent_type, resumed_input, epoch_b = claimed_2
+        run_id_2 = claimed_2.run_id
+        agent_type = claimed_2.agent_type
+        resumed_input = claimed_2.input
+        epoch_b = claimed_2.epoch
         assert run_id_2 == run_id
         assert epoch_b == 2
 

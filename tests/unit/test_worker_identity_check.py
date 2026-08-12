@@ -60,7 +60,9 @@ async def test_id_mismatched_with_label_and_incarnation_is_rejected(
 async def test_same_label_and_incarnation_twice_is_rejected(db_pool: asyncpg.Pool) -> None:
     async with db_pool.acquire() as conn:
         await _insert_worker(conn, id="worker-b#1", label="worker-b", incarnation=1)
-        with pytest.raises((asyncpg.exceptions.UniqueViolationError, asyncpg.exceptions.PostgresError)):
+        with pytest.raises(
+            (asyncpg.exceptions.UniqueViolationError, asyncpg.exceptions.PostgresError)
+        ):
             await _insert_worker(conn, id="worker-b#1", label="worker-b", incarnation=1)
 
 

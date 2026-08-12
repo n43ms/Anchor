@@ -19,8 +19,9 @@ from anchor.core.determinism.actions import Action, Done, ToolCall
 from anchor.core.determinism.context import StepContext
 from anchor.core.events.append import append
 from anchor.core.events.types import EventType
+from anchor.core.leases.claim import claim_one
 from anchor.runtime.agents.registry import register
-from anchor.worker.loop import claim_one, execute_run
+from anchor.worker.loop import execute_run
 
 MAX_PAYLOAD = 1_000_000
 _invocations: list[int] = []
@@ -66,10 +67,19 @@ async def test_resumed_step_is_not_re_presented_to_decide_next_step(db_pool: asy
             "VALUES ('worker-a#1', 'worker-a', 1, 'test', 1, 10, 'dev') ON CONFLICT DO NOTHING"
         )
         claimed = await claim_one(
-            conn, worker_id="worker-a#1", lease_duration_ms=5_000, max_payload_bytes=MAX_PAYLOAD
+            conn,
+            worker_id="worker-a#1",
+            lease_duration_ms=5_000,
+            global_concurrency_cap=50,
+            max_payload_bytes=MAX_PAYLOAD,
         )
         assert claimed is not None
-        run_id_out, agent_type, input_payload, epoch = claimed
+        run_id_out, agent_type, input_payload, epoch = (
+            claimed.run_id,
+            claimed.agent_type,
+            claimed.input,
+            claimed.epoch,
+        )
 
         # Hand-craft that step 0 already completed, exactly as a prior
         # (dead) worker would have left it.

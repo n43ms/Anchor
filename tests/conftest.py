@@ -107,6 +107,7 @@ async def _truncate_between_tests() -> AsyncIterator[None]:
             await conn.execute(f"TRUNCATE {', '.join(to_truncate)} RESTART IDENTITY CASCADE")
             if "runtime_config" in to_truncate:
                 import json
+
                 from anchor.core.config.profiles import ConfigProfile, profile_settings
 
                 profile_name = os.environ.get("ANCHOR_CONFIG_PROFILE", "demo")

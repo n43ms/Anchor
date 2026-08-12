@@ -1,128 +1,96 @@
-"""The worker's claim-execute loop (plan.md P1.4, extended by P2.4/P2.5).
+"""The worker's claim-execute loop (plan.md P1.4, extended by P2.4/P2.5/P3.4).
 
-**Claiming, still interim.** `claim_one` now picks up two kinds of row in
-one `SELECT ... FOR UPDATE SKIP LOCKED`: a `pending` run, or a `running` run
-whose lease has expired — the second branch is what phase 2's hard gate
-needs (a killed worker's run must become claimable by someone else) and it
-is genuinely a claim decision made atomically in one transaction (I4), so it
-is not a correctness gap. What it is *not yet* is phase 3's `core/leases/claim.py`:
-there is no global-concurrency-cap count in this statement, and contention
-between many simultaneously-claiming workers is handled by lock-wait order
-rather than by the single all-branches CTE Principle II describes. That
-statement, with `SKIP LOCKED` doing real work under contention, is P3.1
-(T157-T162); this one is scoped to "one worker's poll loop can recover a
-run whose owner died," which is all phase 2 requires.
+**Claiming, now real.** Claiming is delegated to `core.leases.claim.claim_one`
+(P3.1), the single `SKIP LOCKED` CTE that handles both a `pending` run and a
+`running` run whose lease has expired, guarded by the global concurrency cap,
+all in one transaction (`I4`). This module no longer contains its own claim
+SQL — that was the phase-1/2 interim statement, replaced here.
 
-**Replay, now real.** Every claim — including the first — folds the run's
-complete log through `core.replay.reconstruct` before any step executes,
-and resumes at `last_completed_step_index + 1`, never at 0. A step already
-carrying `STEP_COMPLETED` is therefore never re-presented to
-`decide_next_step` at all: the loop starts *at* the correct index rather
-than iterating past completed ones (P2.5 — this is what makes T110's
-not-re-executed property hold without a `STEP_SKIPPED_ON_REPLAY` event
-needing to exist yet; that event belongs to phase 5's per-tool dedup on a
-*partially* completed step, not to whole-step skip).
+**Ownership, now time-bounded and independently renewed.** Each claimed run
+gets its own `asyncio.TaskGroup` (P3.4) holding two tasks: the execution
+task (this module's `execute_run`) and the renewer (`worker.renewer`,
+P3.3), on its own timer, entirely independent of step progress. Structured
+concurrency is what makes the fencing path real code rather than an
+argument: if the renewer's lease extension is rejected (another worker has
+already reclaimed), it raises `LeaseFencedError`, and the `TaskGroup`
+cancels the sibling execution task — including mid-step if necessary, since
+a fenced worker must stop immediately rather than at the next convenient
+boundary (`I3`; this is deliberately not the *cooperative*, between-steps
+cancellation the constitution's Concurrency Rules describe for a
+user-requested run cancellation, which is a different mechanism landing in
+phase 6). The fenced worker retries nothing and returns to the idle pool.
 
-Crash behaviour: a crash before the claim transaction commits leaves the
-run exactly as it was — `pending`, or `running` under its previous owner
-until that lease also expires. A crash mid-run (after claim, before
-`RUN_COMPLETED`) leaves the run `running` with an expiring lease, which the
-next poll cycle — on this worker or another — reclaims once it expires.
-A crash between a tool's execution and its `TOOL_RESULT` is still lost
-without dedup until phase 5 (P2.5's stated interim limitation).
+**The execute path can also be the fencing detector, and now must say so
+correctly.** Once epoch advances (this phase), an `append` call made with a
+now-stale `epoch` — because *this* worker was fenced without its renewer
+noticing first — is rejected by the phase-0 trigger. Fixed here: the
+execute path's connection now goes through
+`anchor.core.db.pool.acquire`'s translation instead of raw `pool.acquire()`,
+so that rejection surfaces as `LeaseFencedError`, the same typed exception
+the renewer raises, rather than a raw, untranslated `asyncpg.PostgresError`
+that `run_claimed`'s `except* LeaseFencedError` would not recognize.
+Previously nothing in the worker used this translation at all — a gap with
+no observable consequence while every write happened at a fresh epoch, but
+a real one now that a stale write is possible.
+
+**Replay, unchanged from phase 2.** Every claim — including the first —
+folds the run's complete log through `core.replay.reconstruct` before any
+step executes, and resumes at `last_completed_step_index + 1`, never at 0.
+
+Crash behaviour, restated for this phase's additions: a crash before the
+claim transaction commits leaves the run exactly as it was. A crash inside
+the renewer task (the connection drops, the process dies) simply stops
+renewals — the lease lapses on schedule and the next poll cycle, on this
+worker or another, reclaims it once it expires; there is no separate
+liveness signal to fall out of sync with the lease itself (`Principle
+VII`). A crash between a tool's execution and its `TOOL_RESULT` is still
+lost without dedup until phase 5 (P2.5's stated interim limitation,
+unchanged).
 """
 
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
+import random
 import time
 from typing import Any
 
 import asyncpg
 
 from anchor.core.config.settings import RuntimeSettings
+from anchor.core.db.errors import LeaseFencedError
+from anchor.core.db.pool import acquire as acquire_translated
 from anchor.core.determinism.actions import Done, ModelCall, ToolCall, require_action
 from anchor.core.determinism.context import StepContext
 from anchor.core.events.append import append
 from anchor.core.events.types import EventType
+from anchor.core.leases.claim import ClaimedRun, claim_one
 from anchor.core.replay.load import load_run_events
 from anchor.core.replay.reconstruct import reconstruct
 from anchor.runtime.agents.registry import resolve
 from anchor.runtime.tools.demo import DEMO_TOOLS
 from anchor.runtime.tools.model import StubAdapter
+from anchor.worker.renewer import final_renewal, renew_forever
 
 logger = logging.getLogger(__name__)
 
-POLL_INTERVAL_S = 1.0
 
-# Picks up a `pending` run, or a `running` run whose lease has already
-# expired — both branches in one statement so there is no window between
-# "check eligibility" and "claim" in which two workers could observe the
-# same row as available (I4). `SKIP LOCKED` means a worker mid-transaction
-# on a row is invisible to this query rather than a blocking target.
-_CLAIM_SQL = """
-    SELECT id, agent_type, input, epoch, status, owner_worker_id
-    FROM runs
-    WHERE status = 'pending'
-       OR (status = 'running' AND lease_expires_at < now())
-    ORDER BY priority ASC, created_at ASC
-    LIMIT 1
-    FOR UPDATE SKIP LOCKED
-"""
-
-
-async def claim_one(
-    conn: asyncpg.Connection[Any], *, worker_id: str, lease_duration_ms: int, max_payload_bytes: int
-) -> tuple[int, str, dict[str, Any], int] | None:
-    """Claim one eligible run — new or reclaimed — and append `RUN_CLAIMED`
-    in the same transaction as the ownership change (I4). Returns
-    `(run_id, agent_type, input, epoch)`, or `None` if nothing is eligible.
+class RunCounter:
+    """A mutable holder for this worker's own in-process running-run count
+    (T174, data-model.md §5). `workers.current_run_count` is telemetry, not
+    an authority — admission control (phase 6) reads a worker's own
+    in-process count before claiming, never this column, since using the
+    column to decide would be a second source of truth for something the
+    worker already knows. `heartbeat_loop` reads `.value` on its own timer
+    to publish that telemetry; `poll_and_execute_forever` is the only thing
+    that ever mutates it.
     """
-    async with conn.transaction():
-        row = await conn.fetchrow(_CLAIM_SQL)
-        if row is None:
-            return None
 
-        run_id = row["id"]
-        new_epoch = row["epoch"] + 1
-        reason = "reclaimed_after_lease_expiry" if row["status"] == "running" else "initial"
-        previous_worker_id = row["owner_worker_id"]
+    __slots__ = ("value",)
 
-        updated = await conn.fetchrow(
-            """
-            UPDATE runs
-            SET status = 'running',
-                epoch = $2,
-                owner_worker_id = $3,
-                lease_expires_at = now() + ($4 || ' milliseconds')::interval,
-                claimed_at = now()
-            WHERE id = $1
-            RETURNING lease_expires_at
-            """,
-            run_id,
-            new_epoch,
-            worker_id,
-            str(lease_duration_ms),
-        )
-        assert updated is not None
-        await append(
-            conn,
-            run_id=run_id,
-            type=EventType.RUN_CLAIMED,
-            payload={
-                "worker_id": worker_id,
-                "epoch": new_epoch,
-                "reason": reason,
-                "lease_expires_at": updated["lease_expires_at"].isoformat(),
-                "previous_worker_id": previous_worker_id,
-            },
-            epoch=new_epoch,
-            worker_id=worker_id,
-            max_payload_bytes=max_payload_bytes,
-        )
-        return run_id, row["agent_type"], json.loads(row["input"]), new_epoch
+    def __init__(self) -> None:
+        self.value = 0
 
 
 async def execute_run(
@@ -249,9 +217,33 @@ async def execute_run(
                     step_index=step_index,
                     max_payload_bytes=settings.max_event_payload_bytes,
                 )
+
+        # Per-worker step throughput (T178, plan.md P3.7): with no console
+        # yet, this is how three workers genuinely competing for real work
+        # is observed — each worker's own step rate, in its own log lines,
+        # tagged with run_id and epoch so a fencing incident and a merely
+        # slow step are distinguishable after the fact (D-40).
+        logger.info(
+            "step completed",
+            extra={
+                "run_id": run_id,
+                "epoch": epoch,
+                "worker_id": worker_id,
+                "step_index": step_index,
+                "step_duration_ms": step_duration_ms,
+                "steps_per_second": (1000 / step_duration_ms) if step_duration_ms > 0 else None,
+            },
+        )
         step_index += 1
 
     total_duration_ms = (time.monotonic() - total_start) * 1000
+
+    # One forced renewal, emitted unconditionally as final_before_terminal
+    # (D-48), immediately before the terminal append — the renewer's own
+    # timer cannot know in advance which tick will be the last one, so the
+    # execution path makes this one explicit call instead.
+    await final_renewal(conn, run_id=run_id, epoch=epoch, worker_id=worker_id, settings=settings)
+
     async with conn.transaction():
         await append(
             conn,
@@ -280,36 +272,113 @@ async def execute_run(
         )
 
 
-async def poll_and_execute_forever(
-    pool: asyncpg.Pool, *, worker_id: str, settings: RuntimeSettings
+async def run_claimed(
+    pool: asyncpg.Pool, claimed: ClaimedRun, *, worker_id: str, settings: RuntimeSettings
 ) -> None:
-    """Poll for one claimable run at a time and run it to completion.
+    """Execute one claimed run under a per-run `TaskGroup` holding the
+    execution task and the independent renewer (P3.4).
 
-    Deliberately sequential in phase 1/2 — one worker, one run at a time —
-    since the concurrency structure (per-run `TaskGroup`, background
-    renewal, many runs in flight) is phase 3's job (P3.4).
+    Crash behaviour at the two await points this function adds: if the
+    renewer's connection is lost or its renewal is rejected, the
+    `TaskGroup` cancels the execution task — real cancellation, not a
+    checked flag, so it reaches even a step in the middle of an `await`.
+    If the execution task finishes normally, it cancels the renewer itself
+    (there is no other signal the renewer could use to learn the run is
+    done without inspecting run status, which would be a second path to
+    the same decision it should not have).
     """
+    try:
+        async with asyncio.TaskGroup() as tg:
+            renew_task = tg.create_task(
+                renew_forever(
+                    pool,
+                    run_id=claimed.run_id,
+                    epoch=claimed.epoch,
+                    worker_id=worker_id,
+                    settings=settings,
+                ),
+                name=f"renew-run-{claimed.run_id}",
+            )
+
+            async def _execute_and_stop_renewer() -> None:
+                async with acquire_translated(pool) as conn:
+                    await execute_run(
+                        conn,
+                        run_id=claimed.run_id,
+                        agent_type=claimed.agent_type,
+                        input=claimed.input,
+                        epoch=claimed.epoch,
+                        worker_id=worker_id,
+                        settings=settings,
+                    )
+                renew_task.cancel()
+
+            tg.create_task(_execute_and_stop_renewer(), name=f"execute-run-{claimed.run_id}")
+    except* LeaseFencedError:
+        # I3: a fenced worker discards in-memory state, writes nothing
+        # further, retries nothing, and returns to the idle pool. Logging
+        # here is the only action taken — there is deliberately no event
+        # appended to the run's own log (FR-019).
+        logger.warning(
+            "run fenced during renewal; discarding and returning to idle pool",
+            extra={"run_id": claimed.run_id, "epoch": claimed.epoch, "worker_id": worker_id},
+        )
+
+
+def _jittered_seconds(base_ms: int, jitter_pct: float) -> float:
+    """`base_ms` scaled by +/- `jitter_pct`, so many idle workers polling at
+    the same nominal interval do not synchronize into a convoy (FR-014).
+    Reuses the retry backoff's configured jitter fraction rather than
+    introducing a second, unconfigured jitter constant — both exist to
+    solve the same "many callers, one nominal interval" problem.
+    """
+    spread = base_ms * jitter_pct
+    return max(0.0, (base_ms + random.uniform(-spread, spread)) / 1000)
+
+
+async def poll_and_execute_forever(
+    pool: asyncpg.Pool,
+    *,
+    worker_id: str,
+    settings: RuntimeSettings,
+    run_counter: RunCounter | None = None,
+) -> None:
+    """Poll for one claimable run at a time and run it to completion under
+    its own `TaskGroup`. Sequential across runs — this worker looks for its
+    next run only after the previous one reaches a terminal state or is
+    fenced away from it; per-worker concurrency (running several runs at
+    once inside one process) is admission control's job in phase 6, not
+    this loop's.
+
+    `run_counter`, when provided, is incremented for the duration of
+    `run_claimed` and decremented afterward unconditionally (even on
+    fencing) — this worker's own count of runs it currently holds, which
+    `worker.registry.heartbeat` publishes as telemetry (T174).
+    """
+    if run_counter is None:
+        run_counter = RunCounter()
+
     while True:
         async with pool.acquire() as conn:
             claimed = await claim_one(
                 conn,
                 worker_id=worker_id,
                 lease_duration_ms=settings.lease_duration_ms,
+                global_concurrency_cap=settings.global_concurrency_cap,
                 max_payload_bytes=settings.max_event_payload_bytes,
             )
         if claimed is None:
-            await asyncio.sleep(POLL_INTERVAL_S)
+            await asyncio.sleep(
+                _jittered_seconds(settings.reclaim_poll_interval_ms, settings.backoff_jitter_pct)
+            )
             continue
 
-        run_id, agent_type, input_payload, epoch = claimed
-        logger.info("run claimed", extra={"run_id": run_id, "worker_id": worker_id, "epoch": epoch})
-        async with pool.acquire() as conn:
-            await execute_run(
-                conn,
-                run_id=run_id,
-                agent_type=agent_type,
-                input=input_payload,
-                epoch=epoch,
-                worker_id=worker_id,
-                settings=settings,
-            )
+        logger.info(
+            "run claimed",
+            extra={"run_id": claimed.run_id, "worker_id": worker_id, "epoch": claimed.epoch},
+        )
+        run_counter.value += 1
+        try:
+            await run_claimed(pool, claimed, worker_id=worker_id, settings=settings)
+        finally:
+            run_counter.value -= 1

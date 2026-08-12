@@ -122,7 +122,9 @@ To enforce **Invariant I7** (Fail closed), Anchor validates event schemas in Pyt
    encoded = json.dumps(validated_payload)
    measured_bytes = len(encoded.encode("utf-8"))
    if measured_bytes > max_payload_bytes:
-       raise PayloadTooLargeError(event_type=event_type.value, measured_bytes=measured_bytes, ceiling_bytes=max_payload_bytes)
+       raise PayloadTooLargeError(
+           event_type=event_type.value, measured_bytes=measured_bytes, ceiling_bytes=max_payload_bytes
+       )
    ```
 
 #### Inline Test Verifications:
@@ -144,8 +146,13 @@ async def test_oversized_payload_raises_payload_too_large_error(db_pool: asyncpg
         huge_payload = {"step_index": 0, "action_kind": "tool", "extra": "x" * 200_000}
         with pytest.raises(PayloadTooLargeError) as exc_info:
             await append(
-                conn, run_id=1, type="STEP_STARTED", payload=huge_payload,
-                epoch=1, worker_id="worker-a#1", max_payload_bytes=100_000,
+                conn,
+                run_id=1,
+                type="STEP_STARTED",
+                payload=huge_payload,
+                epoch=1,
+                worker_id="worker-a#1",
+                max_payload_bytes=100_000,
             )
         assert exc_info.value.measured_bytes > 100_000
 ```
@@ -184,7 +191,15 @@ async def test_seq_starts_at_1_and_increases_by_1(db_pool: asyncpg.Pool) -> None
         run_id = await _create_test_run(conn)
         seqs = []
         for i in range(5):
-            seq, _ = await append(conn, run_id=run_id, type="STEP_STARTED", payload={"step_index": i, "action_kind": "tool"}, epoch=1, worker_id="w1", max_payload_bytes=10000)
+            seq, _ = await append(
+                conn,
+                run_id=run_id,
+                type="STEP_STARTED",
+                payload={"step_index": i, "action_kind": "tool"},
+                epoch=1,
+                worker_id="w1",
+                max_payload_bytes=10000,
+            )
             seqs.append(seq)
         assert seqs == [1, 2, 3, 4, 5]  # Strictly contiguous, zero gaps
 ```
@@ -198,11 +213,19 @@ async def test_rollback_leaves_last_seq_unchanged(db_pool: asyncpg.Pool) -> None
         run_id = await _create_test_run(conn)
         try:
             async with conn.transaction():
-                await append(conn, run_id=run_id, type="STEP_STARTED", payload={"step_index": 0, "action_kind": "tool"}, epoch=1, worker_id="w1", max_payload_bytes=10000)
+                await append(
+                    conn,
+                    run_id=run_id,
+                    type="STEP_STARTED",
+                    payload={"step_index": 0, "action_kind": "tool"},
+                    epoch=1,
+                    worker_id="w1",
+                    max_payload_bytes=10000,
+                )
                 raise RuntimeError("Abort transaction")
         except RuntimeError:
             pass
-        
+
         # Verify last_seq remains 0 and no orphaned event exists
         last_seq = await conn.fetchval("SELECT last_seq FROM runs WHERE id = $1", run_id)
         assert last_seq == 0
@@ -216,10 +239,16 @@ async def test_duplicate_seq_rejected_by_primary_key(db_pool: asyncpg.Pool) -> N
     async with db_pool.acquire() as conn:
         run_id = await _create_test_run(conn)
         # Manually insert row with seq = 1
-        await conn.execute("INSERT INTO run_events (run_id, seq, type, payload, epoch, worker_id) VALUES ($1, 1, 'STEP_STARTED', '{}', 1, 'w1')", run_id)
+        await conn.execute(
+            "INSERT INTO run_events (run_id, seq, type, payload, epoch, worker_id) VALUES ($1, 1, 'STEP_STARTED', '{}', 1, 'w1')",
+            run_id,
+        )
         # Attempting to insert another row with seq = 1 must fail at the database primary key level
         with pytest.raises(asyncpg.UniqueViolationError):
-            await conn.execute("INSERT INTO run_events (run_id, seq, type, payload, epoch, worker_id) VALUES ($1, 1, 'STEP_STARTED', '{}', 1, 'w1')", run_id)
+            await conn.execute(
+                "INSERT INTO run_events (run_id, seq, type, payload, epoch, worker_id) VALUES ($1, 1, 'STEP_STARTED', '{}', 1, 'w1')",
+                run_id,
+            )
 ```
 * **What This Validates**: Verifies **Invariant I2** at the database layer. `PRIMARY KEY (run_id, seq)` prevents duplicate sequence numbers or silent overwrites.
 
@@ -267,13 +296,27 @@ async def claim_one(conn, *, worker_id, lease_duration_ms, max_payload_bytes):
             return None
         run_id = row["id"]
         new_epoch = row["epoch"] + 1  # Increment fencing token
-        await conn.execute("""
+        await conn.execute(
+            """
             UPDATE runs SET status = 'running', epoch = $2, owner_worker_id = $3,
             lease_expires_at = now() + ($4 || ' milliseconds')::interval, claimed_at = now()
             WHERE id = $1
-        """, run_id, new_epoch, worker_id, lease_duration_ms)
-        
-        await append(conn, run_id=run_id, type=EventType.RUN_CLAIMED, payload={"worker_id": worker_id, "epoch": new_epoch, "reason": "initial"}, epoch=new_epoch, worker_id=worker_id, max_payload_bytes=max_payload_bytes)
+        """,
+            run_id,
+            new_epoch,
+            worker_id,
+            lease_duration_ms,
+        )
+
+        await append(
+            conn,
+            run_id=run_id,
+            type=EventType.RUN_CLAIMED,
+            payload={"worker_id": worker_id, "epoch": new_epoch, "reason": "initial"},
+            epoch=new_epoch,
+            worker_id=worker_id,
+            max_payload_bytes=max_payload_bytes,
+        )
         return run_id, row["agent_type"], json.loads(row["input"]), new_epoch
 ```
 
@@ -284,11 +327,15 @@ async def claim_one(conn, *, worker_id, lease_duration_ms, max_payload_bytes):
 @pytest.mark.asyncio
 async def test_claim_increments_epoch_and_attributes_worker(db_pool: asyncpg.Pool) -> None:
     # After submitting run, claim_one is invoked with worker-a#1
-    claimed = await claim_one(conn, worker_id="worker-a#1", lease_duration_ms=30000, max_payload_bytes=100000)
+    claimed = await claim_one(
+        conn, worker_id="worker-a#1", lease_duration_ms=30000, max_payload_bytes=100000
+    )
     run_id, _, _, epoch = claimed
 
     # Verify RUN_CLAIMED event in DB carries worker-a#1 and epoch = initial_epoch + 1
-    event = await conn.fetchrow("SELECT type, worker_id, epoch FROM run_events WHERE run_id = $1 AND seq = 2", run_id)
+    event = await conn.fetchrow(
+        "SELECT type, worker_id, epoch FROM run_events WHERE run_id = $1 AND seq = 2", run_id
+    )
     assert event["type"] == "RUN_CLAIMED"
     assert event["worker_id"] == "worker-a#1"
     assert event["epoch"] == epoch
@@ -323,7 +370,15 @@ Before executing the action, the worker loop appends `EventType.STEP_STARTED`.
 @pytest.mark.asyncio
 async def test_step_loop_appends_step_started_and_completed(db_pool: asyncpg.Pool) -> None:
     # Execute full run with demo_minimal (3 steps)
-    await execute_run(conn, run_id=run_id, agent_type="demo_minimal", input={"query": "q", "recipient": "r"}, epoch=epoch, worker_id="worker-a#1", settings=settings)
+    await execute_run(
+        conn,
+        run_id=run_id,
+        agent_type="demo_minimal",
+        input={"query": "q", "recipient": "r"},
+        epoch=epoch,
+        worker_id="worker-a#1",
+        settings=settings,
+    )
 
     rows = await conn.fetch("SELECT type FROM run_events WHERE run_id = $1 ORDER BY seq", run_id)
     types = [r["type"] for r in rows]
@@ -386,9 +441,26 @@ async def call_model(self, messages: list[dict[str, Any]], model: str | None = N
     start = time.monotonic()
     response = await self.model_adapter.complete(messages, model)
     latency_ms = (time.monotonic() - start) * 1000
-    prompt_hash = hashlib.sha256(json.dumps(messages, sort_keys=True, separators=(",", ":")).encode("utf-8")).hexdigest()
+    prompt_hash = hashlib.sha256(
+        json.dumps(messages, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
 
-    await append(self.conn, run_id=self.run_id, type=EventType.LLM_CALLED, payload={"step_index": self.step_index, "prompt_hash": prompt_hash, "response": response.text, "model": model or response.model, "latency_ms": latency_ms, "stubbed": response.stubbed}, epoch=self.epoch, worker_id=self.worker_id, max_payload_bytes=self.max_payload_bytes)
+    await append(
+        self.conn,
+        run_id=self.run_id,
+        type=EventType.LLM_CALLED,
+        payload={
+            "step_index": self.step_index,
+            "prompt_hash": prompt_hash,
+            "response": response.text,
+            "model": model or response.model,
+            "latency_ms": latency_ms,
+            "stubbed": response.stubbed,
+        },
+        epoch=self.epoch,
+        worker_id=self.worker_id,
+        max_payload_bytes=self.max_payload_bytes,
+    )
     return response
 ```
 
