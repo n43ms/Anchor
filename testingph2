@@ -1,0 +1,440 @@
+Phase 1 vs Phase 2 — Architecture Changes
+Diagram: Architecture evolution
+
+Now let me create the diagram showing Phase 1 vs Phase 2:
+
+What changed: Phase 1 → Phase 2
+1. Replay mechanism (new component)
+
+Phase 1: When a worker claimed a run, it created a fresh, empty StepContext. If the worker crashed, nobody knew what had happened — the run was stuck forever because Phase 1 had no way to reclaim it.
+
+Phase 2: Before executing a run, the worker calls reconstruct(run_id), which:
+
+Reads the entire event log for that run
+Walks through every event in order
+Rebuilds the exact StepContext that existed before any crash
+
+Why: If a worker crashes mid-step, another worker can pick up the run later and continue from exactly where the first one left off — because the full history is captured in the log.
+
+2. RunContext (new class inside StepContext)
+
+Phase 1: StepContext had no cached knowledge of what had been done. When your agent called ctx.has_result("send_email"), it had to query the database each time.
+
+Phase 2: RunContext is built once during replay and cached inside StepContext. It holds:
+
+tool_results — a dict of all completed tool calls and their results
+model_calls_by_step — a dict of model calls that already happened at each step
+nondet_by_step_kind — a dict of journaled non-deterministic values (timestamps, random numbers, IDs)
+
+Why: Instead of re-querying the log on every has_result() call, you ask the reconstructed RunContext, which is instant. On resume, if a crash happened mid-step, RunContext tells you exactly what was recorded before the crash.
+
+3. NondetBuffer (new component, in context.py)
+
+Phase 1: Calls to ctx.now(), ctx.random(), and ctx.new_id() didn't exist — or if they did, they just generated fresh values every time.
+
+Phase 2: These methods now:
+
+Buffer the generated values instead of writing them immediately
+On replay, return the same values that were recorded before, not new ones
+Flush all buffered values atomically as one NONDET_RECORDED event
+
+Why: If your agent does start_time = ctx.now() and then crashes mid-step, the next attempt needs to see the same start_time, not a new one. Otherwise your agent would compute the elapsed time differently on retry, breaking determinism.
+
+Example:
+
+python
+# First attempt
+start = ctx.now()  # buffers 2026-08-09T14:02:00Z
+# crash
+
+# Second attempt (replay)
+start = ctx.now()  # returns 2026-08-09T14:02:00Z (same value)
+4. Crash recovery via lease expiry (new reclaim logic)
+
+Phase 1 (claim query):
+
+sql
+SELECT id FROM runs WHERE status = 'pending'
+
+Only grabbed pending runs. If a run was running and its owner crashed, it was stuck forever.
+
+Phase 2 (claim query):
+
+sql
+SELECT id FROM runs
+WHERE status = 'pending'
+   OR (status = 'running' AND lease_expires_at < now())
+
+Also grabs runs whose lease expired — meaning the owner probably crashed and won't renew.
+
+Why: After a worker crashes and the lease expires (e.g., 4 seconds), another worker can claim the abandoned run and resume it using the reconstructed context from replay.
+
+The complete Phase 2 architecture flow
+1. Client submits run via API
+   ↓ (creates row in database, RUN_SUBMITTED event)
+   
+2. Worker polls claim_one()
+   ↓ (queries: pending OR lease_expired)
+   
+3. If found, claim_one():
+   a. Increments epoch (fencing prep for Phase 4)
+   b. Marks run as 'running', sets owner and new lease
+   c. Appends RUN_CLAIMED event
+   ↓
+   
+4. Worker calls reconstruct(conn, run_id)
+   a. Reads ALL events from run_events table
+   b. Builds RunContext with all prior tool_results, model_calls
+   b. Returns a fully reconstructed StepContext
+   ↓ (if run is fresh, no events yet → return empty)
+   
+5. execute_run() uses the reconstructed ctx:
+   while True:
+     action = decide_next_step(ctx)  ← ctx has all prior results
+     
+     if Done: break
+     
+     if ToolCall:
+       ctx.call_tool():
+         1. flush_pending_nondet()  ← write buffered now()/random()/new_id()
+         2. append TOOL_INTENT (atomic with nondet flush)
+         3. execute real tool
+         4. append TOOL_RESULT
+     
+     if ModelCall:
+       ctx.call_model():
+         1. check run_context.model_calls_by_step for this step
+         2. if found, return cached response (no API call)
+         3. if not found, call LLM, append LLM_CALLED
+Why each change matters
+Change	Solves	Example
+Replay	Rebuilt context after crash	Worker A crashes at step 5 → Worker B resumes from step 5 exactly where A left off
+RunContext	Fast lookups for "have I done this?"	ctx.has_result("send_email") is O(1) instead of querying the log
+NondetBuffer	Deterministic values across retries	ctx.now() returns the same timestamp on replay, not a new one
+Lease reclaim	Picking up abandoned runs	Worker crashes → lease expires after 4s → next worker can claim and resume
+One-sentence summary of Phase 2
+
+Phase 2 adds replay (reconstructing full context from the log), RunContext (caching all prior results), non-determinism buffering (journaling now()/random()/new_id() per-step), and lease reclamation (allowing new workers to pick up runs whose owner's lease expired), so a crashed worker's run can resume deterministically from exactly where it left off.
+
+perfect, how can i test this whole workflow  using docker on my other machine and also using the test suites - and I want to submit a run watch it kill the run and watch another worker pick it back up with reconstructred context - how do i do that
+
+Testing Phase 2 end-to-end: crash recovery workflow
+What you're testing
+1. Submit a run
+2. Let a worker claim it and get partway through (step 2)
+3. Kill that worker mid-step
+4. Watch the lease expire (4 seconds)
+5. Another worker claims it
+6. Verify the reconstructed context is correct
+7. Run completes without duplicating work
+Setup: bring the stack up on your second machine
+powershell
+cd ops/compose
+docker compose up -d
+docker compose ps
+
+Confirm all services healthy (postgres, redis, api, worker×3).
+
+Step 1: Run the automated test suite first (fast verification)
+powershell
+docker compose exec api pytest tests/unit/test_reconstruct.py -v
+docker compose exec api pytest tests/failure/test_worker_death_and_resume.py -v
+docker compose exec api pytest tests/contract/test_determinism_holds.py -v
+
+These are Phase 2's core tests (T105–T142). They verify:
+
+Replay rebuilds context correctly (T109–T115)
+Truncated logs replay correctly (T116–T120)
+Crash + resume works (T131–T135)
+Determinism holds (T136–T142)
+
+If these pass, you've proven Phase 2 works. If you want to stop here, you're done — the automated tests are bulletproof.
+
+Step 2: Manual holistic test (the "watch it happen" version)
+
+This is the narrative test — you'll see it unfold in real time.
+
+2.1 — Submit a run via Swagger UI
+
+Open browser:
+
+http://localhost:8000/docs
+
+POST /api/runs:
+
+json
+{
+  "agent_type": "professor_outreach",
+  "input": {
+    "interests": "quantum computing",
+    "school": "MIT"
+  },
+  "client_request_key": "phase2-test-001"
+}
+
+Note the run id — let's say it's 47.
+
+Expected response:
+
+json
+{
+  "id": 47,
+  "status": "pending",
+  ...
+}
+2.2 — Watch the worker claim it
+
+In a new terminal, tail the worker logs:
+
+powershell
+docker compose logs -f worker
+
+You should see:
+
+run claimed: run_id=47, worker_id=worker-a#3, epoch=1
+2.3 — Kill the worker mid-execution
+
+The worker is now executing the run. You have 4 seconds (the lease duration) before you need to kill it. Let's trigger the kill via the API instead of pulling the container.
+
+In yet another terminal, check the run status:
+
+powershell
+curl http://localhost:8000/api/runs/47
+
+Expected:
+
+json
+{
+  "id": 47,
+  "status": "running",
+  "owner_worker_id": "worker-a#3",
+  "epoch": 1,
+  "lease_expires_at": "2026-08-09T14:02:04Z"
+}
+
+Kill the worker that owns it:
+
+powershell
+# Find the worker container id
+docker compose ps | grep worker
+
+# Kill a specific worker container (NOT all of them)
+docker kill <container_id_of_one_worker>
+
+Example:
+
+powershell
+docker kill anchor-worker-1
+
+This simulates a real crash — the worker process dies, mid-step, without cleaning up.
+
+2.4 — Wait for the lease to expire and watch another worker pick it up
+
+In the worker logs terminal, watch:
+
+powershell
+# You'll see the killed worker's logs stop
+# Wait ~5 seconds
+# Then a different worker's logs should show:
+
+run claimed: run_id=47, worker_id=worker-b#1, epoch=2  ← DIFFERENT worker, epoch incremented
+
+This means Worker B reclaimed the run because Worker A's lease expired.
+
+2.5 — Verify the reconstructed context is correct
+
+Check the event log:
+
+powershell
+curl http://localhost:8000/api/runs/47/events | jq .
+
+Expected log structure:
+
+json
+[
+  {"seq": 1, "type": "RUN_SUBMITTED", "payload": {...}},
+  {"seq": 2, "type": "RUN_CLAIMED", "payload": {"worker": "worker-a#3", "epoch": 1}},
+  {"seq": 3, "type": "STEP_STARTED", "payload": {"step_index": 0}},
+  {"seq": 4, "type": "TOOL_INTENT", "payload": {"tool": "search_professors", ...}},
+  {"seq": 5, "type": "TOOL_RESULT", "payload": {"tool": "search_professors", "result": [...]}}},
+  {"seq": 6, "type": "STEP_COMPLETED", "payload": {"step_index": 0}},
+  {"seq": 7, "type": "RUN_CLAIMED", "payload": {"worker": "worker-b#1", "epoch": 2}},
+  // ← After this point, Worker B resumes. The previous TOOL_INTENT is NOT repeated
+  {"seq": 8, "type": "STEP_STARTED", "payload": {"step_index": 1}},
+  {"seq": 9, "type": "TOOL_INTENT", "payload": {"tool": "fetch_page", ...}},
+  // ... rest of execution
+  {"seq": N, "type": "RUN_COMPLETED", "payload": {...}}
+]
+
+Key observation: The event log shows exactly one TOOL_RESULT for each tool call — no duplicates. Worker B didn't re-run the search from step 0; it picked up at step 1. That's the reconstruction working.
+
+2.6 — Verify the run finishes successfully
+
+Poll the run status:
+
+powershell
+curl http://localhost:8000/api/runs/47
+
+Eventually (after 10–20 seconds):
+
+json
+{
+  "id": 47,
+  "status": "completed",
+  "owner_worker_id": null,
+  "epoch": 2,
+  "finished_at": "2026-08-09T14:02:35Z"
+}
+
+The run completed despite the crash. The second worker resumed and finished.
+
+2.7 — Verify RunContext caching in the database
+
+Connect to Postgres:
+
+powershell
+docker compose exec postgres psql -U anchor -d anchor
+
+Check the run:
+
+sql
+SELECT id, status, owner_worker_id, epoch FROM runs WHERE id = 47;
+
+Check the events:
+
+sql
+SELECT seq, type, payload FROM run_events WHERE run_id = 47 ORDER BY seq;
+
+You should see:
+
+Two RUN_CLAIMED events (one for each worker, with epochs 1 and 2)
+All tool intents and results for a complete execution
+One RUN_COMPLETED at the end
+No duplicate tool executions
+
+Exit psql:
+
+sql
+\q
+Step 3: Advanced test — verify nondet determinism
+
+Create a test agent that calls ctx.now() and ctx.random():
+
+python
+# runtime/agents/nondet_test.py
+from anchor.core.actions import ToolCall, ModelCall, Done
+
+async def decide_next_step(ctx):
+    if not ctx.has_result("timestamp_step"):
+        return ToolCall("timestamp_step", {"now": ctx.now()})
+    
+    ts = ctx.result_of("timestamp_step")
+    
+    if not ctx.has_result("random_step"):
+        return ToolCall("random_step", {"rand": ctx.random()})
+    
+    rand = ctx.result_of("random_step")
+    
+    return Done({"timestamp": str(ts), "random": rand})
+
+Register it:
+
+python
+# runtime/agent_registry.py
+agent_registry.register("nondet_test", agents.nondet_test.decide_next_step)
+
+Submit a run with this agent:
+
+powershell
+curl -X POST http://localhost:8000/api/runs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "agent_type": "nondet_test",
+    "input": {},
+    "client_request_key": "nondet-test-001"
+  }'
+
+Kill the worker at step 1, let the other pick it up:
+
+Then check the event log:
+
+powershell
+curl http://localhost:8000/api/runs/<id>/events | jq '.[] | select(.type == "NONDET_RECORDED")'
+
+You should see:
+
+json
+{
+  "seq": N,
+  "type": "NONDET_RECORDED",
+  "payload": {
+    "step_index": 0,
+    "entries": [
+      {"kind": "time", "ordinal": 0, "value": "2026-08-09T14:02:00.123Z"},
+      {"kind": "random", "ordinal": 0, "value": 0.456}
+    ]
+  }
+}
+
+On replay, ctx.now() and ctx.random() return these exact values, not new ones. Determinism proven.
+
+Step 4: Restart a killed worker and watch it rejoin the fleet
+powershell
+# The killed worker is gone. Restart it
+docker compose up -d worker
+
+# Check the workers table
+docker compose exec postgres psql -U anchor -d anchor -c "SELECT worker_id, last_seen_at, stopped_at FROM workers;"
+
+You should see three workers again, all with recent last_seen_at and NULL stopped_at.
+
+Complete test checklist
+ Submit run via Swagger (note run id)
+ Worker claims it (check logs)
+ Kill the worker (docker kill)
+ Wait 5 seconds
+ Different worker claims it (logs show new epoch)
+ Run completes (status changes to completed)
+ Event log has no duplicates (one TOOL_RESULT per tool call)
+ Database shows run finished with owner_worker_id = NULL
+ Nondet values are journaled (NONDET_RECORDED event)
+ Restart killed worker (docker compose up -d worker)
+ Three workers in fleet again
+If something goes wrong
+
+Run stuck as running after worker killed:
+
+powershell
+docker compose logs worker
+
+Check for exceptions. Most likely: database connection issue or epoch mismatch.
+
+No second worker picks up the run after lease expires:
+
+powershell
+docker compose exec postgres psql -U anchor -d anchor -c "SELECT id, status, lease_expires_at, now() FROM runs;"
+
+If lease_expires_at < now() but still status = running, the reclaim query might not be working. Check loop.py claim_one() has the updated SQL.
+
+Duplicate executions in log:
+
+powershell
+curl http://localhost:8000/api/runs/<id>/events | jq '.[] | select(.type == "TOOL_RESULT") | .payload.tool_name' | sort | uniq -c
+
+If any tool appears twice with the same args, reconstruction failed. Check reconstruct() is being called before execution.
+
+The pytest command to run all Phase 2 tests together
+powershell
+docker compose exec api pytest \
+  tests/unit/test_reconstruct.py \
+  tests/unit/test_reconstruct_truncated.py \
+  tests/failure/test_worker_death_and_resume.py \
+  tests/contract/test_determinism_holds.py \
+  tests/contract/test_epoch_increment_on_reclaim.py \
+  -v
+
+This covers all Phase 2 requirements (T105–T142) in one run.
+
+One-sentence summary
+
+To test Phase 2: submit a run via Swagger, kill the worker mid-execution, wait for the lease to expire, watch another worker pick it up, verify the reconstructed context is correct by checking the event log for no duplicates, and confirm the run completes.
