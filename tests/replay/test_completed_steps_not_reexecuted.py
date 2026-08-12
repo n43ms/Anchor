@@ -61,6 +61,10 @@ async def test_resumed_step_is_not_re_presented_to_decide_next_step(db_pool: asy
             max_payload_bytes=MAX_PAYLOAD,
         )
 
+        await conn.execute(
+            "INSERT INTO workers (id, label, incarnation, hostname, pid, capacity, code_version) "
+            "VALUES ('worker-a#1', 'worker-a', 1, 'test', 1, 10, 'dev') ON CONFLICT DO NOTHING"
+        )
         claimed = await claim_one(
             conn, worker_id="worker-a#1", lease_duration_ms=5_000, max_payload_bytes=MAX_PAYLOAD
         )

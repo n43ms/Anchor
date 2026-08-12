@@ -53,6 +53,10 @@ async def test_one_nondet_recorded_event_atomic_with_tool_intent(db_pool: asyncp
             worker_id="api",
             max_payload_bytes=1_000_000,
         )
+        await conn.execute(
+            "INSERT INTO workers (id, label, incarnation, hostname, pid, capacity, code_version) "
+            "VALUES ('worker-a#1', 'worker-a', 1, 'test', 1, 10, 'dev') ON CONFLICT DO NOTHING"
+        )
         claimed = await claim_one(
             conn, worker_id="worker-a#1", lease_duration_ms=5_000, max_payload_bytes=1_000_000
         )

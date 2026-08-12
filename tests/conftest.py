@@ -105,6 +105,18 @@ async def _truncate_between_tests() -> AsyncIterator[None]:
         to_truncate = [t for t in _ALL_TABLES if t in names]
         if to_truncate:
             await conn.execute(f"TRUNCATE {', '.join(to_truncate)} RESTART IDENTITY CASCADE")
+            if "runtime_config" in to_truncate:
+                import json
+                from anchor.core.config.profiles import ConfigProfile, profile_settings
+
+                profile_name = os.environ.get("ANCHOR_CONFIG_PROFILE", "demo")
+                settings = profile_settings(ConfigProfile(profile_name))
+                for key, value in settings.model_dump(mode="json").items():
+                    await conn.execute(
+                        "INSERT INTO runtime_config (key, value, updated_by) VALUES ($1, CAST($2 AS jsonb), 'seed') ON CONFLICT DO NOTHING",
+                        key,
+                        json.dumps(value),
+                    )
     finally:
         await conn.close()
     yield

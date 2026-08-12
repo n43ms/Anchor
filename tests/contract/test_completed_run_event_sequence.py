@@ -24,6 +24,10 @@ async def test_full_event_sequence_for_a_completed_run(db_pool: asyncpg.Pool) ->
     )
 
     async with db_pool.acquire() as conn:
+        await conn.execute(
+            "INSERT INTO workers (id, label, incarnation, hostname, pid, capacity, code_version) "
+            "VALUES ('worker-a#1', 'worker-a', 1, 'test', 1, 10, 'dev') ON CONFLICT DO NOTHING"
+        )
         settings = await load_runtime_settings(conn)
         claimed = await claim_one(
             conn,
@@ -53,8 +57,9 @@ async def test_full_event_sequence_for_a_completed_run(db_pool: asyncpg.Pool) ->
     assert types[0] == "RUN_SUBMITTED"
     assert rows[0]["worker_id"] == "api"
     assert types[1] == "RUN_CLAIMED"
+    assert types[2] == "REPLAY_COMPLETED"
 
-    per_step = types[2:-1]
+    per_step = types[3:-1]
     expected_step_pattern = ["STEP_STARTED", "TOOL_INTENT", "TOOL_RESULT", "STEP_COMPLETED"] * 3
     assert per_step == expected_step_pattern
 
