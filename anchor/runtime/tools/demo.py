@@ -25,7 +25,8 @@ class DemoTool:
 
 
 async def _search(args: dict[str, Any]) -> Any:
-    await asyncio.sleep(_LATENCY_S)
+    delay = float(args.get("delay_s", _LATENCY_S))
+    await asyncio.sleep(delay)
     return {"results": [f"result-for-{args.get('query', '')}"]}
 
 
