@@ -66,11 +66,14 @@ async def test_full_event_sequence_for_a_completed_run(db_pool: asyncpg.Pool) ->
     assert types[1] == "RUN_CLAIMED"
     assert types[2] == "REPLAY_COMPLETED"
 
-    per_step = types[3:-1]
+    # In Phase 3, a final renewal is forced immediately before the terminal append
+    # (D-48), producing a LEASE_RENEWED event at the second-to-last position.
+    assert types[-2] == "LEASE_RENEWED"
+    assert types[-1] == "RUN_COMPLETED"
+
+    per_step = types[3:-2]
     expected_step_pattern = ["STEP_STARTED", "TOOL_INTENT", "TOOL_RESULT", "STEP_COMPLETED"] * 3
     assert per_step == expected_step_pattern
-
-    assert types[-1] == "RUN_COMPLETED"
 
     execution_worker_ids = {r["worker_id"] for r in rows[1:]}
     assert execution_worker_ids == {"worker-a#1"}
