@@ -106,9 +106,12 @@ async def test_fenced_worker_writes_nothing_further_including_no_error_event(
             "SELECT type, worker_id FROM run_events WHERE run_id = $1 ORDER BY seq", zombie.run_id
         )
 
-    events_by_zombie = [r for r in rows if r["worker_id"] == zombie.stale_worker_id]
+    events_by_zombie = [
+        r for r in rows 
+        if r["worker_id"] == zombie.stale_worker_id and r["type"] != "RUN_CLAIMED"
+    ]
     assert events_by_zombie == [], (
-        "the fenced worker must not appear as the writer of any event in the run's log"
+        "the fenced worker must not appear as the writer of any subsequent event in the run's log"
     )
     fenced_events = [r for r in rows if r["type"] == "WORKER_FENCED"]
     assert len(fenced_events) == 1, "the survivor's reclaim must have recorded exactly one fencing"

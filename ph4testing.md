@@ -6,33 +6,45 @@ docker compose exec postgres psql -U anchor -d anchor
 Then run this SQL:
 
 sql
--- Create a test run
-INSERT INTO runs (id, agent_type, input, status, epoch, owner_worker_id)
-VALUES (999, 'test', '{}', 'running', 1, 'worker-a#1');
+-- Create test workers first to satisfy foreign key constraints
+INSERT INTO workers (id, label, incarnation, hostname, pid, capacity, code_version)
+VALUES ('worker-a#1', 'worker-a', 1, 'host', 1234, 10, 'dev')
+ON CONFLICT DO NOTHING;
 
--- Write an event with epoch=1 (should succeed)
-INSERT INTO run_events (run_id, type, payload, epoch, worker_id)
-VALUES (999, 'TOOL_INTENT', '{}', 1, 'worker-a#1');
+INSERT INTO workers (id, label, incarnation, hostname, pid, capacity, code_version)
+VALUES ('worker-b#1', 'worker-b', 1, 'host', 1234, 10, 'dev')
+ON CONFLICT DO NOTHING;
+
+-- Create a test run (lease_expires_at must be NOT NULL for status='running')
+INSERT INTO runs (id, agent_type, input, status, epoch, owner_worker_id, lease_expires_at)
+OVERRIDING SYSTEM VALUE
+VALUES (999, 'test', '{}', 'running', 1, 'worker-a#1', now() + interval '1 hour');
+
+-- Write an event with epoch=1 (should succeed; seq column must be provided)
+INSERT INTO run_events (run_id, seq, type, payload, epoch, worker_id)
+VALUES (999, 1, 'TOOL_INTENT', '{}', 1, 'worker-a#1');
 
 -- Check: should have 1 row
 SELECT COUNT(*) FROM run_events WHERE run_id = 999;
 -- Expected: 1
 
--- Now simulate reclaim: increment epoch to 2
-UPDATE runs SET epoch = 2 WHERE id = 999;
+-- Now simulate reclaim: increment epoch to 2, update owner to worker-b#1
+UPDATE runs 
+SET epoch = 2, owner_worker_id = 'worker-b#1', lease_expires_at = now() + interval '1 hour'
+WHERE id = 999;
 
 -- Try to write with stale epoch=1 (should FAIL)
-INSERT INTO run_events (run_id, type, payload, epoch, worker_id)
-VALUES (999, 'TOOL_RESULT', '{}', 1, 'worker-a#1');
--- Expected: ERROR: lease fenced (AN001)
+INSERT INTO run_events (run_id, seq, type, payload, epoch, worker_id)
+VALUES (999, 2, 'TOOL_RESULT', '{}', 1, 'worker-a#1');
+-- Expected: ERROR: fenced write: run 999 epoch 1 is stale (current 2)
 
 -- Check: should still have 1 row (zombie write rejected)
 SELECT COUNT(*) FROM run_events WHERE run_id = 999;
 -- Expected: 1
 
 -- Try to write with correct epoch=2 (should succeed)
-INSERT INTO run_events (run_id, type, payload, epoch, worker_id)
-VALUES (999, 'TOOL_RESULT', '{}', 2, 'worker-b#1');
+INSERT INTO run_events (run_id, seq, type, payload, epoch, worker_id)
+VALUES (999, 2, 'TOOL_RESULT', '{}', 2, 'worker-b#1');
 
 -- Check: should have 2 rows now
 SELECT COUNT(*) FROM run_events WHERE run_id = 999;
@@ -41,6 +53,7 @@ SELECT COUNT(*) FROM run_events WHERE run_id = 999;
 -- Cleanup
 DELETE FROM run_events WHERE run_id = 999;
 DELETE FROM runs WHERE id = 999;
+DELETE FROM workers WHERE id IN ('worker-a#1', 'worker-b#1');
 
 If you see:
 
@@ -136,7 +149,7 @@ docker compose logs -f worker
 # Terminal 3: Submit a run
 curl -X POST http://localhost:8000/api/runs \
   -H "Content-Type: application/json" \
-  -d '{"agent_type": "professor_outreach", "input": {}, "client_request_key": "phase4-test"}'
+  -d '{"agent_type": "demo_minimal", "input": {}, "client_request_key": "phase4-test"}'
 
 # Note the run ID (let's say 60)
 
@@ -146,17 +159,36 @@ docker compose exec postgres psql -U anchor -d anchor
 The one-command verification
 powershell
 docker compose exec postgres psql -U anchor -d anchor -c "
-INSERT INTO runs (id, agent_type, input, status, epoch, owner_worker_id) 
-VALUES (999, 'test', '{}', 'running', 1, 'a');
+DELETE FROM run_events WHERE run_id = 999;
+DELETE FROM runs WHERE id = 999;
+DELETE FROM workers WHERE id IN ('worker-a#1', 'worker-b#1');
 
-INSERT INTO run_events (run_id, type, payload, epoch, worker_id) 
-VALUES (999, 'X', '{}', 1, 'a');
+INSERT INTO workers (id, label, incarnation, hostname, pid, capacity, code_version)
+VALUES ('worker-a#1', 'worker-a', 1, 'host', 1234, 10, 'dev')
+ON CONFLICT DO NOTHING;
 
-UPDATE runs SET epoch = 2 WHERE id = 999;
+INSERT INTO workers (id, label, incarnation, hostname, pid, capacity, code_version)
+VALUES ('worker-b#1', 'worker-b', 1, 'host', 1234, 10, 'dev')
+ON CONFLICT DO NOTHING;
 
-INSERT INTO run_events (run_id, type, payload, epoch, worker_id) 
-VALUES (999, 'Y', '{}', 1, 'a');
-" 2>&1 | grep -i "fenced"
+INSERT INTO runs (id, agent_type, input, status, epoch, owner_worker_id, lease_expires_at) 
+OVERRIDING SYSTEM VALUE
+VALUES (999, 'test', '{}', 'running', 1, 'worker-a#1', now() + interval '1 hour');
+
+INSERT INTO run_events (run_id, seq, type, payload, epoch, worker_id) 
+VALUES (999, 1, 'TOOL_INTENT', '{}', 1, 'worker-a#1');
+
+UPDATE runs 
+SET epoch = 2, owner_worker_id = 'worker-b#1', lease_expires_at = now() + interval '1 hour'
+WHERE id = 999;
+
+INSERT INTO run_events (run_id, seq, type, payload, epoch, worker_id) 
+VALUES (999, 2, 'TOOL_RESULT', '{}', 1, 'worker-a#1');
+
+DELETE FROM run_events WHERE run_id = 999;
+DELETE FROM runs WHERE id = 999;
+DELETE FROM workers WHERE id IN ('worker-a#1', 'worker-b#1');
+" 2>&1 | Select-String -Pattern "fenced"
 
 If you see lease fenced, Phase 4 works. ✓
 
