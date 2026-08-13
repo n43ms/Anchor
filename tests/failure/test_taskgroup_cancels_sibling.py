@@ -99,7 +99,15 @@ async def test_renewer_fencing_cancels_execution_task_mid_run(db_pool: asyncpg.P
         # protocol — this test only exercises what happens to *this*
         # worker's TaskGroup once its epoch goes stale mid-run, not the
         # claim statement itself.
-        await asyncio.sleep(0.12)
+        while True:
+            await asyncio.sleep(0.01)
+            async with db_pool.acquire() as check_conn:
+                count = await check_conn.fetchval(
+                    "SELECT COUNT(*) FROM run_events WHERE run_id = $1 AND type = 'STEP_COMPLETED'",
+                    run_id,
+                )
+                if count > 0:
+                    break
         async with db_pool.acquire() as bump_conn:
             await bump_conn.execute("UPDATE runs SET epoch = epoch + 1 WHERE id = $1", run_id)
 
