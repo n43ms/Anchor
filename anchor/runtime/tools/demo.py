@@ -39,8 +39,15 @@ async def _notify(args: dict[str, Any]) -> Any:
     return {"notified": args.get("recipient", "")}
 
 
+async def _slow_tool(args: dict[str, Any]) -> Any:
+    duration = args.get("duration", 5.0)
+    await asyncio.sleep(duration)
+    return {"slept": duration}
+
+
 DEMO_TOOLS: dict[str, DemoTool] = {
     "search": DemoTool(name="search", safety="retry_safe", fn=_search),
     "summarize": DemoTool(name="summarize", safety="retry_safe", fn=_summarize),
     "notify": DemoTool(name="notify", safety="retry_safe", fn=_notify),
+    "slow_tool": DemoTool(name="slow_tool", safety="retry_safe", fn=_slow_tool),
 }
