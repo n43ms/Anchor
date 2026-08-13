@@ -544,99 +544,99 @@ declared category and assert the documented resolution for each.
 
 ### Tests for Phase 5 (MANDATORY) ⚠️
 
-- [ ] T229 [P] [US3] Write the canonical-serialization property test in `tests/property/test_canonical_serialization.py` using `hypothesis`: structurally identical arguments in **any** mapping key order, **any** nesting traversal, and **any** numeric formatting hash identically. **This is the test that protects the entire idempotency mechanism** (FR-038)
-- [ ] T230 [P] [US3] Extend `tests/property/test_canonical_serialization.py` to assert non-JSON-native types — `set`, `tuple`, `datetime`, `Decimal`, `NaN`, `±Infinity` — raise at call time **with the path to the offending value**, because the alternative is a key that varies across replay and fails silently (D-13)
-- [ ] T231 [P] [US3] Write the key-framing test in `tests/unit/test_idempotency_key_framing.py` asserting the key is hashed over a canonical JSON **array** `[run_id, step_index, action_name, args]`, never a delimited string — framing is unambiguous by construction rather than by argument about which characters are legal in a tool name (D-41)
-- [ ] T232 [P] [US3] Write the key-stability test in `tests/replay/test_key_identical_across_replay.py` asserting the same step re-derives an identical key on replay, including when `ctx.new_id()` feeds the arguments
-- [ ] T233 [P] [US3] Write the journal-uniqueness test in `tests/unit/test_journal_one_intent_per_key.py` asserting a second intent row for the same key is rejected by the primary key (FR-041)
-- [ ] T234 [P] [US3] Write the result-once trigger test in `tests/unit/test_tool_journal_result_once.py` asserting `NULL → result` is permitted, an `attempts` increment is permitted, setting `resolution` is permitted, and **overwriting a non-null `result` with a different value raises `AN004`**. A result, once recorded, is final
-- [ ] T235 [P] [US3] Write the three-state lookup test in `tests/unit/test_journal_three_state_lookup.py` covering all three: row with result → skip and return; no row → execute; **row with `result IS NULL` → apply policy** (FR-042, FR-043)
-- [ ] T236 [P] [US3] Write the uncertainty-window test in `tests/failure/test_uncertainty_window.py` with one case per declared category — `retry_safe` re-executes with the key passed through and produces one effect row; `reconcilable` runs the reconciler and branches, recording `resolution`; `unsafe` halts as `needs_review` holding **no lease** (FR-047, FR-048, FR-049)
-- [ ] T237 [P] [US3] Extend `tests/failure/test_uncertainty_window.py` to assert a `reconcile_fn` returning `Unknown()` **escalates to `needs_review`** — a reconciler that guesses is worse than no reconciler, because it converts an honest halt into a silent double execution
-- [ ] T238 [P] [US3] Write the registration-refusal tests in `tests/unit/test_tool_registration_refusals.py` for all three conditions: absent or invalid `safety`; `reconcilable` without `reconcile_fn`; `retry_safe` with neither `naturally_idempotent` nor `provider_accepts_key` (FR-045, FR-046)
-- [ ] T239 [P] [US3] Write the registry `CHECK` tests in `tests/unit/test_tool_registry_checks.py` asserting the same three rules hold against a direct `INSERT`, so a row inserted by **any** path still satisfies them
-- [ ] T240 [P] [US3] Write the declaration-conflict test in `tests/failure/test_tool_declaration_conflict.py`: two code versions registering one tool with different safety fields makes **that tool, and only that tool**, unexecutable fleet-wide, with both dissenting versions recorded and surfaced (D-46, FR-131)
-- [ ] T241 [P] [US3] Extend `tests/failure/test_tool_declaration_conflict.py` to assert the uncertainty window is **never** resolved from an ambiguous declaration — the run halts instead
-- [ ] T242 [P] [US3] Write the `demo_effects` uniqueness test in `tests/failure/test_demo_effects_unique.py` asserting a forced double execution is **rejected by the database**, not merely counted. The rejection is a loud failure rather than a silent duplicate row
-- [ ] T243 [P] [US3] Write the operator-resolution test in `tests/contract/test_resolve_endpoint.py` asserting the write is attributed to `worker_id: "operator"` at the run's current epoch, is permitted **only on a leaseless `needs_review` run**, and offers three outcomes none of which is a guess (D-24, FR-050)
-- [ ] T244 [P] [US3] Write the skip-marker test in `tests/replay/test_step_skipped_on_replay_emitted.py` asserting `STEP_SKIPPED_ON_REPLAY` carries `idempotency_key`, `tool_name`, `original_result_at`, and `original_epoch` so the console can render the distinction
-- [ ] T245 [P] [US3] Write the intent-before-invocation test in `tests/failure/test_intent_committed_before_invocation.py` asserting no side effect can occur without a **preceding committed** journaled intent — the inverse ordering would make an unrecorded side effect possible, which the constitution forbids outright (FR-057)
-- [ ] T246 [P] [US3] Write the one-effect-per-step test in `tests/unit/test_one_side_effect_per_step.py` asserting a step containing two side-effecting tool calls is rejected — this is what makes the key unique without a within-step counter (D-26)
+- [x] T229 [P] [US3] Write the canonical-serialization property test in `tests/property/test_canonical_serialization.py` using `hypothesis`: structurally identical arguments in **any** mapping key order, **any** nesting traversal, and **any** numeric formatting hash identically. **This is the test that protects the entire idempotency mechanism** (FR-038)
+- [x] T230 [P] [US3] Extend `tests/property/test_canonical_serialization.py` to assert non-JSON-native types — `set`, `tuple`, `datetime`, `Decimal`, `NaN`, `±Infinity` — raise at call time **with the path to the offending value**, because the alternative is a key that varies across replay and fails silently (D-13)
+- [x] T231 [P] [US3] Write the key-framing test in `tests/unit/test_idempotency_key_framing.py` asserting the key is hashed over a canonical JSON **array** `[run_id, step_index, action_name, args]`, never a delimited string — framing is unambiguous by construction rather than by argument about which characters are legal in a tool name (D-41)
+- [x] T232 [P] [US3] Write the key-stability test in `tests/replay/test_key_identical_across_replay.py` asserting the same step re-derives an identical key on replay, including when `ctx.new_id()` feeds the arguments
+- [x] T233 [P] [US3] Write the journal-uniqueness test in `tests/unit/test_journal_one_intent_per_key.py` asserting a second intent row for the same key is rejected by the primary key (FR-041)
+- [x] T234 [P] [US3] Write the result-once trigger test in `tests/unit/test_tool_journal_result_once.py` asserting `NULL → result` is permitted, an `attempts` increment is permitted, setting `resolution` is permitted, and **overwriting a non-null `result` with a different value raises `AN004`**. A result, once recorded, is final
+- [x] T235 [P] [US3] Write the three-state lookup test in `tests/unit/test_journal_three_state_lookup.py` covering all three: row with result → skip and return; no row → execute; **row with `result IS NULL` → apply policy** (FR-042, FR-043)
+- [x] T236 [P] [US3] Write the uncertainty-window test in `tests/failure/test_uncertainty_window.py` with one case per declared category — `retry_safe` re-executes with the key passed through and produces one effect row; `reconcilable` runs the reconciler and branches, recording `resolution`; `unsafe` halts as `needs_review` holding **no lease** (FR-047, FR-048, FR-049)
+- [x] T237 [P] [US3] Extend `tests/failure/test_uncertainty_window.py` to assert a `reconcile_fn` returning `Unknown()` **escalates to `needs_review`** — a reconciler that guesses is worse than no reconciler, because it converts an honest halt into a silent double execution
+- [x] T238 [P] [US3] Write the registration-refusal tests in `tests/unit/test_tool_registration_refusals.py` for all three conditions: absent or invalid `safety`; `reconcilable` without `reconcile_fn`; `retry_safe` with neither `naturally_idempotent` nor `provider_accepts_key` (FR-045, FR-046)
+- [x] T239 [P] [US3] Write the registry `CHECK` tests in `tests/unit/test_tool_registry_checks.py` asserting the same three rules hold against a direct `INSERT`, so a row inserted by **any** path still satisfies them
+- [x] T240 [P] [US3] Write the declaration-conflict test in `tests/failure/test_tool_declaration_conflict.py`: two code versions registering one tool with different safety fields makes **that tool, and only that tool**, unexecutable fleet-wide, with both dissenting versions recorded and surfaced (D-46, FR-131)
+- [x] T241 [P] [US3] Extend `tests/failure/test_tool_declaration_conflict.py` to assert the uncertainty window is **never** resolved from an ambiguous declaration — the run halts instead
+- [x] T242 [P] [US3] Write the `demo_effects` uniqueness test in `tests/failure/test_demo_effects_unique.py` asserting a forced double execution is **rejected by the database**, not merely counted. The rejection is a loud failure rather than a silent duplicate row
+- [x] T243 [P] [US3] Write the operator-resolution test in `tests/contract/test_resolve_endpoint.py` asserting the write is attributed to `worker_id: "operator"` at the run's current epoch, is permitted **only on a leaseless `needs_review` run**, and offers three outcomes none of which is a guess (D-24, FR-050)
+- [x] T244 [P] [US3] Write the skip-marker test in `tests/replay/test_step_skipped_on_replay_emitted.py` asserting `STEP_SKIPPED_ON_REPLAY` carries `idempotency_key`, `tool_name`, `original_result_at`, and `original_epoch` so the console can render the distinction
+- [x] T245 [P] [US3] Write the intent-before-invocation test in `tests/failure/test_intent_committed_before_invocation.py` asserting no side effect can occur without a **preceding committed** journaled intent — the inverse ordering would make an unrecorded side effect possible, which the constitution forbids outright (FR-057)
+- [x] T246 [P] [US3] Write the one-effect-per-step test in `tests/unit/test_one_side_effect_per_step.py` asserting a step containing two side-effecting tool calls is rejected — this is what makes the key unique without a within-step counter (D-26)
 
 ### Implementation for Phase 5
 
 #### P5.1 — Canonical serialization
 
-- [ ] T247 [US3] Implement canonical JSON serialization in `anchor/core/journal/canonical.py`: sorted keys, compact separators, NFC-normalized strings, shortest-round-trip float formatting
-- [ ] T248 [US3] Implement the type rejection in `anchor/core/journal/canonical.py` raising on `NaN`, `±Inf`, `set`, `tuple`, `datetime`, `Decimal`, and any non-JSON-native type, **carrying the JSON path to the offending value** so the author is told where rather than that
-- [ ] T249 [US3] Document in `anchor/core/journal/canonical.py` the failure this module prevents: serialization drift **does not error, it double-executes** — which is why it is guarded by a property test rather than by examples
+- [x] T247 [US3] Implement canonical JSON serialization in `anchor/core/journal/canonical.py`: sorted keys, compact separators, NFC-normalized strings, shortest-round-trip float formatting
+- [x] T248 [US3] Implement the type rejection in `anchor/core/journal/canonical.py` raising on `NaN`, `±Inf`, `set`, `tuple`, `datetime`, `Decimal`, and any non-JSON-native type, **carrying the JSON path to the offending value** so the author is told where rather than that
+- [x] T249 [US3] Document in `anchor/core/journal/canonical.py` the failure this module prevents: serialization drift **does not error, it double-executes** — which is why it is guarded by a property test rather than by examples
 
 #### P5.2 — Idempotency key derivation
 
-- [ ] T250 [US3] Implement key derivation in `anchor/core/journal/keys.py` as `sha256(canonical_json([run_id, step_index, action_name, args]))`, hashed over a canonical **array** so framing is unambiguous by construction (D-41, FR-037)
-- [ ] T251 [US3] Store the full hex key and compute `args_hash` separately in `anchor/core/journal/keys.py`, with the short display form derived for the UI only and never used as an identity
-- [ ] T252 [US3] Add `tests/unit/test_key_display_form_never_identity.py` asserting no lookup, comparison, or constraint uses the truncated display form
+- [x] T250 [US3] Implement key derivation in `anchor/core/journal/keys.py` as `sha256(canonical_json([run_id, step_index, action_name, args]))`, hashed over a canonical **array** so framing is unambiguous by construction (D-41, FR-037)
+- [x] T251 [US3] Store the full hex key and compute `args_hash` separately in `anchor/core/journal/keys.py`, with the short display form derived for the UI only and never used as an identity
+- [x] T252 [US3] Add `tests/unit/test_key_display_form_never_identity.py` asserting no lookup, comparison, or constraint uses the truncated display form
 
 #### P5.3 — Migration 003
 
-- [ ] T253 [US3] Write migration 003 in `ops/migrations/versions/003_journal.py` creating `tool_journal` per data-model.md §3 with `PRIMARY KEY (idempotency_key)`, the `(result IS NULL) = (result_at IS NULL)` `CHECK`, the `resolution` `CHECK`, and `CHECK (attempts >= 1)`
-- [ ] T254 [US3] Create `tool_registry` in `ops/migrations/versions/003_journal.py` per data-model.md §4, including the safety `CHECK`, the **`reconcilable` implies `has_reconcile_fn`** `CHECK`, the **`retry_safe` implies `naturally_idempotent OR provider_accepts_key`** `CHECK`, and the conflict-columns-move-together `CHECK`
-- [ ] T255 [US3] Create `demo_effects` in `ops/migrations/versions/003_journal.py` with **`UNIQUE (idempotency_key)`** — the single strongest piece of evidence in the product, because it makes a double execution a database error rather than a counted anomaly
-- [ ] T256 [US3] Write the `tool_journal_result_once` `BEFORE UPDATE` trigger in `ops/migrations/versions/003_journal.py` permitting only `NULL → result`, `attempts` increment, and setting `resolution`, raising `AN004` otherwise. Comment states that without it, `I1` would hold only for as long as every write path remembered not to overwrite
-- [ ] T257 [US3] Write the `tool_journal_no_delete` `BEFORE DELETE` trigger in `ops/migrations/versions/003_journal.py` raising `AN003`
-- [ ] T258 [US3] Create the journal indexes in `ops/migrations/versions/003_journal.py` — `(run_id, step_index)`, `(tool_name, result_at DESC)`, and the **partial index `WHERE result IS NULL`** that finds every open uncertainty window in one scan and backs both invariant checking and the Needs review page
+- [x] T253 [US3] Write migration 003 in `ops/migrations/versions/003_journal.py` creating `tool_journal` per data-model.md §3 with `PRIMARY KEY (idempotency_key)`, the `(result IS NULL) = (result_at IS NULL)` `CHECK`, the `resolution` `CHECK`, and `CHECK (attempts >= 1)`
+- [x] T254 [US3] Create `tool_registry` in `ops/migrations/versions/003_journal.py` per data-model.md §4, including the safety `CHECK`, the **`reconcilable` implies `has_reconcile_fn`** `CHECK`, the **`retry_safe` implies `naturally_idempotent OR provider_accepts_key`** `CHECK`, and the conflict-columns-move-together `CHECK`
+- [x] T255 [US3] Create `demo_effects` in `ops/migrations/versions/003_journal.py` with **`UNIQUE (idempotency_key)`** — the single strongest piece of evidence in the product, because it makes a double execution a database error rather than a counted anomaly
+- [x] T256 [US3] Write the `tool_journal_result_once` `BEFORE UPDATE` trigger in `ops/migrations/versions/003_journal.py` permitting only `NULL → result`, `attempts` increment, and setting `resolution`, raising `AN004` otherwise. Comment states that without it, `I1` would hold only for as long as every write path remembered not to overwrite
+- [x] T257 [US3] Write the `tool_journal_no_delete` `BEFORE DELETE` trigger in `ops/migrations/versions/003_journal.py` raising `AN003`
+- [x] T258 [US3] Create the journal indexes in `ops/migrations/versions/003_journal.py` — `(run_id, step_index)`, `(tool_name, result_at DESC)`, and the **partial index `WHERE result IS NULL`** that finds every open uncertainty window in one scan and backs both invariant checking and the Needs review page
 
 #### P5.4 — Two-phase `call_tool`
 
-- [ ] T259 [US3] Implement the three-state journal lookup in `anchor/core/journal/lookup.py` returning `Completed(result)`, `NeverAttempted`, or `Uncertain` — the three states are a closed enum, so a fourth branch cannot be added by accident
-- [ ] T260 [US3] Rewrite `ctx.call_tool` in `anchor/core/determinism/context.py` around the three-state lookup: skip / execute / apply policy
-- [ ] T261 [US3] Implement the intent phase in `anchor/core/journal/two_phase.py` inserting the `tool_journal` row and appending `TOOL_INTENT` in one transaction, **committed before invocation** (FR-039)
-- [ ] T262 [US3] Flush the step's non-determinism buffer inside the intent transaction in `anchor/core/journal/two_phase.py`, so a key's inputs and the intent commit atomically and no effect can exist whose inputs are unrecorded (D-47)
-- [ ] T263 [US3] Implement the result phase in `anchor/core/journal/two_phase.py` updating `result` and `result_at` and appending `TOOL_RESULT` under the same key (FR-040)
-- [ ] T264 [US3] Emit `STEP_SKIPPED_ON_REPLAY` on the skip path in `anchor/core/journal/two_phase.py` carrying the original `result_at` and `epoch`, so the console can render replayed steps distinctly (FR-043)
-- [ ] T265 [US3] Enforce one side effect per step in `anchor/core/determinism/context.py`, raising on a second side-effecting call within a step (D-26)
-- [ ] T266 [US3] Document the crash behaviour of each window in `anchor/core/journal/two_phase.py`: between intent commit and invocation → no effect occurred, policy resolves conservatively; between invocation and result → **the uncertainty window**; between result and `STEP_COMPLETED` → the result is durable and the step re-completes harmlessly
+- [x] T259 [US3] Implement the three-state journal lookup in `anchor/core/journal/lookup.py` returning `Completed(result)`, `NeverAttempted`, or `Uncertain` — the three states are a closed enum, so a fourth branch cannot be added by accident
+- [x] T260 [US3] Rewrite `ctx.call_tool` in `anchor/core/determinism/context.py` around the three-state lookup: skip / execute / apply policy
+- [x] T261 [US3] Implement the intent phase in `anchor/core/journal/two_phase.py` inserting the `tool_journal` row and appending `TOOL_INTENT` in one transaction, **committed before invocation** (FR-039)
+- [x] T262 [US3] Flush the step's non-determinism buffer inside the intent transaction in `anchor/core/journal/two_phase.py`, so a key's inputs and the intent commit atomically and no effect can exist whose inputs are unrecorded (D-47)
+- [x] T263 [US3] Implement the result phase in `anchor/core/journal/two_phase.py` updating `result` and `result_at` and appending `TOOL_RESULT` under the same key (FR-040)
+- [x] T264 [US3] Emit `STEP_SKIPPED_ON_REPLAY` on the skip path in `anchor/core/journal/two_phase.py` carrying the original `result_at` and `epoch`, so the console can render replayed steps distinctly (FR-043)
+- [x] T265 [US3] Enforce one side effect per step in `anchor/core/determinism/context.py`, raising on a second side-effecting call within a step (D-26)
+- [x] T266 [US3] Document the crash behaviour of each window in `anchor/core/journal/two_phase.py`: between intent commit and invocation → no effect occurred, policy resolves conservatively; between invocation and result → **the uncertainty window**; between result and `STEP_COMPLETED` → the result is durable and the step re-completes harmlessly
 
 #### P5.5 — Tool registration and declarations
 
-- [ ] T267 [US3] Implement `register_tool` in `anchor/runtime/tools/registry.py` per `contracts/tool-contract.md`, with the three refusal conditions and **no default safety category** — the decision must be made deliberately and there is nothing to fall back to (FR-045)
-- [ ] T268 [US3] Implement declaration content-hashing in `anchor/runtime/tools/registry.py` over the five safety-relevant fields, upserting at worker startup (D-46)
-- [ ] T269 [US3] Implement conflict detection in `anchor/runtime/tools/registry.py`: an existing row with a **different** hash sets `conflict_at` and `conflict_version`, recording both `code_version`s
-- [ ] T270 [US3] Implement the per-tool fail-closed refusal in `anchor/core/journal/two_phase.py` — a tool with `conflict_at IS NOT NULL` is refused for execution **fleet-wide, that tool only**, not the worker and not the fleet (FR-131)
-- [ ] T271 [US3] Document in `anchor/runtime/tools/registry.py` why the conflict is stored rather than logged: during a rolling deploy the table and the code can disagree about *the policy that resolves the uncertainty window*, and a tool reclassified between builds would halt on one worker and re-execute on another, in the same fleet, non-deterministically. `I8` says uncertainty is resolved by the declared policy — if the declared policy is ambiguous, `I8` has no content
-- [ ] T272 [US3] Implement `GET /api/tools` in `anchor/api/routers/registry.py` returning every registry row with its declared category, reconciler presence, conflict state, and last-used timestamp (FR-120)
-- [ ] T273 [US3] Update `last_used_at` on execution in `anchor/core/journal/two_phase.py`
+- [x] T267 [US3] Implement `register_tool` in `anchor/runtime/tools/registry.py` per `contracts/tool-contract.md`, with the three refusal conditions and **no default safety category** — the decision must be made deliberately and there is nothing to fall back to (FR-045)
+- [x] T268 [US3] Implement declaration content-hashing in `anchor/runtime/tools/registry.py` over the five safety-relevant fields, upserting at worker startup (D-46)
+- [x] T269 [US3] Implement conflict detection in `anchor/runtime/tools/registry.py`: an existing row with a **different** hash sets `conflict_at` and `conflict_version`, recording both `code_version`s
+- [x] T270 [US3] Implement the per-tool fail-closed refusal in `anchor/core/journal/two_phase.py` — a tool with `conflict_at IS NOT NULL` is refused for execution **fleet-wide, that tool only**, not the worker and not the fleet (FR-131)
+- [x] T271 [US3] Document in `anchor/runtime/tools/registry.py` why the conflict is stored rather than logged: during a rolling deploy the table and the code can disagree about *the policy that resolves the uncertainty window*, and a tool reclassified between builds would halt on one worker and re-execute on another, in the same fleet, non-deterministically. `I8` says uncertainty is resolved by the declared policy — if the declared policy is ambiguous, `I8` has no content
+- [x] T272 [US3] Implement `GET /api/tools` in `anchor/api/routers/registry.py` returning every registry row with its declared category, reconciler presence, conflict state, and last-used timestamp (FR-120)
+- [x] T273 [US3] Update `last_used_at` on execution in `anchor/core/journal/two_phase.py`
 
 #### P5.6 — The three uncertainty policies
 
-- [ ] T274 [US3] Implement the `retry_safe` policy in `anchor/core/journal/policies.py` re-executing **with the idempotency key passed through** so the provider deduplicates on their side, and incrementing `attempts` (FR-047)
-- [ ] T275 [US3] Implement the `reconcilable` policy in `anchor/core/journal/policies.py` invoking `reconcile_fn` with the same canonical arguments the intent recorded, and branching on `Executed` / `NotExecuted` (FR-048)
-- [ ] T276 [US3] Implement `Unknown()` escalation in `anchor/core/journal/policies.py` routing to `needs_review` rather than defaulting to either branch
-- [ ] T277 [US3] Implement the `unsafe` policy in `anchor/core/journal/policies.py`: set the run to `needs_review`, halt, **release the lease**, and append `RUN_NEEDS_REVIEW` carrying `step_index`, `idempotency_key`, `tool_name`, `reason`, and `available_resolutions`. **Do not guess** (FR-049)
-- [ ] T278 [US3] Record the applied policy on the journal row's `resolution` and `resolved_at` in `anchor/core/journal/policies.py` (FR-044)
-- [ ] T279 [US3] Add `tests/boundary/test_needs_review_holds_no_lease.py` asserting a `needs_review` run satisfies the terminal-state-style `CHECK` and cannot block reclaim while looking healthy
+- [x] T274 [US3] Implement the `retry_safe` policy in `anchor/core/journal/policies.py` re-executing **with the idempotency key passed through** so the provider deduplicates on their side, and incrementing `attempts` (FR-047)
+- [x] T275 [US3] Implement the `reconcilable` policy in `anchor/core/journal/policies.py` invoking `reconcile_fn` with the same canonical arguments the intent recorded, and branching on `Executed` / `NotExecuted` (FR-048)
+- [x] T276 [US3] Implement `Unknown()` escalation in `anchor/core/journal/policies.py` routing to `needs_review` rather than defaulting to either branch
+- [x] T277 [US3] Implement the `unsafe` policy in `anchor/core/journal/policies.py`: set the run to `needs_review`, halt, **release the lease**, and append `RUN_NEEDS_REVIEW` carrying `step_index`, `idempotency_key`, `tool_name`, `reason`, and `available_resolutions`. **Do not guess** (FR-049)
+- [x] T278 [US3] Record the applied policy on the journal row's `resolution` and `resolved_at` in `anchor/core/journal/policies.py` (FR-044)
+- [x] T279 [US3] Add `tests/boundary/test_needs_review_holds_no_lease.py` asserting a `needs_review` run satisfies the terminal-state-style `CHECK` and cannot block reclaim while looking healthy
 
 #### P5.7 — Operator resolution
 
-- [ ] T280 [US3] Implement `POST /api/runs/{id}/resolve` in `anchor/api/routers/runs.py` with three outcomes — `mark_executed`, `mark_not_executed`, `retry` — none of which is a guess (FR-050)
-- [ ] T281 [US3] Restrict the resolution write in `anchor/api/routers/runs.py` to a **leaseless `needs_review` run**, writing through `core.events.append` as `worker_id: 'operator'` at the run's current epoch. Comment states the exception's justification: this is the one permitted `api/` write into a run's log, and it is safe precisely because no worker can be racing a run nobody owns (D-24)
-- [ ] T282 [US3] Implement `GET /api/runs?status=needs_review` and the ambiguous-call serializer in `anchor/api/serializers/runs.py` returning the specific call, its declared policy, and the available resolutions
+- [x] T280 [US3] Implement `POST /api/runs/{id}/resolve` in `anchor/api/routers/runs.py` with three outcomes — `mark_executed`, `mark_not_executed`, `retry` — none of which is a guess (FR-050)
+- [x] T281 [US3] Restrict the resolution write in `anchor/api/routers/runs.py` to a **leaseless `needs_review` run**, writing through `core.events.append` as `worker_id: 'operator'` at the run's current epoch. Comment states the exception's justification: this is the one permitted `api/` write into a run's log, and it is safe precisely because no worker can be racing a run nobody owns (D-24)
+- [x] T282 [US3] Implement `GET /api/runs?status=needs_review` and the ambiguous-call serializer in `anchor/api/serializers/runs.py` returning the specific call, its declared policy, and the available resolutions
 
 #### P5.8 — The three demo agents *(reference implementations, per D-57)*
 
-- [ ] T283 [US3] Implement `anchor/runtime/agents/demo_short.py` — 8–10 steps, 25–40 s total, varied 2–5 s step durations
-- [ ] T284 [US3] Implement `anchor/runtime/agents/demo_long.py` at roughly 40 steps as **the canonical worked example of the already-done filter pattern** — the loop's progress lives in the journal via `ctx.completed_tool_args(...)`, never in a counter. The README points at this file by name (D-57, FR-138)
-- [ ] T285 [US3] Implement `anchor/runtime/agents/demo_unsafe.py` crashing inside the uncertainty window, so the `needs_review` path is reachable from the interface
-- [ ] T286 [US3] Write all three agents in `anchor/runtime/agents/` to reference-implementation quality with explanatory comments, since they are simultaneously the chaos harness's workloads and §27.4's few-shot examples. **This bar is not retrofittable** — improving them after phase 8 would change the system under test after the evidence was captured (D-57)
-- [ ] T287 [US3] Implement the five demo tools in `anchor/runtime/tools/demo.py` — `web_search` and `fetch_page` (`retry_safe`, naturally idempotent), `create_ticket` (`reconcilable`), `send_email` (`unsafe`), `charge_card` (`retry_safe`, only because the provider accepts a key — the declaration names the reason) (§21.5)
-- [ ] T288 [US3] Implement `reconcile_fn` for `create_ticket` in `anchor/runtime/tools/demo.py` returning `Executed` / `NotExecuted` / `Unknown`, located by the same key the tool would have used
+- [x] T283 [US3] Implement `anchor/runtime/agents/demo_short.py` — 8–10 steps, 25–40 s total, varied 2–5 s step durations
+- [x] T284 [US3] Implement `anchor/runtime/agents/demo_long.py` at roughly 40 steps as **the canonical worked example of the already-done filter pattern** — the loop's progress lives in the journal via `ctx.completed_tool_args(...)`, never in a counter. The README points at this file by name (D-57, FR-138)
+- [x] T285 [US3] Implement `anchor/runtime/agents/demo_unsafe.py` crashing inside the uncertainty window, so the `needs_review` path is reachable from the interface
+- [x] T286 [US3] Write all three agents in `anchor/runtime/agents/` to reference-implementation quality with explanatory comments, since they are simultaneously the chaos harness's workloads and §27.4's few-shot examples. **This bar is not retrofittable** — improving them after phase 8 would change the system under test after the evidence was captured (D-57)
+- [x] T287 [US3] Implement the five demo tools in `anchor/runtime/tools/demo.py` — `web_search` and `fetch_page` (`retry_safe`, naturally idempotent), `create_ticket` (`reconcilable`), `send_email` (`unsafe`), `charge_card` (`retry_safe`, only because the provider accepts a key — the declaration names the reason) (§21.5)
+- [x] T288 [US3] Implement `reconcile_fn` for `create_ticket` in `anchor/runtime/tools/demo.py` returning `Executed` / `NotExecuted` / `Unknown`, located by the same key the tool would have used
 
 #### P5.9 — `demo_effects` writes
 
-- [ ] T289 [US3] Write one `demo_effects` row per side-effect execution in `anchor/runtime/tools/demo.py`, carrying the run, step, tool, key, and a payload describing what the fake effect "did"
-- [ ] T290 [US3] Implement `GET /api/runs/{id}/effects` in `anchor/api/routers/runs.py` returning the rows and a total — **the ground truth a reviewer can check without trusting the log** (FR-107)
+- [x] T289 [US3] Write one `demo_effects` row per side-effect execution in `anchor/runtime/tools/demo.py`, carrying the run, step, tool, key, and a payload describing what the fake effect "did"
+- [x] T290 [US3] Implement `GET /api/runs/{id}/effects` in `anchor/api/routers/runs.py` returning the rows and a total — **the ground truth a reviewer can check without trusting the log** (FR-107)
 - [ ] T291 [US3] Execute [V5](./quickstart.md#v5--effectively-once-including-the-uncertainty-window-phase-5) end to end, including the honest-resolution path
-- [ ] T292 [US3] Record the crash behaviour of every await point added in phase 5, and update `anchor/worker/loop.py`'s docstring to **remove** the phase-2 interim limitation note — within-step uncertainty is now handled, and the headline guarantee holds from here
+- [x] T292 [US3] Record the crash behaviour of every await point added in phase 5, and update `anchor/worker/loop.py`'s docstring to **remove** the phase-2 interim limitation note — within-step uncertainty is now handled, and the headline guarantee holds from here
 
 **Exit gate**: [V5](./quickstart.md#v5--effectively-once-including-the-uncertainty-window-phase-5).
 
