@@ -66,6 +66,7 @@ from anchor.core.determinism.context import StepContext
 from anchor.core.events.append import append
 from anchor.core.events.types import EventType
 from anchor.core.leases.claim import ClaimedRun, claim_one
+from anchor.core.leases.fencing import DetectedBy, record_local_fencing
 from anchor.core.replay.load import load_run_events
 from anchor.core.replay.reconstruct import reconstruct
 from anchor.runtime.agents.registry import resolve
@@ -314,15 +315,35 @@ async def run_claimed(
                 renew_task.cancel()
 
             tg.create_task(_execute_and_stop_renewer(), name=f"execute-run-{claimed.run_id}")
-    except* LeaseFencedError:
-        # I3: a fenced worker discards in-memory state, writes nothing
-        # further, retries nothing, and returns to the idle pool. Logging
-        # here is the only action taken — there is deliberately no event
-        # appended to the run's own log (FR-019).
-        logger.warning(
-            "run fenced during renewal; discarding and returning to idle pool",
-            extra={"run_id": claimed.run_id, "epoch": claimed.epoch, "worker_id": worker_id},
-        )
+    except* LeaseFencedError as eg:
+        # I3/T204: a fenced worker discards in-memory state, writes nothing
+        # further, retries nothing, and returns to the idle pool. This
+        # `except*` block is the guard — it is a deliberate dead end that
+        # calls `core.events.append` for nothing at all. The surviving
+        # writer, not this one, is responsible for `WORKER_FENCED`
+        # (`core.leases.claim`, T210) precisely because this worker no
+        # longer owns the run and its opinion about what went wrong is the
+        # corruption the epoch exists to prevent. `record_local_fencing`
+        # writes only to this process's own structured log and in-process
+        # counter (T205, T217) — never to the run's log.
+        #
+        # `detected_by` is read off the exception itself rather than
+        # assumed: `core.leases.renew.renew_once` raises with
+        # `current_epoch=None` (its zero-row guard has no third column to
+        # read one from), while the `AN001` trigger translated by
+        # `core.db.pool.acquire` always carries one (migration 001). Picking
+        # a value here without that signal would be exactly the kind of
+        # guess `I8` forbids.
+        for exc in eg.exceptions:
+            if not isinstance(exc, LeaseFencedError):
+                continue
+            detected_by: DetectedBy = "append" if exc.current_epoch is not None else "renewer"
+            record_local_fencing(
+                run_id=claimed.run_id,
+                worker_id=worker_id,
+                stale_epoch=claimed.epoch,
+                detected_by=detected_by,
+            )
 
 
 def _jittered_seconds(base_ms: int, jitter_pct: float) -> float:

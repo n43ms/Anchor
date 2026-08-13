@@ -19,10 +19,22 @@ to prevent.
 
 This module is the **only** place any code may `INSERT INTO run_events`
 (`tests/boundary/test_single_append_path.py`).
+
+**Fencing (plan.md P4.1, T202).** A write from a stale epoch is rejected by
+the phase-0 `run_events_epoch_gate` trigger with `AN001`, and every caller
+inherits `LeaseFencedError` for free: this module never catches
+`asyncpg.PostgresError` itself, but every caller in the worker path issues
+its connection through `anchor.core.db.pool.acquire`, whose `__aexit__`
+translates `AN001` on the way out. Concentrating translation at the pool
+boundary — rather than duplicating a try/except in this module and in
+`core.leases.renew` (which detects fencing through its own zero-row `UPDATE`
+guard, a different SQL shape) — means a third detection site added later
+inherits the same typed exception without repeating the translation.
 """
 
 from __future__ import annotations
 
+import asyncio
 import json
 from datetime import datetime
 from typing import Any
@@ -86,6 +98,20 @@ async def append(
             measured_bytes=measured_bytes,
             ceiling_bytes=max_payload_bytes,
         )
+
+    # T201/T208 (plan.md P4.2): a fenced execution task is cancelled by a
+    # sibling task in the same `TaskGroup` (the renewer, on a rejected
+    # renewal), not by this task itself — so cancellation can already be
+    # pending by the time control reaches here, before the next `await`
+    # would otherwise deliver it. Checking `Task.cancelling()` closes that
+    # window explicitly rather than relying on `conn.fetchrow` below to be
+    # the first point cancellation happens to land: a write must never be
+    # issued once cancellation has been requested, because the whole point
+    # of the fencing cancellation is that this worker no longer owns the
+    # run it is about to write to.
+    current_task = asyncio.current_task()
+    if current_task is not None and current_task.cancelling() > 0:
+        raise asyncio.CancelledError()
 
     row = await conn.fetchrow(
         _APPEND_SQL,

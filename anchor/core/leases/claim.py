@@ -35,6 +35,14 @@ liveness bug: it strands runs permanently at exactly the load level chaos
 testing exists to prove survivable. The cap predicate below therefore
 applies to the `pending` branch only; the expired-lease branch is ungated,
 because admitting it never grows the running count.
+
+**`WORKER_FENCED` on reclaim (plan.md P4.3, T210).** When the claimed
+candidate was `running` with an expired lease, the previous owner is being
+fenced by this claim, and this same transaction appends `WORKER_FENCED`
+immediately after `RUN_CLAIMED` — same epoch, same commit, so a reader can
+never observe a reclaim without its fencing record or vice versa. See
+`anchor.core.leases.fencing` for why this is the only writer of that event
+allowed to exist, and why `detected_by` is always `"renewer"` here.
 """
 
 from __future__ import annotations
@@ -47,6 +55,7 @@ import asyncpg
 
 from anchor.core.events.append import append
 from anchor.core.events.types import EventType
+from anchor.core.leases.fencing import append_worker_fenced
 
 # One statement: choose the highest-priority eligible candidate — pending
 # (under the cap), or running with an expired lease — and claim it in the
@@ -84,6 +93,7 @@ RETURNING
     r.agent_type,
     r.input,
     r.epoch AS new_epoch,
+    c.epoch AS previous_epoch,
     r.lease_expires_at AS lease_expires_at,
     c.status AS previous_status,
     c.owner_worker_id AS previous_worker_id
@@ -149,6 +159,22 @@ async def claim_one(
             worker_id=worker_id,
             max_payload_bytes=max_payload_bytes,
         )
+
+        if reason == "reclaimed_after_lease_expiry" and row["previous_worker_id"] is not None:
+            # The surviving writer, not the stale one, records the fencing
+            # (I3/FR-019) — see fencing.py's module docstring for why this
+            # is the only structurally honest place and why detected_by is
+            # always "renewer" here (reclaim is reachable only via lease
+            # expiry; a graceful release never leaves a lease to expire).
+            await append_worker_fenced(
+                conn,
+                run_id=row["run_id"],
+                surviving_worker_id=worker_id,
+                new_epoch=row["new_epoch"],
+                fenced_worker_id=row["previous_worker_id"],
+                stale_epoch=row["previous_epoch"],
+                max_payload_bytes=max_payload_bytes,
+            )
 
         return ClaimedRun(
             run_id=row["run_id"],
