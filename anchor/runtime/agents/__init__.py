@@ -7,7 +7,7 @@ Every module in this package is walked by the AST determinism checker
 
 from __future__ import annotations
 
-from anchor.runtime.agents import demo_minimal
+from anchor.runtime.agents import demo_long, demo_minimal, demo_short, demo_unsafe
 from anchor.runtime.agents.registry import register
 
 
@@ -17,3 +17,6 @@ def register_all() -> None:
     and the worker process (which resolves it at claim time).
     """
     register("demo_minimal", demo_minimal.decide_next_step)
+    register("demo_short", demo_short.decide_next_step)
+    register("demo_long", demo_long.decide_next_step)
+    register("demo_unsafe", demo_unsafe.decide_next_step)

@@ -65,6 +65,7 @@ from anchor.core.determinism.actions import Done, ModelCall, ToolCall, require_a
 from anchor.core.determinism.context import StepContext
 from anchor.core.events.append import append
 from anchor.core.events.types import EventType
+from anchor.core.journal.policies import NeedsReviewHalted
 from anchor.core.leases.claim import ClaimedRun, claim_one
 from anchor.core.leases.fencing import DetectedBy, record_local_fencing
 from anchor.core.replay.load import load_run_events
@@ -139,6 +140,94 @@ async def execute_run(
     step_index = run_context.last_completed_step_index + 1
     assert step_index >= 0, "resume index must never be lower than the highest completed step"
     total_start = time.monotonic()
+
+    try:
+        action, step_index = await _run_steps(
+            conn,
+            run_id=run_id,
+            epoch=epoch,
+            worker_id=worker_id,
+            agent_type=agent_type,
+            input=input,
+            messages=messages,
+            step_index=step_index,
+            run_context=run_context,
+            model_adapter=model_adapter,
+            settings=settings,
+        )
+    except NeedsReviewHalted:
+        # P5.6/T277: the run is already `needs_review`, leaseless, and
+        # RUN_NEEDS_REVIEW is already committed — all inside
+        # `core.journal.policies.halt_needs_review`, atomically, before
+        # this exception was raised. Nothing else in this function may run:
+        # no final renewal (there is no lease left to renew) and no
+        # RUN_COMPLETED (the run did not complete). Returning here is the
+        # whole handler.
+        return
+
+    total_duration_ms = (time.monotonic() - total_start) * 1000
+
+    # One forced renewal, emitted unconditionally as final_before_terminal
+    # (D-48), immediately before the terminal append — the renewer's own
+    # timer cannot know in advance which tick will be the last one, so the
+    # execution path makes this one explicit call instead.
+    await final_renewal(conn, run_id=run_id, epoch=epoch, worker_id=worker_id, settings=settings)
+
+    async with conn.transaction():
+        await append(
+            conn,
+            run_id=run_id,
+            type=EventType.RUN_COMPLETED,
+            payload={
+                "output": action.output,
+                "total_steps": step_index,
+                "total_duration_ms": total_duration_ms,
+                "handoff_count": 0,
+            },
+            epoch=epoch,
+            worker_id=worker_id,
+            max_payload_bytes=settings.max_event_payload_bytes,
+        )
+        await conn.execute(
+            """
+            UPDATE runs
+            SET status = 'completed',
+                owner_worker_id = NULL,
+                lease_expires_at = NULL,
+                finished_at = now()
+            WHERE id = $1
+            """,
+            run_id,
+        )
+
+
+async def _run_steps(
+    conn: asyncpg.Connection[Any],
+    *,
+    run_id: int,
+    epoch: int,
+    worker_id: str,
+    agent_type: str,
+    input: dict[str, Any],
+    messages: list[dict[str, Any]],
+    step_index: int,
+    run_context: Any,
+    model_adapter: StubAdapter,
+    settings: RuntimeSettings,
+) -> tuple[Done, int]:
+    """The step loop, factored out of `execute_run` so the
+    `NeedsReviewHalted` boundary (P5.6, T277) is a single `try/except` at
+    the call site rather than spread across the loop body. Returns the
+    terminal `Done` action together with the number of steps executed.
+
+    Crash behaviour is unchanged from phases 1-4 at every point except
+    `ctx.call_tool`, whose crash behaviour is now stated fully in
+    `core.journal.two_phase.execute_tool_call`'s docstring — the possible
+    duplicate execution on retry that phases 1-2 stated as an interim
+    limitation no longer exists.
+    """
+    decide_next_step = resolve(agent_type)
+    assert decide_next_step is not None  # already validated by execute_run, above
 
     while True:
         ctx = StepContext(
@@ -237,40 +326,8 @@ async def execute_run(
         )
         step_index += 1
 
-    total_duration_ms = (time.monotonic() - total_start) * 1000
-
-    # One forced renewal, emitted unconditionally as final_before_terminal
-    # (D-48), immediately before the terminal append — the renewer's own
-    # timer cannot know in advance which tick will be the last one, so the
-    # execution path makes this one explicit call instead.
-    await final_renewal(conn, run_id=run_id, epoch=epoch, worker_id=worker_id, settings=settings)
-
-    async with conn.transaction():
-        await append(
-            conn,
-            run_id=run_id,
-            type=EventType.RUN_COMPLETED,
-            payload={
-                "output": action.output,
-                "total_steps": step_index,
-                "total_duration_ms": total_duration_ms,
-                "handoff_count": 0,
-            },
-            epoch=epoch,
-            worker_id=worker_id,
-            max_payload_bytes=settings.max_event_payload_bytes,
-        )
-        await conn.execute(
-            """
-            UPDATE runs
-            SET status = 'completed',
-                owner_worker_id = NULL,
-                lease_expires_at = NULL,
-                finished_at = now()
-            WHERE id = $1
-            """,
-            run_id,
-        )
+    assert isinstance(action, Done)  # the only way out of the loop above
+    return action, step_index
 
 
 async def run_claimed(

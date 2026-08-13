@@ -8,6 +8,8 @@ the dedupe path of `submit_run`), rather than re-assembled per route.
 
 from __future__ import annotations
 
+from typing import Any
+
 import asyncpg
 from pydantic import BaseModel
 
@@ -42,10 +44,19 @@ class RunResponse(BaseModel):
     created_at: str
     claimed_at: str | None
     finished_at: str | None
+    needs_review: dict[str, Any] | None = None
 
 
-def serialize_run(row: asyncpg.Record) -> RunResponse:
-    """Build a `RunResponse` from a row selected with `RUN_COLUMNS`."""
+def serialize_run(
+    row: asyncpg.Record, *, needs_review: dict[str, Any] | None = None
+) -> RunResponse:
+    """Build a `RunResponse` from a row selected with `RUN_COLUMNS`.
+
+    `needs_review` is supplied by the caller (`get_run`, `list_runs`) only
+    for rows whose status is `needs_review` — the specific ambiguous call,
+    its declared policy, and the available resolutions (T282), read from
+    the most recent `RUN_NEEDS_REVIEW` event rather than re-derived here.
+    """
     return RunResponse(
         id=row["id"],
         display_id=f"run_{row['id']}",
@@ -64,4 +75,5 @@ def serialize_run(row: asyncpg.Record) -> RunResponse:
         created_at=row["created_at"].isoformat(),
         claimed_at=row["claimed_at"].isoformat() if row["claimed_at"] else None,
         finished_at=row["finished_at"].isoformat() if row["finished_at"] else None,
+        needs_review=needs_review,
     )

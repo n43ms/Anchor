@@ -1,16 +1,18 @@
-"""`StepContext` (plan.md P1.5, extended by P2.2/P2.4 — T089-T094, T120-T127).
+"""`StepContext` (plan.md P1.5, extended by P2.2/P2.4/P5.4 — T089-T094,
+T120-T127, T259-T266).
 
 Agent code reaches the outside world **only** through this object
 (constitution Principle III; agent-contract.md).
 
 Two journaling regimes meet here:
 
-- `ctx.call_tool` / `ctx.call_model` append events directly, as phase 1
-  established. Phase 5 adds the two-phase *journal table* and per-tool
-  uncertainty policies on top of the event log this module already writes
-  — until then, a crash between a tool's execution and its `TOOL_RESULT`
-  being recorded can still double-execute (plan.md P1.5, P2.5's stated
-  interim limitation).
+- `ctx.call_tool` routes every call through `core.journal.two_phase`'s
+  three-state lookup (phase 5): a completed key replays via
+  `STEP_SKIPPED_ON_REPLAY`, a fresh key gets the two-phase
+  intent-then-invoke-then-result sequence, and an uncertain key is resolved
+  by the tool's declared policy. `ctx.call_model` still appends
+  `LLM_CALLED` directly — a model call has no side effect and therefore no
+  uncertainty window to resolve.
 - `ctx.now()` / `ctx.random()` / `ctx.new_id()` buffer into one
   `NONDET_RECORDED` per step, flushed atomically with that step's
   `TOOL_INTENT` (or, when the step has no tool call, its `STEP_COMPLETED`)
@@ -26,7 +28,7 @@ import json
 import random as _random
 import time
 import uuid as _uuid
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any, Protocol, TypeVar
@@ -36,6 +38,8 @@ import asyncpg
 from anchor.core.determinism.buffer import NondetBuffer
 from anchor.core.events.append import append
 from anchor.core.events.types import EventType
+from anchor.core.journal.tool_protocol import RegisteredToolLike
+from anchor.core.journal.two_phase import execute_tool_call
 from anchor.core.replay.context import RunContext
 
 _T = TypeVar("_T")
@@ -51,24 +55,6 @@ def _as_float(value: Any) -> float:
 
 def _as_str(value: Any) -> str:
     return str(value)
-
-
-def _phase1_idempotency_key(
-    run_id: int, step_index: int, tool_name: str, args: dict[str, Any]
-) -> str:
-    """A placeholder key derivation for phase 1 and 2 only.
-
-    The canonical, collision-proof derivation
-    (`sha256(canonical_json([run_id, step_index, action_name, args]))`) is
-    core/journal's job, built in phase 5 (D-12, D-41). This version exists
-    only so `TOOL_INTENT`'s required `idempotency_key` field is populated —
-    there is no journal table yet to look it up against, so nothing reads
-    this value back for deduplication before phase 5.
-    """
-    canonical = json.dumps(
-        [run_id, step_index, tool_name, args], sort_keys=True, separators=(",", ":")
-    )
-    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
 @dataclass
@@ -89,9 +75,10 @@ class StepContext:
 
     conn: asyncpg.Connection[Any] | None = None
     model_adapter: ModelAdapter | None = None
-    tool_registry: dict[str, Any] = field(default_factory=dict)
+    tool_registry: Mapping[str, RegisteredToolLike] = field(default_factory=dict)
 
     nondet_buffer: NondetBuffer = field(init=False)
+    _tool_called_this_step: bool = field(init=False, default=False)
 
     def __post_init__(self) -> None:
         self.nondet_buffer = NondetBuffer(step_index=self.step_index)
@@ -210,67 +197,48 @@ class StepContext:
     # --- The two side-effecting calls (P1.5) ---
 
     async def call_tool(self, name: str, args: dict[str, Any]) -> Any:
-        """Execute a tool, appending `TOOL_INTENT` — committed atomically
-        with any buffered non-determinism, and before invocation — then
-        `TOOL_RESULT` (FR-039, FR-040).
+        """Execute a tool through the three-state journal lookup
+        (`core.journal.two_phase`, phase 5): a key already carrying a
+        result replays via `STEP_SKIPPED_ON_REPLAY`; a fresh key gets the
+        two-phase intent-then-invoke-then-result sequence, with the intent
+        committed atomically with any buffered non-determinism and before
+        invocation (FR-039, FR-040); an uncertain key — a crash landed
+        between a committed intent and its result — is resolved by the
+        tool's declared policy, never guessed (`I8`).
 
-        Crash behaviour: a crash before the `TOOL_INTENT` transaction
-        commits leaves neither the intent nor the buffered non-determinism
-        — they are one statement group, so there is no interleaving in
-        which an effect's inputs are unrecorded (D-47, T113). A crash
-        between the committed intent and `TOOL_RESULT` is the uncertainty
-        window; phase 5 resolves it per the tool's declared policy; until
-        then the interim behaviour is a possible duplicate execution on
-        retry, stated rather than assumed (P2.5).
+        **One side effect per step** (D-26): a second call in the same
+        step raises, because that constraint is what makes the idempotency
+        key unique without a within-step counter.
+
+        Crash behaviour: a crash before the intent transaction commits
+        leaves neither the intent nor the buffered non-determinism — one
+        statement group, so there is no interleaving in which an effect's
+        inputs are unrecorded (D-47, T113). A crash between the committed
+        intent and the result phase is the uncertainty window; the next
+        attempt at this exact call resolves it per the tool's declared
+        policy rather than assuming success or failure.
         """
         assert self.conn is not None
-        tool = self.tool_registry[name]
-        idempotency_key = _phase1_idempotency_key(self.run_id, self.step_index, name, args)
-        args_hash = hashlib.sha256(
-            json.dumps(args, sort_keys=True, separators=(",", ":")).encode("utf-8")
-        ).hexdigest()
-
-        async with self.conn.transaction():
-            await self.flush_pending_nondet()
-            await append(
-                self.conn,
-                run_id=self.run_id,
-                type=EventType.TOOL_INTENT,
-                payload={
-                    "step_index": self.step_index,
-                    "tool_name": name,
-                    "args_canonical": args,
-                    "idempotency_key": idempotency_key,
-                    "args_hash": args_hash,
-                    "safety": tool.safety,
-                },
-                epoch=self.epoch,
-                worker_id=self.worker_id,
-                step_index=self.step_index,
-                max_payload_bytes=self.max_payload_bytes,
+        if self._tool_called_this_step:
+            raise RuntimeError(
+                f"step {self.step_index} attempted a second side-effecting tool "
+                f"call ({name!r}) — exactly one side effect per step is what makes "
+                "the idempotency key unique without a within-step counter (D-26)"
             )
+        self._tool_called_this_step = True
+        tool = self.tool_registry[name]
 
-        start = time.monotonic()
-        result = await tool.fn(args)
-        latency_ms = (time.monotonic() - start) * 1000
-
-        await append(
+        return await execute_tool_call(
             self.conn,
             run_id=self.run_id,
-            type=EventType.TOOL_RESULT,
-            payload={
-                "step_index": self.step_index,
-                "tool_name": name,
-                "idempotency_key": idempotency_key,
-                "result": result,
-                "latency_ms": latency_ms,
-            },
             epoch=self.epoch,
             worker_id=self.worker_id,
             step_index=self.step_index,
+            tool=tool,
+            args=args,
+            flush_pending_nondet=self.flush_pending_nondet,
             max_payload_bytes=self.max_payload_bytes,
         )
-        return result
 
     async def call_model(self, messages: list[dict[str, Any]], model: str | None = None) -> Any:
         """Call the configured `ModelAdapter` (the stub by default on every

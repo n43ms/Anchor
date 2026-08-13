@@ -20,6 +20,7 @@ from anchor.core.db.pool import create_pool
 from anchor.core.db.schema_gate import assert_schema_matches
 from anchor.core.logging import configure_logging
 from anchor.runtime.agents import register_all
+from anchor.runtime.tools.demo import register_demo_tools
 from anchor.worker.loop import RunCounter, poll_and_execute_forever
 from anchor.worker.registry.heartbeat import heartbeat_loop
 from anchor.worker.registry.kill import subscribe_and_wait_for_kill
@@ -43,6 +44,12 @@ async def main() -> None:
         # (plan.md P6.6), not retroactively to an already-registered
         # worker's row.
         settings = await load_runtime_settings(conn)
+        # Declared-tool registration (P5.5): upserts every demo tool's
+        # safety declaration into `tool_registry` before this worker can
+        # possibly claim a run that might call one, so the conflict check
+        # in `core.journal.two_phase` never races a tool's own
+        # registration.
+        await register_demo_tools(conn, code_version=env.code_version)
         registered = await register(
             conn,
             label_pool=env.worker_labels,

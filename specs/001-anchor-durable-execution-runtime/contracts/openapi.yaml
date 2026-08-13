@@ -236,11 +236,16 @@ paths:
               properties:
                 resolution:
                   type: string
-                  enum: [mark_executed, mark_not_executed, abandon]
+                  enum: [mark_executed, mark_not_executed, retry]
                   description: >-
-                    mark_executed writes the missing TOOL_RESULT and resumes. mark_not_executed
-                    clears the intent and returns the run to pending. abandon finalizes as
-                    cancelled. There is no 'guess' option, by design.
+                    mark_executed writes the missing TOOL_RESULT now, attributed to the operator,
+                    and resumes. mark_not_executed authorizes execution on the next resumption
+                    without re-consulting the tool's own declared policy. retry re-consults that
+                    declared policy from a clean slate (tasks.md T280) — for a tool declared
+                    unsafe this re-enters needs_review immediately, since no automatic policy
+                    exists for that category. There is no 'guess' option, by design. Finalizing a
+                    needs_review run as cancelled ("abandon") is deferred to phase 6, which is
+                    where cooperative cancellation (RUN_CANCELLED) is built.
                 note: { type: string, description: Recorded on the event. }
       responses:
         '202':
