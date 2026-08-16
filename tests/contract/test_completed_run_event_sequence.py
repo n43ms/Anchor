@@ -25,6 +25,8 @@ async def test_full_event_sequence_for_a_completed_run(db_pool: asyncpg.Pool) ->
     )
 
     async with db_pool.acquire() as conn:
+        from anchor.runtime.tools.demo import register_demo_tools
+        await register_demo_tools(conn, code_version="dev")
         await conn.execute(
             "INSERT INTO workers (id, label, incarnation, hostname, pid, capacity, code_version) "
             "VALUES ('worker-a#1', 'worker-a', 1, 'test', 1, 10, 'dev') ON CONFLICT DO NOTHING"

@@ -78,6 +78,10 @@ async def test_conflicted_tool_halts_rather_than_resolving_the_uncertainty_windo
         await register_tool(conn, v1, code_version="build-1")
         await register_tool(conn, v2, code_version="build-2")
 
+        await conn.execute(
+            "INSERT INTO workers (id, label, incarnation, hostname, pid, capacity, code_version) "
+            "VALUES ('worker-a#1', 'worker-a', 1, 'test', 1, 10, 'dev') ON CONFLICT DO NOTHING"
+        )
         run_id: int = await conn.fetchval(
             "INSERT INTO runs (agent_type, status, owner_worker_id, lease_expires_at) "
             "VALUES ('demo_short', 'running', 'worker-a#1', now() + interval '1 minute') "

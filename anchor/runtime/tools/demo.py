@@ -34,7 +34,7 @@ import asyncpg
 from anchor.core.journal.reconcile import NotExecuted, ReconcileResult
 from anchor.runtime.tools.registry import ToolDeclaration
 
-_LATENCY_S = 0.05
+_LATENCY_S = 3.0
 
 
 async def _record_effect(

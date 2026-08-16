@@ -34,6 +34,8 @@ register("test_nondet_batch_agent", _two_nondet_calls_then_tool)
 @pytest.mark.asyncio
 async def test_one_nondet_recorded_event_atomic_with_tool_intent(db_pool: asyncpg.Pool) -> None:
     async with db_pool.acquire() as conn:
+        from anchor.runtime.tools.demo import register_demo_tools
+        await register_demo_tools(conn, code_version="dev")
         run_id: int = await conn.fetchval(
             "INSERT INTO runs (agent_type, input) VALUES ($1, $2::jsonb) RETURNING id",
             "test_nondet_batch_agent",

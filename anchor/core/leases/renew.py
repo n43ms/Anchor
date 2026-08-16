@@ -104,7 +104,7 @@ async def renew_once(
     """
     start = time.monotonic()
     async with conn.transaction():
-        row = await conn.fetchrow(_RENEW_SQL, run_id, epoch, str(settings.renewal_interval_ms))
+        row = await conn.fetchrow(_RENEW_SQL, run_id, epoch, str(settings.lease_duration_ms))
         latency_ms = (time.monotonic() - start) * 1000
 
         if row is None:

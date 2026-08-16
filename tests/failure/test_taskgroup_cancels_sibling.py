@@ -74,6 +74,8 @@ async def test_renewer_fencing_cancels_execution_task_mid_run(db_pool: asyncpg.P
     )
 
     async with db_pool.acquire() as conn:
+        from anchor.runtime.tools.demo import register_demo_tools
+        await register_demo_tools(conn, code_version="dev")
         run_id = await _insert_run(conn)
         await conn.execute(
             "INSERT INTO workers (id, label, incarnation, hostname, pid, capacity, code_version) "

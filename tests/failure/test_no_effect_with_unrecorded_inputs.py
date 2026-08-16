@@ -45,6 +45,8 @@ async def test_new_id_value_is_recorded_atomically_with_its_tool_intent(
     db_pool: asyncpg.Pool,
 ) -> None:
     async with db_pool.acquire() as conn:
+        from anchor.runtime.tools.demo import register_demo_tools
+        await register_demo_tools(conn, code_version="dev")
         run_id: int = await conn.fetchval(
             "INSERT INTO runs (agent_type, input) VALUES ($1, $2::jsonb) RETURNING id",
             "test_new_id_atomicity_agent",

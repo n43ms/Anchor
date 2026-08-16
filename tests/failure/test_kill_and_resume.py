@@ -44,6 +44,8 @@ async def test_different_worker_resumes_after_reclaim(db_pool: asyncpg.Pool) -> 
     input_payload = {"query": "durable execution", "recipient": "ops@example.com"}
 
     async with db_pool.acquire() as conn:
+        from anchor.runtime.tools.demo import register_demo_tools
+        await register_demo_tools(conn, code_version="dev")
         run_id = await _insert_run(conn, "demo_minimal", input_payload)
         await append(
             conn,

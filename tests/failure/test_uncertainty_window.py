@@ -32,8 +32,13 @@ async def _noop_flush() -> None:
 
 
 async def _insert_run(conn: asyncpg.Connection) -> int:
+    await conn.execute(
+        "INSERT INTO workers (id, label, incarnation, hostname, pid, capacity, code_version) "
+        "VALUES ('worker-a#1', 'worker-a', 1, 'test', 1, 10, 'dev') ON CONFLICT DO NOTHING"
+    )
     run_id: int = await conn.fetchval(
-        "INSERT INTO runs (agent_type, status) VALUES ('demo_short', 'running') RETURNING id"
+        "INSERT INTO runs (agent_type, status, owner_worker_id, lease_expires_at) "
+        "VALUES ('demo_short', 'running', 'worker-a#1', now() + interval '1 minute') RETURNING id"
     )
     return run_id
 

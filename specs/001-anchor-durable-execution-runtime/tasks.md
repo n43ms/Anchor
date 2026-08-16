@@ -363,75 +363,75 @@ asserted exactly rather than statistically.
 
 ### Tests for Phase 3 (MANDATORY) ⚠️
 
-- [ ] T145 [P] [US1] Write the claim-contention test in `tests/concurrency/test_exactly_one_claim.py`: N workers, one available run, **exactly one** claim succeeds. No assertion in this file may say "usually" or "eventually" — `SKIP LOCKED` in one transaction makes the property exact (FR-007)
-- [ ] T146 [P] [US1] Write the sustained-contention test in `tests/concurrency/test_claim_under_load.py` repeating the above for many runs and many workers, asserting no run is ever claimed twice at the same epoch
-- [ ] T147 [P] [US1] Write the reclaim test in `tests/concurrency/test_reclaim_after_expiry.py` asserting the second claim carries `reason: reclaimed_after_lease_expiry` and `epoch + 1`, and that `status` **stays** `running` (data-model.md §1 state machine) (FR-011)
-- [ ] T148 [P] [US1] Write the single-statement test in `tests/unit/test_claim_is_one_statement.py` asserting `pending` and expired-lease runs are handled by **one** statement, never two queries (FR-009)
-- [ ] T149 [P] [US1] Write the atomic-claim test in `tests/unit/test_claim_transaction_atomic.py` asserting the epoch increment, owner assignment, lease extension, status transition, and `RUN_CLAIMED` append are all one transaction — and that an induced failure after the update leaves none of them (FR-008)
-- [ ] T150 [P] [US1] Write the long-step test in `tests/failure/test_long_step_not_fenced.py` asserting a step lasting longer than `lease_duration` is **not** fenced, because the renewer extends independently. This is the behaviour that makes two configuration profiles possible at all (FR-012)
-- [ ] T151 [P] [US1] Write the database-clock test in `tests/unit/test_lease_expiry_uses_db_clock.py` asserting lease expiry is evaluated in SQL against `now()` and that no worker's clock appears in any comparison (`I5`, FR-010)
-- [ ] T152 [P] [US1] Write the global-cap test in `tests/unit/test_global_cap_enforced_at_claim.py`: submitting far beyond the cap leaves the running count **at** the cap with the remainder `pending`, and **no submission rejected**. A cap applied at submission enforces nothing (D-44, FR-003)
-- [ ] T153 [P] [US1] Write the renewal-latency test in `tests/unit/test_renewal_latency_recorded.py` asserting every renewal records its latency to telemetry regardless of whether an event was emitted (D-48)
-- [ ] T154 [P] [US1] Write the conditional-emission test in `tests/unit/test_lease_renewed_emit_policy.py` asserting `LEASE_RENEWED` is emitted on `first_after_claim`, on `latency_threshold_exceeded`, and on `final_before_terminal` — and **not** on every renewal under the default policy (D-48)
-- [ ] T155 [P] [US1] Write the polling-convoy test in `tests/concurrency/test_idle_backoff_jitter.py` asserting idle workers' poll times spread rather than synchronizing (FR-014)
-- [ ] T156 [P] [US1] Write the structured-concurrency test in `tests/failure/test_taskgroup_cancels_sibling.py` asserting a failure in the renewer task cancels the execution task via the `TaskGroup` rather than leaving an orphaned writer
+- [x] T145 [P] [US1] Write the claim-contention test in `tests/concurrency/test_exactly_one_claim.py`: N workers, one available run, **exactly one** claim succeeds. No assertion in this file may say "usually" or "eventually" — `SKIP LOCKED` in one transaction makes the property exact (FR-007)
+- [x] T146 [P] [US1] Write the sustained-contention test in `tests/concurrency/test_claim_under_load.py` repeating the above for many runs and many workers, asserting no run is ever claimed twice at the same epoch
+- [x] T147 [P] [US1] Write the reclaim test in `tests/concurrency/test_reclaim_after_expiry.py` asserting the second claim carries `reason: reclaimed_after_lease_expiry` and `epoch + 1`, and that `status` **stays** `running` (data-model.md §1 state machine) (FR-011)
+- [x] T148 [P] [US1] Write the single-statement test in `tests/unit/test_claim_is_one_statement.py` asserting `pending` and expired-lease runs are handled by **one** statement, never two queries (FR-009)
+- [x] T149 [P] [US1] Write the atomic-claim test in `tests/unit/test_claim_transaction_atomic.py` asserting the epoch increment, owner assignment, lease extension, status transition, and `RUN_CLAIMED` append are all one transaction — and that an induced failure after the update leaves none of them (FR-008)
+- [x] T150 [P] [US1] Write the long-step test in `tests/failure/test_long_step_not_fenced.py` asserting a step lasting longer than `lease_duration` is **not** fenced, because the renewer extends independently. This is the behaviour that makes two configuration profiles possible at all (FR-012)
+- [x] T151 [P] [US1] Write the database-clock test in `tests/unit/test_lease_expiry_uses_db_clock.py` asserting lease expiry is evaluated in SQL against `now()` and that no worker's clock appears in any comparison (`I5`, FR-010)
+- [x] T152 [P] [US1] Write the global-cap test in `tests/unit/test_global_cap_enforced_at_claim.py`: submitting far beyond the cap leaves the running count **at** the cap with the remainder `pending`, and **no submission rejected**. A cap applied at submission enforces nothing (D-44, FR-003)
+- [x] T153 [P] [US1] Write the renewal-latency test in `tests/unit/test_renewal_latency_recorded.py` asserting every renewal records its latency to telemetry regardless of whether an event was emitted (D-48)
+- [x] T154 [P] [US1] Write the conditional-emission test in `tests/unit/test_lease_renewed_emit_policy.py` asserting `LEASE_RENEWED` is emitted on `first_after_claim`, on `latency_threshold_exceeded`, and on `final_before_terminal` — and **not** on every renewal under the default policy (D-48)
+- [x] T155 [P] [US1] Write the polling-convoy test in `tests/concurrency/test_idle_backoff_jitter.py` asserting idle workers' poll times spread rather than synchronizing (FR-014)
+- [x] T156 [P] [US1] Write the structured-concurrency test in `tests/failure/test_taskgroup_cancels_sibling.py` asserting a failure in the renewer task cancels the execution task via the `TaskGroup` rather than leaving an orphaned writer
 
 ### Implementation for Phase 3
 
 #### P3.1 — The claim statement
 
-- [ ] T157 [US1] Implement the claim CTE in `anchor/core/leases/claim.py` selecting one eligible row — `pending`, **or** `running` with an expired lease — ordered by `priority` then `created_at`, `FOR UPDATE SKIP LOCKED LIMIT 1` (FR-007, D-10)
-- [ ] T158 [US1] Extend the claim CTE in `anchor/core/leases/claim.py` to increment `epoch`, set `owner_worker_id`, extend `lease_expires_at` **from `now()`**, set `claimed_at`, and return `(id, epoch)` — all in the same statement (FR-008, FR-010)
-- [ ] T159 [US1] Enforce the global concurrency cap **inside** the claim statement in `anchor/core/leases/claim.py` by counting currently-`running` runs in the same CTE. Comment states why: a cap at submission enforces nothing and contradicts §9's "new runs stay pending" (D-44, FR-003)
-- [ ] T160 [US1] Append `RUN_CLAIMED` in the claim transaction in `anchor/core/leases/claim.py` carrying `worker_id`, `epoch`, `reason`, `lease_expires_at`, and `previous_worker_id` (FR-011)
-- [ ] T161 [US1] Document in `anchor/core/leases/claim.py` why reclaim does **not** change `status`: `orphaned` is a derived display state, and storing it would require a writer at the exact moment nobody owns the run
-- [ ] T162 [US1] Add the transaction comment to `anchor/core/leases/claim.py` stating what must be atomic and why — two workers observing the same epoch is the whole failure this statement exists to prevent
+- [x] T157 [US1] Implement the claim CTE in `anchor/core/leases/claim.py` selecting one eligible row — `pending`, **or** `running` with an expired lease — ordered by `priority` then `created_at`, `FOR UPDATE SKIP LOCKED LIMIT 1` (FR-007, D-10)
+- [x] T158 [US1] Extend the claim CTE in `anchor/core/leases/claim.py` to increment `epoch`, set `owner_worker_id`, extend `lease_expires_at` **from `now()`**, set `claimed_at`, and return `(id, epoch)` — all in the same statement (FR-008, FR-010)
+- [x] T159 [US1] Enforce the global concurrency cap **inside** the claim statement in `anchor/core/leases/claim.py` by counting currently-`running` runs in the same CTE. Comment states why: a cap at submission enforces nothing and contradicts §9's "new runs stay pending" (D-44, FR-003)
+- [x] T160 [US1] Append `RUN_CLAIMED` in the claim transaction in `anchor/core/leases/claim.py` carrying `worker_id`, `epoch`, `reason`, `lease_expires_at`, and `previous_worker_id` (FR-011)
+- [x] T161 [US1] Document in `anchor/core/leases/claim.py` why reclaim does **not** change `status`: `orphaned` is a derived display state, and storing it would require a writer at the exact moment nobody owns the run
+- [x] T162 [US1] Add the transaction comment to `anchor/core/leases/claim.py` stating what must be atomic and why — two workers observing the same epoch is the whole failure this statement exists to prevent
 
 #### P3.2 — Claim indexes
 
-- [ ] T163 [US1] Write migration 002 in `ops/migrations/versions/002_claim_indexes.py` adding any claim index not already created in 001, plus the `status` index the global-cap count uses, each with its serving query and write cost recorded as a SQL comment. **Numbering note**: this migration does not appear in plan.md, which labelled phase 5's migration `002` and phase 8's `003`. Because the global-cap count index cannot be specified before D-44 is implemented here, migrations are sequentially `002` (phase 3), `003` (phase 5), `004` (phase 8). Content is unchanged; only the labels shift by one
-- [ ] T164 [US1] Add `tests/unit/test_claim_uses_indexes.py` asserting via `EXPLAIN` that both claim branches use their intended partial index rather than a sequential scan
+- [x] T163 [US1] Write migration 002 in `ops/migrations/versions/002_claim_indexes.py` adding any claim index not already created in 001, plus the `status` index the global-cap count uses, each with its serving query and write cost recorded as a SQL comment. **Numbering note**: this migration does not appear in plan.md, which labelled phase 5's migration `002` and phase 8's `003`. Because the global-cap count index cannot be specified before D-44 is implemented here, migrations are sequentially `002` (phase 3), `003` (phase 5), `004` (phase 8). Content is unchanged; only the labels shift by one
+- [x] T164 [US1] Add `tests/unit/test_claim_uses_indexes.py` asserting via `EXPLAIN` that both claim branches use their intended partial index rather than a sequential scan
 
 #### P3.3 — Lease renewal
 
-- [ ] T165 [US1] Implement lease renewal in `anchor/core/leases/renew.py` as `UPDATE runs SET lease_expires_at = now() + $interval WHERE id = $1 AND epoch = $2`, returning whether a row was updated — **a zero-row result is a fencing signal**, not a retryable error (FR-012)
-- [ ] T166 [US1] Implement the emit policy in `anchor/core/leases/renew.py` per `lease_renewed_emit_policy`: emit on `first_after_claim`, on latency above `renewal_latency_warn_pct` of the lease, on `final_before_terminal`, and on every renewal only in `always` mode (D-48)
-- [ ] T167 [US1] Record every renewal's latency to the telemetry path in `anchor/core/leases/renew.py` regardless of emission, so the distribution stays complete while the log stays readable
-- [ ] T168 [US1] Document in `anchor/core/leases/renew.py` that the renewer emits **no liveness signal other than lease extension** — there is no heartbeat that can outlive a stalled process, and that absence is the design (FR-012)
+- [x] T165 [US1] Implement lease renewal in `anchor/core/leases/renew.py` as `UPDATE runs SET lease_expires_at = now() + $interval WHERE id = $1 AND epoch = $2`, returning whether a row was updated — **a zero-row result is a fencing signal**, not a retryable error (FR-012)
+- [x] T166 [US1] Implement the emit policy in `anchor/core/leases/renew.py` per `lease_renewed_emit_policy`: emit on `first_after_claim`, on latency above `renewal_latency_warn_pct` of the lease, on `final_before_terminal`, and on every renewal only in `always` mode (D-48)
+- [x] T167 [US1] Record every renewal's latency to the telemetry path in `anchor/core/leases/renew.py` regardless of emission, so the distribution stays complete while the log stays readable
+- [x] T168 [US1] Document in `anchor/core/leases/renew.py` that the renewer emits **no liveness signal other than lease extension** — there is no heartbeat that can outlive a stalled process, and that absence is the design (FR-012)
 
 #### P3.4 — The `TaskGroup` structure
 
-- [ ] T169 [US1] Implement the per-run `asyncio.TaskGroup` in `anchor/worker/loop.py` holding the execution task and the renewer task, so a failure in either cancels the other by structured concurrency rather than by bookkeeping
-- [ ] T170 [US1] Put the renewer on its own timer in `anchor/worker/renewer.py`, **independent of step progress**, and add a comment stating that coupling it to step completion is the mistake that makes long steps unrunnable
-- [ ] T171 [US1] Document the crash behaviour in `anchor/worker/loop.py`: a crash between the claim commit and the first step leaves a claimed run with a live lease that expires normally; a crash inside the renewer cancels the sibling rather than orphaning a writer
+- [x] T169 [US1] Implement the per-run `asyncio.TaskGroup` in `anchor/worker/loop.py` holding the execution task and the renewer task, so a failure in either cancels the other by structured concurrency rather than by bookkeeping
+- [x] T170 [US1] Put the renewer on its own timer in `anchor/worker/renewer.py`, **independent of step progress**, and add a comment stating that coupling it to step completion is the mistake that makes long steps unrunnable
+- [x] T171 [US1] Document the crash behaviour in `anchor/worker/loop.py`: a crash between the claim commit and the first step leaves a claimed run with a live lease that expires normally; a crash inside the renewer cancels the sibling rather than orphaning a writer
 
 #### P3.5 — Reclaim polling
 
-- [ ] T172 [US1] Implement the poll loop in `anchor/worker/loop.py` at `reclaim_poll_interval_ms` plus jitter
-- [ ] T173 [US1] Implement backoff with jitter on an empty claim in `anchor/worker/loop.py`, so idle workers do not form a polling convoy (FR-014)
+- [x] T172 [US1] Implement the poll loop in `anchor/worker/loop.py` at `reclaim_poll_interval_ms` plus jitter
+- [x] T173 [US1] Implement backoff with jitter on an empty claim in `anchor/worker/loop.py`, so idle workers do not form a polling convoy (FR-014)
 
 #### P3.6 — Fleet telemetry
 
-- [ ] T174 [US1] Update `current_run_count` on claim and release in `anchor/worker/registry/heartbeat.py`, with a comment stating it is **telemetry, not an authority** — admission control reads the worker's own in-process count, and using this column to decide would be a second source of truth (data-model.md §5)
-- [ ] T175 [US1] Publish fleet telemetry to the `anchor:fleet` Redis channel in `anchor/worker/registry/heartbeat.py` as **display only** — `last_seen_at` in PostgreSQL remains the only thing anyone reasons about
-- [ ] T176 [US1] Implement `GET /api/workers` in `anchor/api/routers/workers.py` returning id, label, incarnation, uptime, `current_run_count`, last-heartbeat age, `code_version`, and `role` (FR-066)
-- [ ] T177 [US1] Implement stale-worker detection in `anchor/api/serializers/workers.py` as `now() - last_seen_at` against a threshold, surfacing the register-then-die case (FR-067)
+- [x] T174 [US1] Update `current_run_count` on claim and release in `anchor/worker/registry/heartbeat.py`, with a comment stating it is **telemetry, not an authority** — admission control reads the worker's own in-process count, and using this column to decide would be a second source of truth (data-model.md §5)
+- [x] T175 [US1] Publish fleet telemetry to the `anchor:fleet` Redis channel in `anchor/worker/registry/heartbeat.py` as **display only** — `last_seen_at` in PostgreSQL remains the only thing anyone reasons about
+- [x] T176 [US1] Implement `GET /api/workers` in `anchor/api/routers/workers.py` returning id, label, incarnation, uptime, `current_run_count`, last-heartbeat age, `code_version`, and `role` (FR-066)
+- [x] T177 [US1] Implement stale-worker detection in `anchor/api/serializers/workers.py` as `now() - last_seen_at` against a threshold, surfacing the register-then-die case (FR-067)
 
 #### P3.7 — Multi-worker verification
 
-- [ ] T178 [US1] Add per-worker step throughput to the structured log in `anchor/worker/loop.py` so three workers competing for real work is observable without a console
-- [ ] T179 [US1] Execute [V3](./quickstart.md#v3--claim-contention-phase-3) against a three-worker compose fleet and record the result
-- [ ] T180 [US1] Run `tests/concurrency` under repetition (at least 100 iterations) and confirm zero double-claims
-- [ ] T181 [P] [US1] Implement `POST /api/workers/{id}/kill` in `anchor/api/routers/workers.py` publishing to the Redis kill channel, documented and presented as a **first-class product feature**, not a debug affordance (FR-068)
-- [ ] T182 [P] [US1] Add the graceful-kill variant to `anchor/api/routers/workers.py` that releases the lease on the way out, **labelled distinctly from the hard kill**, so the demo can show both and explain why they differ — presenting a cooperative shutdown as a crash would misrepresent system state (§25.5 closing note)
-- [ ] T183 [P] [US1] Write the kill-endpoint contract test in `tests/contract/test_kill_endpoint.py` asserting both variants match `contracts/openapi.yaml` and that the hard kill produces no `stopped_at`
-- [ ] T184 [P] [US1] Write the respawn test in `tests/failure/test_worker_respawns.py` asserting a killed worker returns to `GET /api/workers` within seconds **as a new id** with a higher incarnation, the old row unmodified (FR-069)
-- [ ] T185 [P] [US1] Write the fleet-saturation test in `tests/failure/test_fleet_saturated.py` asserting excess runs stay `pending` and no worker exceeds its capacity — nothing degrades uniformly
-- [ ] T186 [P] [US1] Write the register-then-die test in `tests/failure/test_worker_registers_then_dies.py` asserting the stale `last_seen_at` surfaces the worker as stale rather than as healthy
-- [ ] T187 [P] [US1] Write the clock-skew test in `tests/failure/test_clock_skew_irrelevant.py` asserting a worker with a deliberately wrong system clock claims, renews, and expires identically — because every comparison is on the database clock (`I5`)
-- [ ] T188 [US1] Record the crash behaviour of every await point added in phase 3 in the relevant module docstrings
-- [ ] T189 [US1] Add `tests/boundary/test_redis_never_authoritative.py` asserting no ownership, lease, or liveness decision reads from Redis anywhere in `anchor/` (FR-058)
-- [ ] T190 [US1] Run the full suite and confirm every phase-3 test passes
+- [x] T178 [US1] Add per-worker step throughput to the structured log in `anchor/worker/loop.py` so three workers competing for real work is observable without a console
+- [x] T179 [US1] Execute [V3](./quickstart.md#v3--claim-contention-phase-3) against a three-worker compose fleet and record the result
+- [x] T180 [US1] Run `tests/concurrency` under repetition (at least 100 iterations) and confirm zero double-claims
+- [x] T181 [P] [US1] Implement `POST /api/workers/{id}/kill` in `anchor/api/routers/workers.py` publishing to the Redis kill channel, documented and presented as a **first-class product feature**, not a debug affordance (FR-068)
+- [x] T182 [P] [US1] Add the graceful-kill variant to `anchor/api/routers/workers.py` that releases the lease on the way out, **labelled distinctly from the hard kill**, so the demo can show both and explain why they differ — presenting a cooperative shutdown as a crash would misrepresent system state (§25.5 closing note)
+- [x] T183 [P] [US1] Write the kill-endpoint contract test in `tests/contract/test_kill_endpoint.py` asserting both variants match `contracts/openapi.yaml` and that the hard kill produces no `stopped_at`
+- [x] T184 [P] [US1] Write the respawn test in `tests/failure/test_worker_respawns.py` asserting a killed worker returns to `GET /api/workers` within seconds **as a new id** with a higher incarnation, the old row unmodified (FR-069)
+- [x] T185 [P] [US1] Write the fleet-saturation test in `tests/failure/test_fleet_saturated.py` asserting excess runs stay `pending` and no worker exceeds its capacity — nothing degrades uniformly
+- [x] T186 [P] [US1] Write the register-then-die test in `tests/failure/test_worker_registers_then_dies.py` asserting the stale `last_seen_at` surfaces the worker as stale rather than as healthy
+- [x] T187 [P] [US1] Write the clock-skew test in `tests/failure/test_clock_skew_irrelevant.py` asserting a worker with a deliberately wrong system clock claims, renews, and expires identically — because every comparison is on the database clock (`I5`)
+- [x] T188 [US1] Record the crash behaviour of every await point added in phase 3 in the relevant module docstrings
+- [x] T189 [US1] Add `tests/boundary/test_redis_never_authoritative.py` asserting no ownership, lease, or liveness decision reads from Redis anywhere in `anchor/` (FR-058)
+- [x] T190 [US1] Run the full suite and confirm every phase-3 test passes
 
 **Exit gate**: [V3](./quickstart.md#v3--claim-contention-phase-3).
 
@@ -459,67 +459,67 @@ landed, and that the fenced worker performs no subsequent write of any kind.
 
 All in `tests/failure`, each corresponding to a row of §9's failure matrix.
 
-- [ ] T191 [P] [US2] Write the zombie-fencing test in `tests/failure/test_zombie_worker_fenced.py`: a worker holding a stale epoch attempts an append and the **database** raises `AN001` — the rejection comes from the trigger, not from Python (FR-017)
-- [ ] T192 [P] [US2] Extend `tests/failure/test_zombie_worker_fenced.py` to assert **no partial write landed** — the run's `last_seq` is unchanged after the rejection
-- [ ] T193 [P] [US2] Extend `tests/failure/test_zombie_worker_fenced.py` to assert the fenced worker performs **no subsequent write of any kind**, including no error event through that run's log (FR-019)
-- [ ] T194 [P] [US2] Extend `tests/failure/test_zombie_worker_fenced.py` to assert the fenced worker does not retry and returns to the idle pool, claiming other work normally
-- [ ] T195 [P] [US2] Write the renewal-cancellation test in `tests/failure/test_renewal_rejected_cancels_run_task.py` asserting a rejected renewal cancels the execution task and **no write follows the cancellation**, verified by the log's final `seq` being unchanged (FR-021)
-- [ ] T196 [P] [US2] Write the blocked-loop test in `tests/failure/test_blocked_event_loop_is_reclaimed.py` asserting a fully blocked event loop results in lease expiry and reclaim, **not** in continued renewal — the renewer must be incapable of signalling liveness that outlives a stalled process
-- [ ] T197 [P] [US2] Write the epoch-monotonicity test in `tests/unit/test_epoch_never_decrements.py` asserting no code path decrements `epoch`, and that a hand-crafted decrement is rejected by the `CHECK`
-- [ ] T198 [P] [US2] Write the typed-error test in `tests/unit/test_fencing_error_distinguishable.py` asserting `LeaseFencedError` is catchable without catching any other database error — a fencing rejection handled as a generic failure would be retried, which is the one thing it must never be (FR-018)
-- [ ] T199 [P] [US2] Write the `WORKER_FENCED` payload test in `tests/unit/test_worker_fenced_payload.py` asserting both `stale_epoch` and `current_epoch` are present and required, because §22.4 requires the marker to display both (FR-020)
-- [ ] T200 [P] [US2] Write the single-writer-per-epoch test in `tests/concurrency/test_single_writer_per_epoch.py` asserting that across a contended workload, no `(run_id, epoch)` pair ever carries events from two different worker ids (`I3`)
-- [ ] T201 [P] [US2] Write the append-cancellation-check test in `tests/failure/test_append_checks_cancellation.py` asserting the single append path checks its own cancellation state **before issuing SQL**, so a cancelled task cannot land a write in flight
+- [x] T191 [P] [US2] Write the zombie-fencing test in `tests/failure/test_zombie_worker_fenced.py`: a worker holding a stale epoch attempts an append and the **database** raises `AN001` — the rejection comes from the trigger, not from Python (FR-017)
+- [x] T192 [P] [US2] Extend `tests/failure/test_zombie_worker_fenced.py` to assert **no partial write landed** — the run's `last_seq` is unchanged after the rejection
+- [x] T193 [P] [US2] Extend `tests/failure/test_zombie_worker_fenced.py` to assert the fenced worker performs **no subsequent write of any kind**, including no error event through that run's log (FR-019)
+- [x] T194 [P] [US2] Extend `tests/failure/test_zombie_worker_fenced.py` to assert the fenced worker does not retry and returns to the idle pool, claiming other work normally
+- [x] T195 [P] [US2] Write the renewal-cancellation test in `tests/failure/test_renewal_rejected_cancels_run_task.py` asserting a rejected renewal cancels the execution task and **no write follows the cancellation**, verified by the log's final `seq` being unchanged (FR-021)
+- [x] T196 [P] [US2] Write the blocked-loop test in `tests/failure/test_blocked_event_loop_is_reclaimed.py` asserting a fully blocked event loop results in lease expiry and reclaim, **not** in continued renewal — the renewer must be incapable of signalling liveness that outlives a stalled process
+- [x] T197 [P] [US2] Write the epoch-monotonicity test in `tests/unit/test_epoch_never_decrements.py` asserting no code path decrements `epoch`, and that a hand-crafted decrement is rejected by the `CHECK`
+- [x] T198 [P] [US2] Write the typed-error test in `tests/unit/test_fencing_error_distinguishable.py` asserting `LeaseFencedError` is catchable without catching any other database error — a fencing rejection handled as a generic failure would be retried, which is the one thing it must never be (FR-018)
+- [x] T199 [P] [US2] Write the `WORKER_FENCED` payload test in `tests/unit/test_worker_fenced_payload.py` asserting both `stale_epoch` and `current_epoch` are present and required, because §22.4 requires the marker to display both (FR-020)
+- [x] T200 [P] [US2] Write the single-writer-per-epoch test in `tests/concurrency/test_single_writer_per_epoch.py` asserting that across a contended workload, no `(run_id, epoch)` pair ever carries events from two different worker ids (`I3`)
+- [x] T201 [P] [US2] Write the append-cancellation-check test in `tests/failure/test_append_checks_cancellation.py` asserting the single append path checks its own cancellation state **before issuing SQL**, so a cancelled task cannot land a write in flight
 
 ### Implementation for Phase 4
 
 #### P4.1 — Fenced-worker withdrawal
 
-- [ ] T202 [US2] Implement fencing detection in `anchor/core/events/append.py` translating `AN001` into `LeaseFencedError` at the single append path, so every writer inherits the behaviour without implementing it
-- [ ] T203 [US2] Implement fenced withdrawal in `anchor/worker/loop.py`: catch `LeaseFencedError`, **discard all in-memory state**, write nothing further through that run, perform no retry, and return to the idle pool (FR-019)
-- [ ] T204 [US2] Add an explicit guard in `anchor/worker/loop.py` preventing an error event from being appended through a fenced run's log, with a comment stating why: the fenced worker no longer owns the run, and its opinion about what went wrong is exactly the corruption the epoch exists to prevent
-- [ ] T205 [US2] Emit the fencing incident to the structured log in `anchor/worker/loop.py` carrying both epochs and the run id — **the local log, not the run's log** — so the incident is reconstructable from two workers' logs afterwards
+- [x] T202 [US2] Implement fencing detection in `anchor/core/events/append.py` translating `AN001` into `LeaseFencedError` at the single append path, so every writer inherits the behaviour without implementing it
+- [x] T203 [US2] Implement fenced withdrawal in `anchor/worker/loop.py`: catch `LeaseFencedError`, **discard all in-memory state**, write nothing further through that run, perform no retry, and return to the idle pool (FR-019)
+- [x] T204 [US2] Add an explicit guard in `anchor/worker/loop.py` preventing an error event from being appended through a fenced run's log, with a comment stating why: the fenced worker no longer owns the run, and its opinion about what went wrong is exactly the corruption the epoch exists to prevent
+- [x] T205 [US2] Emit the fencing incident to the structured log in `anchor/worker/loop.py` carrying both epochs and the run id — **the local log, not the run's log** — so the incident is reconstructable from two workers' logs afterwards
 
 #### P4.2 — The renewer as fencing detector
 
-- [ ] T206 [US2] Implement rejection handling in `anchor/worker/renewer.py`: a zero-row renewal result raises `LeaseFencedError` rather than being retried
-- [ ] T207 [US2] Implement execution-task cancellation in `anchor/worker/renewer.py` on detected fencing, propagating through the `TaskGroup` (FR-021)
-- [ ] T208 [US2] Implement the cancellation check in `anchor/core/events/append.py` that inspects the current task's cancellation state immediately before issuing SQL, so a cancelled execution task cannot land a write already in flight
-- [ ] T209 [US2] Document the race in `anchor/worker/renewer.py`: the cancellation path acts on a *different task* than the one doing the work, which is why T195 exists as a test rather than as an argument in a comment
+- [x] T206 [US2] Implement rejection handling in `anchor/worker/renewer.py`: a zero-row renewal result raises `LeaseFencedError` rather than being retried
+- [x] T207 [US2] Implement execution-task cancellation in `anchor/worker/renewer.py` on detected fencing, propagating through the `TaskGroup` (FR-021)
+- [x] T208 [US2] Implement the cancellation check in `anchor/core/events/append.py` that inspects the current task's cancellation state immediately before issuing SQL, so a cancelled execution task cannot land a write already in flight
+- [x] T209 [US2] Document the race in `anchor/worker/renewer.py`: the cancellation path acts on a *different task* than the one doing the work, which is why T195 exists as a test rather than as an argument in a comment
 
 #### P4.3 — `WORKER_FENCED`
 
-- [ ] T210 [US2] Append `WORKER_FENCED` from the **surviving writer** in `anchor/core/leases/claim.py` where the fencing is observable, carrying `fenced_worker_id`, `stale_epoch`, `current_epoch`, and `detected_by` (FR-020)
-- [ ] T211 [US2] Implement `detected_by` discrimination in `anchor/core/leases/fencing.py` distinguishing `renewer` from `append`, since the two are different races and the console displays which one fired
+- [x] T210 [US2] Append `WORKER_FENCED` from the **surviving writer** in `anchor/core/leases/claim.py` where the fencing is observable, carrying `fenced_worker_id`, `stale_epoch`, `current_epoch`, and `detected_by` (FR-020)
+- [x] T211 [US2] Implement `detected_by` discrimination in `anchor/core/leases/fencing.py` distinguishing `renewer` from `append`, since the two are different races and the console displays which one fired
 
 #### P4.4 — Zombie construction
 
-- [ ] T212 [US2] Implement the test-only stall injection in `anchor/chaos/injections/stall.py` suspending a worker's event loop while it holds a stale epoch, so the zombie scenario is **reproducible rather than anecdotal** (FR-077)
-- [ ] T213 [US2] Add a guard in `anchor/chaos/injections/stall.py` making the injection unreachable outside tests and the chaos harness, with `tests/boundary/test_stall_injection_not_reachable.py` asserting no production import path reaches it
-- [ ] T214 [US2] Implement the zombie test harness in `tests/failure/conftest.py` providing a reusable "make me a zombie holding epoch N" fixture, since four tests need it and hand-rolling it four times is how they drift apart
+- [x] T212 [US2] Implement the test-only stall injection in `anchor/chaos/injections/stall.py` suspending a worker's event loop while it holds a stale epoch, so the zombie scenario is **reproducible rather than anecdotal** (FR-077)
+- [x] T213 [US2] Add a guard in `anchor/chaos/injections/stall.py` making the injection unreachable outside tests and the chaos harness, with `tests/boundary/test_stall_injection_not_reachable.py` asserting no production import path reaches it
+- [x] T214 [US2] Implement the zombie test harness in `tests/failure/conftest.py` providing a reusable "make me a zombie holding epoch N" fixture, since four tests need it and hand-rolling it four times is how they drift apart
 
 #### P4.5 — Blocked-loop verification
 
-- [ ] T215 [US2] Implement blocked-loop simulation in `tests/failure/test_blocked_event_loop_is_reclaimed.py` using a synchronous sleep that starves the loop, and assert lease expiry and reclaim follow
-- [ ] T216 [US2] Add an assertion in `anchor/worker/renewer.py`'s docstring and in the test that the renewer cannot renew while the loop is blocked — **this is a property of running on the same loop, and it is load-bearing, not incidental**
+- [x] T215 [US2] Implement blocked-loop simulation in `tests/failure/test_blocked_event_loop_is_reclaimed.py` using a synchronous sleep that starves the loop, and assert lease expiry and reclaim follow
+- [x] T216 [US2] Add an assertion in `anchor/worker/renewer.py`'s docstring and in the test that the renewer cannot renew while the loop is blocked — **this is a property of running on the same loop, and it is load-bearing, not incidental**
 
 #### P4.6 — Fencing-rate counting
 
-- [ ] T217 [US2] Implement the fencing counter in `anchor/core/leases/fencing.py` incrementing on every rejected write, emitted to telemetry so the phase-6 metric series **has history by the time the chart exists**
-- [ ] T218 [US2] Document in `anchor/core/leases/fencing.py` that a rising fencing rate reads as "the lease is too short relative to **renewal latency**", not as unhealthy workers — the misreading is the expensive one (FR-071)
+- [x] T217 [US2] Implement the fencing counter in `anchor/core/leases/fencing.py` incrementing on every rejected write, emitted to telemetry so the phase-6 metric series **has history by the time the chart exists**
+- [x] T218 [US2] Document in `anchor/core/leases/fencing.py` that a rising fencing rate reads as "the lease is too short relative to **renewal latency**", not as unhealthy workers — the misreading is the expensive one (FR-071)
 
 #### Phase 4 gate work
 
-- [ ] T219 [US2] Execute [V4](./quickstart.md#v4--the-zombie-worker-is-fenced-phase-4--the-most-valuable-phase) end to end and confirm all five expected outcomes
-- [ ] T220 [US2] Run `tests/failure` and `tests/concurrency` under repetition and confirm no intermittent failure across at least 100 iterations
-- [ ] T221 [US2] Write the fencing narrative in `docs/fencing.md`: the zombie timeline, why the epoch must be monotonic, and why the check must live in the database
-- [ ] T222 [US2] **Whiteboard the fencing mechanism cold, without notes.** This is a non-mechanical exit gate and it is the one the source spec calls "the real bar" (SC-018)
-- [ ] T223 [P] [US2] Add `tests/failure/test_duplicate_seq_under_contention.py` asserting that under deliberate racing, a duplicate `(run_id, seq)` is rejected by the primary key rather than overwriting
-- [ ] T224 [P] [US2] Add `tests/failure/test_two_workers_race_same_run.py` asserting the race is structurally impossible — one locking transaction that skips rows locked elsewhere
-- [ ] T225 [P] [US2] Add `tests/replay/test_replay_from_fencing_incident_log.py` replaying a log captured from a real fencing incident, since a `RunContext` bug that survives happy-path logs is the highest-value risk in the project
-- [ ] T226 [P] [US2] Capture a fencing-incident log into `tests/fixtures/logs/fencing_incident.json` from the T219 run
-- [ ] T227 [US2] Record the crash behaviour of every await point added in phase 4 in the relevant module docstrings
-- [ ] T228 [US2] Record the phase-4 gate result in the PR description, including the observed `AN001` rejection and the unchanged `last_seq`
+- [x] T219 [US2] Execute [V4](./quickstart.md#v4--the-zombie-worker-is-fenced-phase-4--the-most-valuable-phase) end to end and confirm all five expected outcomes
+- [x] T220 [US2] Run `tests/failure` and `tests/concurrency` under repetition and confirm no intermittent failure across at least 100 iterations
+- [x] T221 [US2] Write the fencing narrative in `docs/fencing.md`: the zombie timeline, why the epoch must be monotonic, and why the check must live in the database
+- [x] T222 [US2] **Whiteboard the fencing mechanism cold, without notes.** This is a non-mechanical exit gate and it is the one the source spec calls "the real bar" (SC-018)
+- [x] T223 [P] [US2] Add `tests/failure/test_duplicate_seq_under_contention.py` asserting that under deliberate racing, a duplicate `(run_id, seq)` is rejected by the primary key rather than overwriting
+- [x] T224 [P] [US2] Add `tests/failure/test_two_workers_race_same_run.py` asserting the race is structurally impossible — one locking transaction that skips rows locked elsewhere
+- [x] T225 [P] [US2] Add `tests/replay/test_replay_from_fencing_incident_log.py` replaying a log captured from a real fencing incident, since a `RunContext` bug that survives happy-path logs is the highest-value risk in the project
+- [x] T226 [P] [US2] Capture a fencing-incident log into `tests/fixtures/logs/fencing_incident.json` from the T219 run
+- [x] T227 [US2] Record the crash behaviour of every await point added in phase 4 in the relevant module docstrings
+- [x] T228 [US2] Record the phase-4 gate result in the PR description, including the observed `AN001` rejection and the unchanged `last_seq`
 
 **Exit gate**: [V4](./quickstart.md#v4--the-zombie-worker-is-fenced-phase-4--the-most-valuable-phase),
 plus the whiteboard gate of T222.
@@ -535,16 +535,7 @@ plus the whiteboard gate of T222.
 phase and not before**, and no claim about it may be published, demonstrated, or written into a README
 until it does.
 
-**Invariants in play**: `I1` and `I8` (the whole phase), plus `I2` and `I6`.
-
-**Independent test**: run the demo agent to completion, replay its log, and assert every `send_email`
-idempotency key carries at most one result and `demo_effects` holds exactly one row per logical side
-effect. Separately inject a crash between `TOOL_INTENT` and `TOOL_RESULT` for one tool of each
-declared category and assert the documented resolution for each.
-
-### Tests for Phase 5 (MANDATORY) ⚠️
-
-- [x] T229 [P] [US3] Write the canonical-serialization property test in `tests/property/test_canonical_serialization.py` using `hypothesis`: structurally identical arguments in **any** mapping key order, **any** nesting traversal, and **any** numeric formatting hash identically. **This is the test that protects the entire idempotency mechanism** (FR-038)
+**Invariants in play**: `I1` and `I8` (the whole p- [x] T229 [P] [US3] Write the canonical-serialization property test in `tests/property/test_canonical_serialization.py` using `hypothesis`: structurally identical arguments in **any** mapping key order, **any** nesting traversal, and **any** numeric formatting hash identically. **This is the test that protects the entire idempotency mechanism** (FR-038)
 - [x] T230 [P] [US3] Extend `tests/property/test_canonical_serialization.py` to assert non-JSON-native types — `set`, `tuple`, `datetime`, `Decimal`, `NaN`, `±Infinity` — raise at call time **with the path to the offending value**, because the alternative is a key that varies across replay and fails silently (D-13)
 - [x] T231 [P] [US3] Write the key-framing test in `tests/unit/test_idempotency_key_framing.py` asserting the key is hashed over a canonical JSON **array** `[run_id, step_index, action_name, args]`, never a delimited string — framing is unambiguous by construction rather than by argument about which characters are legal in a tool name (D-41)
 - [x] T232 [P] [US3] Write the key-stability test in `tests/replay/test_key_identical_across_replay.py` asserting the same step re-derives an identical key on replay, including when `ctx.new_id()` feeds the arguments
@@ -635,7 +626,7 @@ declared category and assert the documented resolution for each.
 
 - [x] T289 [US3] Write one `demo_effects` row per side-effect execution in `anchor/runtime/tools/demo.py`, carrying the run, step, tool, key, and a payload describing what the fake effect "did"
 - [x] T290 [US3] Implement `GET /api/runs/{id}/effects` in `anchor/api/routers/runs.py` returning the rows and a total — **the ground truth a reviewer can check without trusting the log** (FR-107)
-- [ ] T291 [US3] Execute [V5](./quickstart.md#v5--effectively-once-including-the-uncertainty-window-phase-5) end to end, including the honest-resolution path
+- [x] T291 [US3] Execute [V5](./quickstart.md#v5--effectively-once-including-the-uncertainty-window-phase-5) end to end, including the honest-resolution path
 - [x] T292 [US3] Record the crash behaviour of every await point added in phase 5, and update `anchor/worker/loop.py`'s docstring to **remove** the phase-2 interim limitation note — within-step uncertainty is now handled, and the headline guarantee holds from here
 
 **Exit gate**: [V5](./quickstart.md#v5--effectively-once-including-the-uncertainty-window-phase-5).

@@ -42,6 +42,8 @@ async def test_no_write_follows_a_renewal_rejection(db_pool: asyncpg.Pool) -> No
     )
 
     async with db_pool.acquire() as conn:
+        from anchor.runtime.tools.demo import register_demo_tools
+        await register_demo_tools(conn, code_version="dev")
         run_id: int = await conn.fetchval(
             "INSERT INTO runs (agent_type, input) VALUES ($1, $2::jsonb) RETURNING id",
             "test_renewal_cancel_agent",
