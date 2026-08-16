@@ -904,7 +904,7 @@ components:
             declared_policy: { $ref: '#/components/schemas/ToolSafety' }
             available_resolutions:
               type: array
-              items: { type: string, enum: [mark_executed, mark_not_executed, abandon] }
+              items: { type: string, enum: [mark_executed, mark_not_executed, retry] }
         summary: { $ref: '#/components/schemas/RunSummary' }
 
     RunEvent:

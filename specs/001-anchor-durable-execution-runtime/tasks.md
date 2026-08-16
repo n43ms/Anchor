@@ -584,7 +584,7 @@ until it does.
 - [x] T261 [US3] Implement the intent phase in `anchor/core/journal/two_phase.py` inserting the `tool_journal` row and appending `TOOL_INTENT` in one transaction, **committed before invocation** (FR-039)
 - [x] T262 [US3] Flush the step's non-determinism buffer inside the intent transaction in `anchor/core/journal/two_phase.py`, so a key's inputs and the intent commit atomically and no effect can exist whose inputs are unrecorded (D-47)
 - [x] T263 [US3] Implement the result phase in `anchor/core/journal/two_phase.py` updating `result` and `result_at` and appending `TOOL_RESULT` under the same key (FR-040)
-- [x] T264 [x] Emit `STEP_SKIPPED_ON_REPLAY` on the skip path in `anchor/core/journal/two_phase.py` carrying the original `result_at` and `epoch`, so the console can render replayed steps distinctly (FR-043)
+- [x] T264 [US3] Emit `STEP_SKIPPED_ON_REPLAY` on the skip path in `anchor/core/journal/two_phase.py` carrying the original `result_at` and `epoch`, so the console can render replayed steps distinctly (FR-043)
 - [x] T265 [US3] Enforce one side effect per step in `anchor/core/determinism/context.py`, raising on a second side-effecting call within a step (D-26)
 - [x] T266 [US3] Document the crash behaviour of each window in `anchor/core/journal/two_phase.py`: between intent commit and invocation → no effect occurred, policy resolves conservatively; between invocation and result → **the uncertainty window**; between result and `STEP_COMPLETED` → the result is durable and the step re-completes harmlessly
 
@@ -609,7 +609,7 @@ until it does.
 
 #### P5.7 — Operator resolution
 
-- [x] T280 [US3] Implement `POST /api/runs/{id}/resolve` in `anchor/api/runs/{id}/resolve` in `anchor/api/routers/runs.py` with three outcomes — `mark_executed`, `mark_not_executed`, `retry` — none of which is a guess (FR-050)
+- [x] T280 [US3] Implement `POST /api/runs/{id}/resolve` in `anchor/api/routers/runs.py` with three outcomes — `mark_executed`, `mark_not_executed`, `retry` — none of which is a guess (FR-050)
 - [x] T281 [US3] Restrict the resolution write in `anchor/api/routers/runs.py` to a **leaseless `needs_review` run**, writing through `core.events.append` as `worker_id: 'operator'` at the run's current epoch. Comment states the exception's justification: this is the one permitted `api/` write into a run's log, and it is safe precisely because no worker can be racing a run nobody owns (D-24)
 - [x] T282 [US3] Implement `GET /api/runs?status=needs_review` and the ambiguous-call serializer in `anchor/api/serializers/runs.py` returning the specific call, its declared policy, and the available resolutions
 

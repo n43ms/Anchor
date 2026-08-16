@@ -85,7 +85,7 @@ def create_app() -> FastAPI:
     app = FastAPI(title="Anchor", lifespan=lifespan)
 
     from anchor.api.middleware import log_requests
-    from anchor.api.routers import health, runs, workers
+    from anchor.api.routers import health, registry, runs, workers
     from anchor.runtime.agents import register_all
 
     register_all()
@@ -93,6 +93,7 @@ def create_app() -> FastAPI:
     app.include_router(health.router)
     app.include_router(runs.router)
     app.include_router(workers.router)
+    app.include_router(registry.router)
 
     for error_type, status_code in _ERROR_STATUS_CODES.items():
 

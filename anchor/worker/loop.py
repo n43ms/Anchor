@@ -1,4 +1,4 @@
-"""The worker's claim-execute loop (plan.md P1.4, extended by P2.4/P2.5/P3.4).
+"""The worker's claim-execute loop (plan.md P1.4, extended by P2.4/P2.5/P3.4/P5.6).
 
 **Claiming, now real.** Claiming is delegated to `core.leases.claim.claim_one`
 (P3.1), the single `SKIP LOCKED` CTE that handles both a `pending` run and a
@@ -43,9 +43,20 @@ the renewer task (the connection drops, the process dies) simply stops
 renewals — the lease lapses on schedule and the next poll cycle, on this
 worker or another, reclaims it once it expires; there is no separate
 liveness signal to fall out of sync with the lease itself (`Principle
-VII`). A crash between a tool's execution and its `TOOL_RESULT` is still
-lost without dedup until phase 5 (P2.5's stated interim limitation,
-unchanged).
+VII`).
+
+**P2.5's interim limitation no longer applies.** A crash between a tool's
+execution and its `TOOL_RESULT` used to be lost without dedup; from phase 5
+onward every `ctx.call_tool` goes through `core.journal.two_phase`, so that
+window is the uncertainty window `I8` names, resolved per the tool's
+declared policy on the next attempt rather than silently re-executed. The
+one new control-flow path this adds here: `_run_steps` may raise
+`NeedsReviewHalted` (an `unsafe` tool, or an ambiguous reconciliation, or a
+fleet-wide declaration conflict) — by the time that exception reaches
+`execute_run`, the run is already `needs_review` and leaseless, committed
+atomically inside `core.journal.policies.halt_needs_review`, so the handler
+here is exactly one `return`: no final renewal (there is no lease left) and
+no `RUN_COMPLETED` (the run did not complete).
 """
 
 from __future__ import annotations
