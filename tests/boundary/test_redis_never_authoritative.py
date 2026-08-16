@@ -30,6 +30,12 @@ _REDIS_ALLOWED_MODULES = frozenset(
         "worker/registry/kill.py",
         "worker/registry/heartbeat.py",
         "worker/__main__.py",  # constructs the redis client to hand to kill.py
+        # P6.7/P6.8 (D-50): the API process constructs the one redis client
+        # shared by the publish path (core.events.publish, no redis import
+        # of its own — a Protocol) and the always-on WebSocket-firehose
+        # subscriber (api.ws.subscriber, also a Protocol) — both are
+        # display/fan-out only, never an ownership or lease decision.
+        "api/app.py",
     }
 )
 

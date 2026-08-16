@@ -23,6 +23,7 @@ Two journaling regimes meet here:
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import random as _random
@@ -43,6 +44,27 @@ from anchor.core.journal.two_phase import execute_tool_call
 from anchor.core.replay.context import RunContext
 
 _T = TypeVar("_T")
+
+
+class StepTimeoutError(Exception):
+    """Raised when a step's external call (a tool invocation or a model
+    call) runs longer than `step_timeout_ms` (plan.md P6.5, T328, FR-055).
+
+    **Deliberately not retried by `worker.retry.policy`.** A step that is
+    merely slow gets no special treatment elsewhere in this system — but a
+    step that has been running for longer than the configured timeout is
+    treated as a sign that *this worker* may be stalled, not as an ordinary
+    failure to back off and re-attempt from the same process. The caller
+    (`anchor.worker.loop.run_claimed`) lets this propagate out of the
+    execution task uncaught; `asyncio.TaskGroup`'s structured concurrency
+    then cancels the sibling renewer task exactly as it does for
+    `LeaseFencedError`, so the lease simply stops being renewed and lapses
+    on its own schedule (FR-013) — the run is reclaimed by whichever
+    worker's poll next observes the expired lease, which may be this same
+    worker once it has recovered. Nothing is written to the run's log by
+    the timing-out worker itself: it does not know, and must not guess,
+    whether the external call it abandoned actually completed.
+    """
 
 
 class ModelAdapter(Protocol):
@@ -71,6 +93,12 @@ class StepContext:
     messages: list[dict[str, Any]] = field(default_factory=list)
     attempt: int = 1
     max_payload_bytes: int = 1_000_000
+    # No numeric default: this is a `runtime_config` key (FR-059), and a
+    # hardcoded fallback here would be a second place that value lives,
+    # which `tests/boundary/test_no_hardcoded_constants.py` forbids by
+    # construction. `None` is the sentinel for "not yet supplied by the
+    # caller", asserted away at both use sites below.
+    step_timeout_ms: int | None = None
     run_context: RunContext = field(default_factory=RunContext)
 
     conn: asyncpg.Connection[Any] | None = None
@@ -227,18 +255,26 @@ class StepContext:
             )
         self._tool_called_this_step = True
         tool = self.tool_registry[name]
+        assert self.step_timeout_ms is not None, "step_timeout_ms must be supplied by the caller"
 
-        return await execute_tool_call(
-            self.conn,
-            run_id=self.run_id,
-            epoch=self.epoch,
-            worker_id=self.worker_id,
-            step_index=self.step_index,
-            tool=tool,
-            args=args,
-            flush_pending_nondet=self.flush_pending_nondet,
-            max_payload_bytes=self.max_payload_bytes,
-        )
+        try:
+            async with asyncio.timeout(self.step_timeout_ms / 1000):
+                return await execute_tool_call(
+                    self.conn,
+                    run_id=self.run_id,
+                    epoch=self.epoch,
+                    worker_id=self.worker_id,
+                    step_index=self.step_index,
+                    tool=tool,
+                    args=args,
+                    flush_pending_nondet=self.flush_pending_nondet,
+                    max_payload_bytes=self.max_payload_bytes,
+                )
+        except TimeoutError as exc:
+            raise StepTimeoutError(
+                f"step {self.step_index}: tool {name!r} exceeded step_timeout_ms "
+                f"({self.step_timeout_ms})"
+            ) from exc
 
     async def call_model(self, messages: list[dict[str, Any]], model: str | None = None) -> Any:
         """Call the configured `ModelAdapter` (the stub by default on every
@@ -266,8 +302,16 @@ class StepContext:
 
         assert self.conn is not None
         assert self.model_adapter is not None
+        assert self.step_timeout_ms is not None, "step_timeout_ms must be supplied by the caller"
         start = time.monotonic()
-        response = await self.model_adapter.complete(messages, model)
+        try:
+            async with asyncio.timeout(self.step_timeout_ms / 1000):
+                response = await self.model_adapter.complete(messages, model)
+        except TimeoutError as exc:
+            raise StepTimeoutError(
+                f"step {self.step_index}: model call exceeded step_timeout_ms "
+                f"({self.step_timeout_ms})"
+            ) from exc
         latency_ms = (time.monotonic() - start) * 1000
         prompt_hash = hashlib.sha256(
             json.dumps(messages, sort_keys=True, separators=(",", ":")).encode("utf-8")

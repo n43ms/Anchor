@@ -107,8 +107,7 @@ async def test_fenced_worker_writes_nothing_further_including_no_error_event(
         )
 
     events_by_zombie = [
-        r for r in rows 
-        if r["worker_id"] == zombie.stale_worker_id and r["type"] != "RUN_CLAIMED"
+        r for r in rows if r["worker_id"] == zombie.stale_worker_id and r["type"] != "RUN_CLAIMED"
     ]
     assert events_by_zombie == [], (
         "the fenced worker must not appear as the writer of any subsequent event in the run's log"

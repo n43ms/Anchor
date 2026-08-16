@@ -42,6 +42,7 @@ async def test_resumed_step_is_not_re_presented_to_decide_next_step(db_pool: asy
     _invocations.clear()
     async with db_pool.acquire() as conn:
         from anchor.runtime.tools.demo import register_demo_tools
+
         await register_demo_tools(conn, code_version="dev")
         run_id: int = await conn.fetchval(
             "INSERT INTO runs (agent_type, input) VALUES ($1, $2::jsonb) RETURNING id",

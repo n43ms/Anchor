@@ -4,14 +4,21 @@ from __future__ import annotations
 
 import base64
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Annotated, Any, Literal
 
 import asyncpg
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel, Field
 
-from anchor.api.serializers.runs import RUN_COLUMNS, RunResponse, serialize_run
+from anchor.api.errors import ApiError
+from anchor.api.serializers.runs import (
+    RUN_COLUMNS,
+    RunResponse,
+    serialize_run,
+    serialize_run_list_item,
+)
+from anchor.api.serializers.timeline import RunTimeline, build_run_timeline
 from anchor.core.config.loader import load_runtime_settings
 from anchor.core.events.append import append
 from anchor.core.events.types import EventType
@@ -93,7 +100,9 @@ def _decode_cursor(cursor: str) -> tuple[datetime, int]:
         created_at_str, run_id_str = raw.rsplit("|", 1)
         return datetime.fromisoformat(created_at_str), int(run_id_str)
     except (ValueError, UnicodeDecodeError) as exc:
-        raise HTTPException(status_code=422, detail="malformed cursor") from exc
+        raise ApiError(
+            status_code=422, error="malformed_cursor", message="malformed cursor"
+        ) from exc
 
 
 @router.post("/api/runs", response_model=RunResponse, status_code=201)
@@ -102,7 +111,11 @@ async def submit_run(
     pool: Annotated[asyncpg.Pool, Depends(get_pool)],
 ) -> RunResponse:
     if not is_registered(submission.agent_type):
-        raise HTTPException(status_code=404, detail=f"unknown agent_type: {submission.agent_type}")
+        raise ApiError(
+            status_code=404,
+            error="unknown_agent",
+            message=f"unknown agent_type: {submission.agent_type}",
+        )
 
     async with pool.acquire() as conn:
         settings = await load_runtime_settings(conn)
@@ -157,23 +170,46 @@ async def list_runs(
     pool: Annotated[asyncpg.Pool, Depends(get_pool)],
     status: list[str] | None = None,
     agent_type: str | None = None,
+    is_demo: bool | None = None,
     limit: int = 50,
     cursor: str | None = None,
+    include_archived: bool = False,
 ) -> dict[str, Any]:
     """Newest first, keyset-paginated on `(created_at, id)` — never
     offset-based, so a page boundary stays correct while runs are being
-    submitted concurrently (contracts/openapi.yaml).
+    submitted concurrently (contracts/openapi.yaml `RunListItem`, which
+    requires `summary` and `segments` per row — the same shape
+    `GET /api/runs/{id}/timeline` derives, reused here rather than
+    duplicated).
+
+    Excludes archived runs by default (migration 005, T361-T362) —
+    `POST /api/runs/demo/reset`'s target set — via `include_archived=true`.
+
+    **A known N+1, stated rather than hidden**: each row's `segments` and
+    `summary` are built by `build_run_timeline`, one call per row, because
+    that is the one place this system computes them correctly (including
+    the live `duplicate_side_effects` correctness read, D-30) and
+    duplicating that logic into a batch query would be exactly the "same
+    conceptual value computed two ways" the constitution's anti-patterns
+    reject. Acceptable at this project's demo scale (page sizes up to 200);
+    a batched variant would be the right optimization for a production
+    listing endpoint, not attempted here without it being asked for.
     """
     page_size = min(limit, 200)
     async with pool.acquire() as conn:
         clauses = []
         params: list[Any] = []
+        if not include_archived:
+            clauses.append("archived_at IS NULL")
         if status:
             params.append(status)
             clauses.append(f"status = ANY(${len(params)})")
         if agent_type:
             params.append(agent_type)
             clauses.append(f"agent_type = ${len(params)}")
+        if is_demo is not None:
+            params.append(is_demo)
+            clauses.append(f"is_demo = ${len(params)}")
         if cursor is not None:
             cursor_created_at, cursor_id = _decode_cursor(cursor)
             params.append(cursor_created_at)
@@ -191,6 +227,7 @@ async def list_runs(
             """,
             *params,
         )
+        db_now = await conn.fetchval("SELECT now()")
         # Needs review is its own page, never only a filter (§13.3) — this
         # is what the filter path returns when it is used. One extra query
         # per needs_review row: rare in steady state (T279's whole point
@@ -202,9 +239,20 @@ async def list_runs(
             if r["status"] == "needs_review"
         }
 
-    items = [
-        serialize_run(r, needs_review=needs_review_by_id.get(r["id"])).model_dump() for r in rows
-    ]
+        items = []
+        for r in rows:
+            timeline = await build_run_timeline(conn, r["id"])
+            assert timeline is not None  # r came from `runs` in this same transaction snapshot
+            items.append(
+                serialize_run_list_item(
+                    r,
+                    db_now=db_now,
+                    segments=timeline.segments,
+                    summary=timeline.summary,
+                    needs_review=needs_review_by_id.get(r["id"]),
+                ).model_dump()
+            )
+
     next_cursor = (
         _encode_cursor(rows[-1]["created_at"], rows[-1]["id"]) if len(rows) == page_size else None
     )
@@ -216,7 +264,7 @@ async def get_run(run_id: int, pool: Annotated[asyncpg.Pool, Depends(get_pool)])
     async with pool.acquire() as conn:
         row = await conn.fetchrow(_RUN_ROW_SQL, run_id)
         if row is None:
-            raise HTTPException(status_code=404, detail="run not found")
+            raise ApiError(status_code=404, error="run_not_found", message="run not found")
         needs_review = (
             await _load_needs_review_details(conn, run_id)
             if row["status"] == "needs_review"
@@ -236,7 +284,7 @@ async def get_run_events(
     async with pool.acquire() as conn:
         exists = await conn.fetchval("SELECT 1 FROM runs WHERE id = $1", run_id)
         if not exists:
-            raise HTTPException(status_code=404, detail="run not found")
+            raise ApiError(status_code=404, error="run_not_found", message="run not found")
         rows = await conn.fetch(
             """
             SELECT run_id, seq, type, payload, epoch, worker_id, step_index, created_at
@@ -266,6 +314,22 @@ async def get_run_events(
     return {"run_id": run_id, "items": items, "next_after_seq": next_after_seq}
 
 
+@router.get("/api/runs/{run_id}/timeline", response_model=RunTimeline)
+async def get_run_timeline(
+    run_id: int, pool: Annotated[asyncpg.Pool, Depends(get_pool)]
+) -> RunTimeline:
+    """`contracts/openapi.yaml` `RunTimeline` (plan.md P6.9, T346). Also
+    exactly what `WS /ws/runs/{run_id}` sends as its `snapshot` frame
+    (contracts/websocket.md) — one builder, reused, so the two surfaces
+    can never silently diverge in shape.
+    """
+    async with pool.acquire() as conn:
+        timeline = await build_run_timeline(conn, run_id)
+    if timeline is None:
+        raise ApiError(status_code=404, error="run_not_found", message="run not found")
+    return timeline
+
+
 @router.get("/api/runs/{run_id}/effects")
 async def get_run_effects(
     run_id: int, pool: Annotated[asyncpg.Pool, Depends(get_pool)]
@@ -277,7 +341,7 @@ async def get_run_effects(
     async with pool.acquire() as conn:
         exists = await conn.fetchval("SELECT 1 FROM runs WHERE id = $1", run_id)
         if not exists:
-            raise HTTPException(status_code=404, detail="run not found")
+            raise ApiError(status_code=404, error="run_not_found", message="run not found")
         rows = await conn.fetch(
             """
             SELECT id, run_id, step_index, tool_name, idempotency_key, payload, executed_at
@@ -300,6 +364,127 @@ async def get_run_effects(
         for r in rows
     ]
     return {"run_id": run_id, "items": items, "total": len(items)}
+
+
+@router.post("/api/runs/{run_id}/cancel", response_model=RunResponse, status_code=202)
+async def cancel_run(
+    run_id: int,
+    pool: Annotated[asyncpg.Pool, Depends(get_pool)],
+    request: Request,
+) -> RunResponse:
+    """`POST /api/runs/{id}/cancel` (plan.md P6.3, T323, T325; D-54).
+
+    A `pending` run has no owner and no lease, so "the worker checks the
+    flag between steps" (FR-054) never applies to it — waiting for a
+    worker that will never claim it to notice a flag it can't yet see
+    would just be a run stuck `pending` forever with `cancel_requested_at`
+    set and nothing ever consulting it. The API finalizes it directly:
+    leaseless, so there is no lease to fence against and no worker racing
+    this write (D-54).
+
+    A `running` run is different: a worker already owns it, under a lease
+    this endpoint has no way to safely preempt without racing that
+    worker's own writes. This just records the request; the owning worker
+    notices at its next step boundary (`anchor.worker.loop._check_and_apply_cancellation`)
+    and finalizes it there, never mid-step (FR-054).
+
+    Any other status (already terminal) is a no-op 409 — cancelling an
+    already-finished run has nothing to do.
+    """
+    async with pool.acquire() as conn:
+        run_row = await conn.fetchrow(
+            "SELECT status, epoch, is_demo FROM runs WHERE id = $1", run_id
+        )
+        if run_row is None:
+            raise ApiError(status_code=404, error="run_not_found", message="run not found")
+
+        deployment_mode: str = request.app.state.deployment_mode
+        if deployment_mode == "demonstration" and not run_row["is_demo"]:
+            raise ApiError(
+                status_code=403,
+                error="non_demo_run",
+                message="only demo runs may be cancelled in demonstration mode",
+            )
+
+        if run_row["status"] == "pending":
+            settings = await load_runtime_settings(conn)
+            async with conn.transaction():
+                await append(
+                    conn,
+                    run_id=run_id,
+                    type=EventType.RUN_CANCELLED,
+                    payload={
+                        "requested_at": datetime.now(UTC).isoformat(),
+                        "step_index": None,
+                        "cancelled_by": "operator",
+                    },
+                    epoch=run_row["epoch"],
+                    worker_id="api",
+                    max_payload_bytes=settings.max_event_payload_bytes,
+                )
+                await conn.execute(
+                    "UPDATE runs SET status = 'cancelled', finished_at = now() WHERE id = $1",
+                    run_id,
+                )
+        elif run_row["status"] == "running":
+            await conn.execute(
+                "UPDATE runs SET cancel_requested_at = now() WHERE id = $1 AND cancel_requested_at IS NULL",
+                run_id,
+            )
+        else:
+            raise ApiError(
+                status_code=409,
+                error="run_already_terminal",
+                message=f"run is already {run_row['status']}; cannot cancel",
+            )
+
+        row = await conn.fetchrow(_RUN_ROW_SQL, run_id)
+        assert row is not None
+        return serialize_run(row)
+
+
+@router.post("/api/runs/demo/reset")
+async def reset_demo_runs(pool: Annotated[asyncpg.Pool, Depends(get_pool)]) -> dict[str, Any]:
+    """ "Clear demo runs" (plan.md P6.13, T361-T362; FR-108, §21.6).
+
+    **Archives, never deletes** (migration 005): `run_events_immutable`
+    raises `AN003` on any `UPDATE OR DELETE` against the log unconditionally
+    (`I2`), with no administrative carve-out, so a literal `DELETE FROM
+    runs` is not available to this endpoint at all — it would fail on the
+    foreign key from `run_events` the instant any targeted run had ever
+    appended a single event. Setting `archived_at` gets the stated
+    requirement ("the runs list stays legible") without touching the log:
+    `GET /api/runs` excludes archived rows by default.
+
+    Only **completed** demo runs are archived — `is_demo = true` and a
+    terminal status other than `needs_review` (a halted run stays visible;
+    archiving it out from under an operator who has not yet resolved it
+    would hide exactly the state this product exists to surface).
+
+    **Structurally unable to touch chaos history**: this statement is
+    scoped by `runs.is_demo = true` and writes only `runs.archived_at` —
+    there is no code path here that reaches `chaos_events` or
+    `chaos_reports` at all, because the query never selects from those
+    tables in the first place.
+
+    Response key is `runs_deleted` (`contracts/openapi.yaml`) even though
+    the mechanism is archival, not deletion — the contract names the
+    user-visible effect ("these runs are gone from your list"), which
+    archiving achieves exactly; see the docstring above for why a literal
+    delete is not available to this endpoint at all.
+    """
+    async with pool.acquire() as conn:
+        archived_ids = await conn.fetch(
+            """
+            UPDATE runs
+            SET archived_at = now()
+            WHERE is_demo = true
+              AND status IN ('completed', 'failed', 'cancelled')
+              AND archived_at IS NULL
+            RETURNING id
+            """
+        )
+    return {"runs_deleted": len(archived_ids)}
 
 
 class ResolveRequest(BaseModel):
@@ -335,15 +520,21 @@ async def resolve_run(
             "SELECT status, epoch, is_demo FROM runs WHERE id = $1", run_id
         )
         if run_row is None:
-            raise HTTPException(status_code=404, detail="run not found")
+            raise ApiError(status_code=404, error="run_not_found", message="run not found")
 
         deployment_mode: str = request.app.state.deployment_mode
         if deployment_mode == "demonstration" and not run_row["is_demo"]:
-            raise HTTPException(
-                status_code=403, detail="only demo runs may be resolved in demonstration mode"
+            raise ApiError(
+                status_code=403,
+                error="non_demo_run",
+                message="only demo runs may be resolved in demonstration mode",
             )
         if run_row["status"] != "needs_review":
-            raise HTTPException(status_code=409, detail="run is not in needs_review")
+            raise ApiError(
+                status_code=409,
+                error="run_not_needs_review",
+                message="run is not in needs_review",
+            )
 
         epoch = run_row["epoch"]
         journal_row = await _open_journal_row(conn, run_id)
@@ -353,8 +544,10 @@ async def resolve_run(
             # follows an Uncertain lookup) — but a bare assert here would
             # be an internal-error crash a caller cannot act on, so this
             # names the actual state instead.
-            raise HTTPException(
-                status_code=409, detail="no open uncertainty window found for this run"
+            raise ApiError(
+                status_code=409,
+                error="no_open_uncertainty_window",
+                message="no open uncertainty window found for this run",
             )
 
         settings = await load_runtime_settings(conn)

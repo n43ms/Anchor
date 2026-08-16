@@ -69,11 +69,12 @@ from typing import Any
 
 import asyncpg
 
+from anchor.core.config.live import LiveSettings
 from anchor.core.config.settings import RuntimeSettings
 from anchor.core.db.errors import LeaseFencedError
 from anchor.core.db.pool import acquire as acquire_translated
 from anchor.core.determinism.actions import Done, ModelCall, ToolCall, require_action
-from anchor.core.determinism.context import StepContext
+from anchor.core.determinism.context import StepContext, StepTimeoutError
 from anchor.core.events.append import append
 from anchor.core.events.types import EventType
 from anchor.core.journal.policies import NeedsReviewHalted
@@ -84,9 +85,76 @@ from anchor.core.replay.reconstruct import reconstruct
 from anchor.runtime.agents.registry import resolve
 from anchor.runtime.tools.demo import DEMO_TOOLS
 from anchor.runtime.tools.model import StubAdapter
+from anchor.worker.admission.limiter import has_capacity
 from anchor.worker.renewer import final_renewal, renew_forever
+from anchor.worker.retry.policy import DeadLettered, record_step_failure
 
 logger = logging.getLogger(__name__)
+
+_CANCELLED_BY = "operator"
+
+
+class RunCancelled(Exception):
+    """Raised after a `running` run has been finalized as `cancelled`,
+    atomically, inside `_check_and_apply_cancellation` (plan.md P6.3,
+    T324). Mirrors `core.journal.policies.NeedsReviewHalted` and
+    `worker.retry.policy.DeadLettered`: by the time this is raised, the
+    terminal transition is already committed, so the caller's handler is
+    exactly one `return`.
+    """
+
+    def __init__(self, run_id: int) -> None:
+        self.run_id = run_id
+        super().__init__(f"run {run_id} cancelled")
+
+
+async def _check_and_apply_cancellation(
+    conn: asyncpg.Connection[Any],
+    *,
+    run_id: int,
+    epoch: int,
+    worker_id: str,
+    step_index: int,
+    settings: RuntimeSettings,
+) -> None:
+    """Checked **only** at a step boundary — never mid-step (FR-054) — so a
+    cancellation request can never interrupt a tool call that has already
+    committed its intent. Raises `RunCancelled` after atomically appending
+    `RUN_CANCELLED` and finalizing `runs.status = 'cancelled'` with the
+    lease released, exactly like the dead-letter and needs-review halts.
+    """
+    row = await conn.fetchrow("SELECT cancel_requested_at FROM runs WHERE id = $1", run_id)
+    if row is None or row["cancel_requested_at"] is None:
+        return
+
+    requested_at = row["cancel_requested_at"]
+    async with conn.transaction():
+        await append(
+            conn,
+            run_id=run_id,
+            type=EventType.RUN_CANCELLED,
+            payload={
+                "requested_at": requested_at.isoformat(),
+                "step_index": step_index,
+                "cancelled_by": _CANCELLED_BY,
+            },
+            epoch=epoch,
+            worker_id=worker_id,
+            step_index=step_index,
+            max_payload_bytes=settings.max_event_payload_bytes,
+        )
+        await conn.execute(
+            """
+            UPDATE runs
+            SET status = 'cancelled',
+                owner_worker_id = NULL,
+                lease_expires_at = NULL,
+                finished_at = now()
+            WHERE id = $1
+            """,
+            run_id,
+        )
+    raise RunCancelled(run_id)
 
 
 class RunCounter:
@@ -115,10 +183,32 @@ async def execute_run(
     epoch: int,
     worker_id: str,
     settings: RuntimeSettings,
+    live: LiveSettings | None = None,
 ) -> None:
     """Replay the log, then run `decide_next_step` to completion from the
     correct step (P2.4).
+
+    `live` defaults to a `LiveSettings` wrapping `settings` itself when a
+    caller does not supply one — every call site from before P6.6 (direct
+    replay/unit/contract tests exercising this function against a single
+    fixed `RuntimeSettings`, with no live worker loop around it) keeps
+    working unchanged, and simply never observes a configuration change
+    mid-run, which is exactly what "no `live` was given" should mean.
+
+    `settings` is a pinned snapshot taken at claim time (P6.6, T332) — used
+    here for `REPLAY_COMPLETED`'s and `RUN_COMPLETED`'s payload ceiling and
+    for the forced final renewal, none of which should shift mid-run just
+    because an operator changed configuration while this run was in
+    flight. `live` is the mutable, continuously-refreshed holder passed
+    through to `_run_steps`, which re-reads `live.current` once per loop
+    iteration — at the step boundary, and nowhere else — so a live
+    configuration change (new `step_timeout_ms`, `max_attempts_per_step`,
+    backoff parameters, or payload ceiling) takes effect for the *next*
+    step without ever applying mid-step.
     """
+    if live is None:
+        live = LiveSettings(current=settings, version=0)
+
     decide_next_step = resolve(agent_type)
     if decide_next_step is None:
         raise ValueError(f"unregistered agent_type: {agent_type}")
@@ -164,16 +254,17 @@ async def execute_run(
             step_index=step_index,
             run_context=run_context,
             model_adapter=model_adapter,
-            settings=settings,
+            live=live,
         )
-    except NeedsReviewHalted:
-        # P5.6/T277: the run is already `needs_review`, leaseless, and
-        # RUN_NEEDS_REVIEW is already committed — all inside
-        # `core.journal.policies.halt_needs_review`, atomically, before
-        # this exception was raised. Nothing else in this function may run:
-        # no final renewal (there is no lease left to renew) and no
-        # RUN_COMPLETED (the run did not complete). Returning here is the
-        # whole handler.
+    except (NeedsReviewHalted, DeadLettered, RunCancelled):
+        # P5.6/T277 (needs_review), P6.2/T321 (dead-lettered), P6.3/T324
+        # (cancelled): in all three cases the run's terminal transition —
+        # RUN_NEEDS_REVIEW / RUN_FAILED / RUN_CANCELLED plus the matching
+        # status change and lease release — is already committed
+        # atomically, inside the function that raised. Nothing else in
+        # this function may run: no final renewal (there is no lease left)
+        # and no RUN_COMPLETED (the run did not reach that state).
+        # Returning here is the whole handler for all three.
         return
 
     total_duration_ms = (time.monotonic() - total_start) * 1000
@@ -224,7 +315,7 @@ async def _run_steps(
     step_index: int,
     run_context: Any,
     model_adapter: StubAdapter,
-    settings: RuntimeSettings,
+    live: LiveSettings,
 ) -> tuple[Done, int]:
     """The step loop, factored out of `execute_run` so the
     `NeedsReviewHalted` boundary (P5.6, T277) is a single `try/except` at
@@ -236,11 +327,36 @@ async def _run_steps(
     `core.journal.two_phase.execute_tool_call`'s docstring — the possible
     duplicate execution on retry that phases 1-2 stated as an interim
     limitation no longer exists.
+
+    **Live configuration (P6.6, T330-T332).** `settings` is re-read from
+    `live.current` exactly once per loop iteration, at the very top,
+    alongside the cancellation check — both are "step boundary" concerns
+    checked in the same place for the same reason. Every use of `settings`
+    within one iteration (the step's timeout, its attempt cap, its backoff
+    parameters, its payload ceiling) therefore sees one consistent
+    snapshot for that entire step attempt, and a change an operator makes
+    mid-step is never observed until the *next* boundary.
     """
     decide_next_step = resolve(agent_type)
     assert decide_next_step is not None  # already validated by execute_run, above
 
     while True:
+        settings = live.current
+
+        # Cooperative cancellation, checked only here — a step boundary,
+        # never mid-step (plan.md P6.3, FR-054). Raises RunCancelled after
+        # already committing the finalization; the exception is this
+        # function's only way out in that case.
+        await _check_and_apply_cancellation(
+            conn,
+            run_id=run_id,
+            epoch=epoch,
+            worker_id=worker_id,
+            step_index=step_index,
+            settings=settings,
+        )
+
+        attempt = run_context.attempts_by_step.get(step_index, 0) + 1
         ctx = StepContext(
             run_id=run_id,
             epoch=epoch,
@@ -248,62 +364,45 @@ async def _run_steps(
             step_index=step_index,
             input=input,
             messages=messages,
-            attempt=run_context.attempts_by_step.get(step_index, 0) + 1,
+            attempt=attempt,
             run_context=run_context,
             conn=conn,
             model_adapter=model_adapter,
             tool_registry=DEMO_TOOLS,
             max_payload_bytes=settings.max_event_payload_bytes,
-        )
-        raw_action = decide_next_step(ctx)
-        action = require_action(raw_action)
-
-        if isinstance(action, Done):
-            break
-
-        action_kind = "tool" if isinstance(action, ToolCall) else "model"
-        await append(
-            conn,
-            run_id=run_id,
-            type=EventType.STEP_STARTED,
-            payload={"step_index": step_index, "action_kind": action_kind},
-            epoch=epoch,
-            worker_id=worker_id,
-            step_index=step_index,
-            max_payload_bytes=settings.max_event_payload_bytes,
+            step_timeout_ms=settings.step_timeout_ms,
         )
 
-        step_start = time.monotonic()
-        if isinstance(action, ToolCall):
-            # Any buffered non-determinism is flushed inside call_tool,
-            # atomically with TOOL_INTENT (D-47) — nothing left to flush
-            # here.
-            await ctx.call_tool(action.name, action.args)
-        elif isinstance(action, ModelCall):
-            await ctx.call_model(action.messages, action.model)
-        step_duration_ms = (time.monotonic() - step_start) * 1000
+        try:
+            raw_action = decide_next_step(ctx)
+            action = require_action(raw_action)
 
-        if isinstance(action, ToolCall):
+            if isinstance(action, Done):
+                break
+
+            action_kind = "tool" if isinstance(action, ToolCall) else "model"
             await append(
                 conn,
                 run_id=run_id,
-                type=EventType.STEP_COMPLETED,
-                payload={
-                    "step_index": step_index,
-                    "duration_ms": step_duration_ms,
-                    "action_kind": action_kind,
-                },
+                type=EventType.STEP_STARTED,
+                payload={"step_index": step_index, "action_kind": action_kind},
                 epoch=epoch,
                 worker_id=worker_id,
                 step_index=step_index,
                 max_payload_bytes=settings.max_event_payload_bytes,
             )
-        else:
-            # A model-only step has no side effect to pair the buffer with,
-            # so any nondet values it consulted are flushed atomically with
-            # STEP_COMPLETED instead of TOOL_INTENT (D-47, T112).
-            async with conn.transaction():
-                await ctx.flush_pending_nondet()
+
+            step_start = time.monotonic()
+            if isinstance(action, ToolCall):
+                # Any buffered non-determinism is flushed inside call_tool,
+                # atomically with TOOL_INTENT (D-47) — nothing left to
+                # flush here.
+                await ctx.call_tool(action.name, action.args)
+            elif isinstance(action, ModelCall):
+                await ctx.call_model(action.messages, action.model)
+            step_duration_ms = (time.monotonic() - step_start) * 1000
+
+            if isinstance(action, ToolCall):
                 await append(
                     conn,
                     run_id=run_id,
@@ -318,6 +417,80 @@ async def _run_steps(
                     step_index=step_index,
                     max_payload_bytes=settings.max_event_payload_bytes,
                 )
+            else:
+                # A model-only step has no side effect to pair the buffer
+                # with, so any nondet values it consulted are flushed
+                # atomically with STEP_COMPLETED instead of TOOL_INTENT
+                # (D-47, T112).
+                async with conn.transaction():
+                    await ctx.flush_pending_nondet()
+                    await append(
+                        conn,
+                        run_id=run_id,
+                        type=EventType.STEP_COMPLETED,
+                        payload={
+                            "step_index": step_index,
+                            "duration_ms": step_duration_ms,
+                            "action_kind": action_kind,
+                        },
+                        epoch=epoch,
+                        worker_id=worker_id,
+                        step_index=step_index,
+                        max_payload_bytes=settings.max_event_payload_bytes,
+                    )
+        except (NeedsReviewHalted, StepTimeoutError, RunCancelled):
+            # NeedsReviewHalted: the halt is already committed inside
+            # core.journal.two_phase / core.journal.policies — this
+            # function must not treat it as a retryable step failure.
+            # StepTimeoutError (P6.5, T328-T329): deliberately NOT
+            # retried here — it propagates out of this task so the
+            # worker's TaskGroup (run_claimed) cancels the sibling
+            # renewer via structured concurrency, letting the lease lapse
+            # rather than this worker holding or retrying it (FR-013).
+            # RunCancelled is unreachable here (already raised above,
+            # outside this try) but listed for the reader: it must never
+            # be caught by the generic handler below either.
+            raise
+        except Exception as exc:
+            # Every other exception a step attempt can raise — a
+            # deliberately failing tool, a PayloadTooLargeError from an
+            # oversized result, an agent bug — is a retryable step
+            # failure at step granularity (FR-051). asyncio.CancelledError
+            # is a BaseException, not an Exception, so a fencing
+            # cancellation (plan.md P4) is never caught here regardless.
+            outcome = await record_step_failure(
+                conn,
+                run_id=run_id,
+                epoch=epoch,
+                worker_id=worker_id,
+                step_index=step_index,
+                attempt=attempt,
+                error=exc,
+                settings=settings,
+            )
+            # record_step_failure raises DeadLettered instead of returning
+            # when the cap is exhausted, so reaching here means will_retry
+            # is always True. Recorded on run_context (not re-derived from
+            # the log) so the *next* iteration's attempt number is correct
+            # without a redundant query — this process already knows what
+            # it just wrote (D-43 governs cross-handoff attempts, not
+            # same-process bookkeeping within one execute_run call).
+            run_context.attempts_by_step[step_index] = attempt
+            assert outcome.backoff_ms is not None
+            logger.warning(
+                "step failed; retrying after backoff",
+                extra={
+                    "run_id": run_id,
+                    "epoch": epoch,
+                    "worker_id": worker_id,
+                    "step_index": step_index,
+                    "attempt": attempt,
+                    "error_type": type(exc).__name__,
+                    "backoff_ms": outcome.backoff_ms,
+                },
+            )
+            await asyncio.sleep(outcome.backoff_ms / 1000)
+            continue
 
         # Per-worker step throughput (T178, plan.md P3.7): with no console
         # yet, this is how three workers genuinely competing for real work
@@ -342,7 +515,12 @@ async def _run_steps(
 
 
 async def run_claimed(
-    pool: asyncpg.Pool, claimed: ClaimedRun, *, worker_id: str, settings: RuntimeSettings
+    pool: asyncpg.Pool,
+    claimed: ClaimedRun,
+    *,
+    worker_id: str,
+    settings: RuntimeSettings,
+    live: LiveSettings | None = None,
 ) -> None:
     """Execute one claimed run under a per-run `TaskGroup` holding the
     execution task and the independent renewer (P3.4).
@@ -355,7 +533,14 @@ async def run_claimed(
     (there is no other signal the renewer could use to learn the run is
     done without inspecting run status, which would be a second path to
     the same decision it should not have).
+
+    `live` defaults to a `LiveSettings` wrapping `settings` when omitted —
+    see `execute_run`'s docstring; this keeps every pre-P6.6 direct caller
+    of this function working unchanged.
     """
+    if live is None:
+        live = LiveSettings(current=settings, version=0)
+
     try:
         async with asyncio.TaskGroup() as tg:
             renew_task = tg.create_task(
@@ -379,6 +564,7 @@ async def run_claimed(
                         epoch=claimed.epoch,
                         worker_id=worker_id,
                         settings=settings,
+                        live=live,
                     )
                 renew_task.cancel()
 
@@ -412,6 +598,29 @@ async def run_claimed(
                 stale_epoch=claimed.epoch,
                 detected_by=detected_by,
             )
+    except* StepTimeoutError as eg:
+        # P6.5/T329: a step exceeded step_timeout_ms. This worker gives up
+        # on the run without writing anything to its log — it cannot know,
+        # and must not guess, whether the timed-out external call actually
+        # completed (I8). `asyncio.TaskGroup` has already cancelled the
+        # sibling renewer task by the time this handler runs (the group
+        # cancels every other task the instant one raises), so the lease
+        # simply stops being renewed and lapses on schedule; the next
+        # worker whose poll observes the expiry reclaims it exactly as it
+        # would any other orphaned run (plan.md P3.1). Logged only to this
+        # process's own structured log, the same pattern as the fencing
+        # guard above.
+        for timeout_exc in eg.exceptions:
+            if not isinstance(timeout_exc, StepTimeoutError):
+                continue
+            logger.warning(
+                "step timed out; abandoning run without writing, lease will lapse",
+                extra={
+                    "run_id": claimed.run_id,
+                    "worker_id": worker_id,
+                    "error": str(timeout_exc),
+                },
+            )
 
 
 def _jittered_seconds(base_ms: int, jitter_pct: float) -> float:
@@ -429,45 +638,115 @@ async def poll_and_execute_forever(
     pool: asyncpg.Pool,
     *,
     worker_id: str,
-    settings: RuntimeSettings,
+    live: LiveSettings,
     run_counter: RunCounter | None = None,
 ) -> None:
-    """Poll for one claimable run at a time and run it to completion under
-    its own `TaskGroup`. Sequential across runs — this worker looks for its
-    next run only after the previous one reaches a terminal state or is
-    fenced away from it; per-worker concurrency (running several runs at
-    once inside one process) is admission control's job in phase 6, not
-    this loop's.
+    """Poll for claimable runs and execute up to `settings.per_worker_concurrency`
+    of them concurrently in this process (plan.md P6.4, T298, T326) — each
+    under its own per-run `TaskGroup` (execution + independent renewer,
+    P3.4), fully isolated from every other concurrently in-flight run in
+    this process.
 
-    `run_counter`, when provided, is incremented for the duration of
-    `run_claimed` and decremented afterward unconditionally (even on
-    fencing) — this worker's own count of runs it currently holds, which
-    `worker.registry.heartbeat` publishes as telemetry (T174).
+    Admission is checked **before** every claim attempt, from this worker's
+    own in-process count (`run_counter`) — never from
+    `workers.current_run_count`, which is telemetry only (T174). At
+    capacity, this loop does not attempt a claim at all; it sleeps briefly
+    and re-checks, exactly as it does when nothing is claimable (FR-004).
+
+    `run_counter`'s increment happens synchronously in this loop, the
+    instant a claim succeeds — not inside the spawned task — so a claim
+    burst can never admit more runs than `per_worker_concurrency` before
+    the count catches up with reality. The matching decrement happens in
+    the spawned task's `finally`, unconditionally (even on fencing, a
+    timeout abandonment, or an unexpected bug in `run_claimed` itself).
+
+    Crash/shutdown behaviour: if this coroutine itself is cancelled (the
+    worker's top-level `asyncio.TaskGroup`, `anchor/worker/__main__.py`,
+    cancelling every sibling task on a graceful-shutdown request), the
+    `finally` below cancels every still-in-flight per-run task rather than
+    abandoning them silently — the same posture a hard kill already forces
+    on every run this worker holds, just triggered cooperatively instead of
+    by `os._exit`.
     """
     if run_counter is None:
         run_counter = RunCounter()
 
-    while True:
-        async with pool.acquire() as conn:
-            claimed = await claim_one(
-                conn,
-                worker_id=worker_id,
-                lease_duration_ms=settings.lease_duration_ms,
-                global_concurrency_cap=settings.global_concurrency_cap,
-                max_payload_bytes=settings.max_event_payload_bytes,
-            )
-        if claimed is None:
-            await asyncio.sleep(
-                _jittered_seconds(settings.reclaim_poll_interval_ms, settings.backoff_jitter_pct)
-            )
-            continue
+    in_flight: set[asyncio.Task[None]] = set()
 
-        logger.info(
-            "run claimed",
-            extra={"run_id": claimed.run_id, "worker_id": worker_id, "epoch": claimed.epoch},
-        )
-        run_counter.value += 1
+    async def _run_and_release(claimed: ClaimedRun, settings_at_claim: RuntimeSettings) -> None:
         try:
-            await run_claimed(pool, claimed, worker_id=worker_id, settings=settings)
+            await run_claimed(
+                pool, claimed, worker_id=worker_id, settings=settings_at_claim, live=live
+            )
+        except Exception:
+            # Every worker-internal failure mode this system has a policy
+            # for (fencing, dead-lettering, needs-review, cancellation,
+            # timeout) is already handled to completion inside
+            # `run_claimed`/`execute_run` and never reaches here. Anything
+            # that does is a genuine bug in this process; letting it
+            # propagate would crash the whole claim-execute loop and take
+            # down every *other* concurrently in-flight run for a reason
+            # that has nothing to do with them. This is the top-level
+            # boundary for this one run, not a swallowed correctness
+            # failure — nothing about the run's own durable state was
+            # written by this handler.
+            logger.exception(
+                "unexpected error executing claimed run",
+                extra={"run_id": claimed.run_id, "worker_id": worker_id},
+            )
         finally:
             run_counter.value -= 1
+
+    try:
+        while True:
+            in_flight = {t for t in in_flight if not t.done()}
+            settings = live.current  # re-read fresh every iteration (P6.6)
+
+            if not has_capacity(
+                current_count=run_counter.value, capacity=settings.per_worker_concurrency
+            ):
+                await asyncio.sleep(
+                    _jittered_seconds(
+                        settings.reclaim_poll_interval_ms, settings.backoff_jitter_pct
+                    )
+                )
+                continue
+
+            async with pool.acquire() as conn:
+                claimed = await claim_one(
+                    conn,
+                    worker_id=worker_id,
+                    lease_duration_ms=settings.lease_duration_ms,
+                    global_concurrency_cap=settings.global_concurrency_cap,
+                    max_payload_bytes=settings.max_event_payload_bytes,
+                )
+            if claimed is None:
+                await asyncio.sleep(
+                    _jittered_seconds(
+                        settings.reclaim_poll_interval_ms, settings.backoff_jitter_pct
+                    )
+                )
+                continue
+
+            logger.info(
+                "run claimed",
+                extra={"run_id": claimed.run_id, "worker_id": worker_id, "epoch": claimed.epoch},
+            )
+            run_counter.value += 1
+            # `settings` (this iteration's `live.current`) is pinned into
+            # the spawned task now, at claim time — the renewer and the
+            # forced final renewal use exactly this snapshot for the run's
+            # entire lifetime (P6.6, T332's lease-stability rationale),
+            # while `_run_steps` inside it re-reads `live` fresh at every
+            # subsequent step boundary.
+            in_flight.add(
+                asyncio.create_task(
+                    _run_and_release(claimed, settings), name=f"run-{claimed.run_id}"
+                )
+            )
+    finally:
+        for task in in_flight:
+            if not task.done():
+                task.cancel()
+        if in_flight:
+            await asyncio.gather(*in_flight, return_exceptions=True)

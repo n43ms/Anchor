@@ -15,9 +15,11 @@ import signal
 
 import redis.asyncio as redis_asyncio
 
-from anchor.core.config.loader import BootstrapEnv, load_runtime_settings
+from anchor.core.config.live import load_live_settings, poll_forever
+from anchor.core.config.loader import BootstrapEnv
 from anchor.core.db.pool import create_pool
 from anchor.core.db.schema_gate import assert_schema_matches
+from anchor.core.events.publish import configure_publisher
 from anchor.core.logging import configure_logging
 from anchor.runtime.agents import register_all
 from anchor.runtime.tools.demo import register_demo_tools
@@ -43,7 +45,8 @@ async def main() -> None:
         # are applied at the next step boundary from phase 6 onward
         # (plan.md P6.6), not retroactively to an already-registered
         # worker's row.
-        settings = await load_runtime_settings(conn)
+        live = await load_live_settings(conn)
+        settings = live.current
         # Declared-tool registration (P5.5): upserts every demo tool's
         # safety declaration into `tool_registry` before this worker can
         # possibly claim a run that might call one, so the conflict check
@@ -61,6 +64,10 @@ async def main() -> None:
     logger.info("worker registered", extra={"worker_id": worker_id})
 
     redis_client = redis_asyncio.from_url(env.redis_url)
+    # Every event this worker appends is published to the anchor:events
+    # firehose from this point on (P6.7, T336) — best-effort, and a no-op
+    # if Redis is unreachable (FR-058).
+    configure_publisher(redis_client)
 
     run_counter = RunCounter()
     shutdown_requested = asyncio.Event()
@@ -108,11 +115,16 @@ async def main() -> None:
                 name="kill-subscriber",
             )
             tg.create_task(_shutdown_waiter(), name="shutdown-waiter")
-            # Sequential, one run at a time — the per-run TaskGroup with an
-            # independent background renewer is phase 3 (P3.4).
+            tg.create_task(
+                poll_forever(pool, live, redis_client=redis_client),
+                name="live-config-poll",
+            )
+            # Concurrent up to per_worker_concurrency, each run under its
+            # own per-run TaskGroup with an independent renewer (P3.4,
+            # P6.4).
             tg.create_task(
                 poll_and_execute_forever(
-                    pool, worker_id=worker_id, settings=settings, run_counter=run_counter
+                    pool, worker_id=worker_id, live=live, run_counter=run_counter
                 ),
                 name="claim-execute-loop",
             )

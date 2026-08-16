@@ -13,6 +13,8 @@ from typing import Any
 import asyncpg
 from pydantic import BaseModel
 
+from anchor.api.serializers.timeline import RunSummary, TimelineSegment
+
 # Every column `RunResponse` needs, plus `orphaned` derived in SQL rather
 # than in Python: `status = 'running' AND lease_expires_at < now()` reads
 # the database clock (I5), never a worker's or the API process's own clock.
@@ -76,4 +78,37 @@ def serialize_run(
         claimed_at=row["claimed_at"].isoformat() if row["claimed_at"] else None,
         finished_at=row["finished_at"].isoformat() if row["finished_at"] else None,
         needs_review=needs_review,
+    )
+
+
+class RunListItemResponse(RunResponse):
+    """`contracts/openapi.yaml` -> `RunListItem` (`Run` plus the thread
+    summary a list row's compact strand renders from — `GET /api/runs`'s
+    own contract, distinct from `RunResponse`, which every *other* runs
+    route returns).
+    """
+
+    elapsed_ms: int
+    segments: list[TimelineSegment]
+    summary: RunSummary
+
+
+def serialize_run_list_item(
+    row: asyncpg.Record,
+    *,
+    db_now: Any,
+    segments: list[TimelineSegment],
+    summary: RunSummary,
+    needs_review: dict[str, Any] | None = None,
+) -> RunListItemResponse:
+    """`db_now` is one `SELECT now()` the caller reads once per page — the
+    database clock, never a worker's or the API process's own (`I5`) — used
+    as the "elapsed so far" reference for a still-`running` row; a
+    finished row uses its own `finished_at` instead.
+    """
+    base = serialize_run(row, needs_review=needs_review)
+    finished_at = row["finished_at"] or db_now
+    elapsed_ms = int((finished_at - row["created_at"]).total_seconds() * 1000)
+    return RunListItemResponse(
+        **base.model_dump(), elapsed_ms=elapsed_ms, segments=segments, summary=summary
     )

@@ -43,6 +43,7 @@ import asyncpg
 
 from anchor.core.db.errors import PayloadTooLargeError
 from anchor.core.events.payloads import PAYLOAD_MODELS
+from anchor.core.events.publish import publish_event
 from anchor.core.events.types import EventType
 
 # One CTE: increments runs.last_seq and inserts the event in a single
@@ -124,4 +125,20 @@ async def append(
     )
     if row is None:
         raise ValueError(f"run {run_id} does not exist; nothing to append to")
-    return int(row["seq"]), row["created_at"]
+    seq, created_at = int(row["seq"]), row["created_at"]
+
+    # Publish (P6.7, T336): best-effort, after the INSERT above — see
+    # core.events.publish's module docstring for exactly what "after" means
+    # when this call is nested inside a caller's own explicit transaction,
+    # and why that relaxation is safe here specifically.
+    await publish_event(
+        run_id=run_id,
+        seq=seq,
+        type=event_type.value,
+        payload=validated_payload,
+        epoch=epoch,
+        worker_id=worker_id,
+        step_index=step_index,
+        created_at=created_at,
+    )
+    return seq, created_at

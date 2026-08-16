@@ -1,7 +1,11 @@
-"""`GET /api/tools` — the declared-safety registry (plan.md P5.5, T272; FR-120).
+"""`GET /api/tools` and `GET /api/agents` — the declared registries (plan.md
+P5.5/T272, P6.11/T370; FR-120).
 
-Read-only. Every row already exists in `tool_registry`, written by
-`register_tool` at worker startup — this route just serializes it.
+Read-only. Tools come from `tool_registry`, written by `register_tool` at
+worker startup; agents come from `anchor.runtime.agents.registry`, an
+in-process dict populated by `register_all()` at API/worker startup —
+there is no database table for agent contracts, because the contract is a
+property of the code deployed, not of any run.
 """
 
 from __future__ import annotations
@@ -11,12 +15,30 @@ from typing import Annotated, Any
 import asyncpg
 from fastapi import APIRouter, Depends, Request
 
+from anchor.runtime.agents.registry import list_agents
+
 router = APIRouter()
 
 
 async def get_pool(request: Request) -> asyncpg.Pool:
     pool: asyncpg.Pool = request.app.state.db_pool
     return pool
+
+
+@router.get("/api/agents")
+async def get_agents() -> dict[str, Any]:
+    items = [
+        {
+            "agent_type": a.agent_type,
+            "description": a.description,
+            "contract_version": a.contract_version,
+            "expected_step_count": a.expected_step_count,
+            "tools_used": list(a.tools_used),
+            "stubbed_model": a.stubbed_model,
+        }
+        for a in list_agents()
+    ]
+    return {"items": items}
 
 
 @router.get("/api/tools")
