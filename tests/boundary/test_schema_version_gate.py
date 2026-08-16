@@ -26,7 +26,7 @@ from anchor.core.db.schema_gate import (
 def test_built_against_revision_needs_no_database() -> None:
     """Pure: reads ops/migrations/versions/ directly."""
     head = built_against_revision()
-    assert head == "002_claim_indexes"
+    assert head == "003_journal"
 
 
 @pytest.mark.asyncio
@@ -76,7 +76,7 @@ async def test_a_mismatched_revision_refuses_to_start_naming_both(
             await assert_schema_matches(conn)
 
     assert exc_info.value.applied == "not_a_real_revision"
-    assert exc_info.value.built_against == "002_claim_indexes"
+    assert exc_info.value.built_against == "003_journal"
     message = str(exc_info.value)
     assert "not_a_real_revision" in message
-    assert "002_claim_indexes" in message
+    assert "003_journal" in message

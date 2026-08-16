@@ -104,6 +104,7 @@ async def _intent_phase(
     `ctx.new_id()` value feeding `args_canonical` — are unrecorded.
     """
     async with conn.transaction():
+        await conn.execute("SELECT 1 FROM runs WHERE id = $1 FOR UPDATE", run_id)
         await flush_pending_nondet()
         await conn.execute(
             """
@@ -154,6 +155,7 @@ async def _result_phase(
     max_payload_bytes: int,
 ) -> None:
     async with conn.transaction():
+        await conn.execute("SELECT 1 FROM runs WHERE id = $1 FOR UPDATE", run_id)
         await conn.execute(
             """
             UPDATE tool_journal

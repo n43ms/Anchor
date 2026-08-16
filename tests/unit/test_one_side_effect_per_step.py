@@ -27,6 +27,10 @@ async def test_second_tool_call_in_the_same_step_raises(db_pool: asyncpg.Pool) -
 
     async with db_pool.acquire() as conn:
         await register_tool(conn, decl, code_version="test")
+        await conn.execute(
+            "INSERT INTO workers (id, label, incarnation, hostname, pid, capacity, code_version) "
+            "VALUES ('worker-a#1', 'worker-a', 1, 'test', 1, 10, 'dev') ON CONFLICT DO NOTHING"
+        )
         run_id: int = await conn.fetchval(
             "INSERT INTO runs (agent_type, status, owner_worker_id, lease_expires_at) "
             "VALUES ('demo_short', 'running', 'worker-a#1', now() + interval '1 minute') "

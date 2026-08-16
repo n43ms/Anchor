@@ -76,6 +76,23 @@ async def test_demo_tools_deduplicate_a_legitimate_retry_via_the_same_mechanism(
         run_id: int = await conn.fetchval(
             "INSERT INTO runs (agent_type) VALUES ('demo_short') RETURNING id"
         )
+        await conn.execute(
+            """
+            INSERT INTO tool_registry
+                (name, safety, naturally_idempotent, provider_accepts_key, has_reconcile_fn,
+                 default_policy, declaration_hash, declared_by_version)
+            VALUES ('charge_card', 'retry_safe', false, true, false, 'retry_safe', 'h', 'test')
+            ON CONFLICT DO NOTHING
+            """
+        )
+        await conn.execute(
+            """
+            INSERT INTO tool_journal
+                (idempotency_key, run_id, step_index, tool_name, args_canonical, args_hash, intent_epoch)
+            VALUES ('effect-key-2', $1, 0, 'charge_card', '{}'::jsonb, 'h', 0)
+            """,
+            run_id,
+        )
         first = await _record_effect(
             conn,
             run_id=run_id,
