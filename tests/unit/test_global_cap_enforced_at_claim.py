@@ -115,7 +115,7 @@ async def test_a_reclaim_is_never_blocked_by_a_saturated_cap(db_pool: asyncpg.Po
         )
         assert first is not None
 
-        await asyncio.sleep(0.2)
+        await asyncio.sleep(1.0)
 
         second = await claim_one(
             conn,

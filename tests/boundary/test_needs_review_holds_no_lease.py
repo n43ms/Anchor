@@ -13,6 +13,10 @@ import pytest
 @pytest.mark.asyncio
 async def test_needs_review_cannot_hold_owner_or_lease(db_pool: asyncpg.Pool) -> None:
     async with db_pool.acquire() as conn:
+        await conn.execute(
+            "INSERT INTO workers (id, label, incarnation, hostname, pid, capacity, code_version) "
+            "VALUES ('worker-a#1', 'worker-a', 1, 'test', 1, 10, 'dev') ON CONFLICT DO NOTHING"
+        )
         run_id: int = await conn.fetchval(
             "INSERT INTO runs (agent_type) VALUES ('demo_short') RETURNING id"
         )
@@ -44,6 +48,10 @@ async def test_needs_review_transition_matching_halt_needs_review_is_valid(
     accepts, so a real halt never trips the constraint it must satisfy.
     """
     async with db_pool.acquire() as conn:
+        await conn.execute(
+            "INSERT INTO workers (id, label, incarnation, hostname, pid, capacity, code_version) "
+            "VALUES ('worker-a#1', 'worker-a', 1, 'test', 1, 10, 'dev') ON CONFLICT DO NOTHING"
+        )
         run_id: int = await conn.fetchval(
             "INSERT INTO runs (agent_type, status, owner_worker_id, lease_expires_at) "
             "VALUES ('demo_short', 'running', 'worker-a#1', now() + interval '1 minute') "

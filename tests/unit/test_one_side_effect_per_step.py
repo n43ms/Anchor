@@ -43,6 +43,7 @@ async def test_second_tool_call_in_the_same_step_raises(db_pool: asyncpg.Pool) -
             worker_id="worker-a#1",
             step_index=0,
             input={},
+            step_timeout_ms=5000,
             run_context=RunContext(),
             conn=conn,
             tool_registry={"test_one_effect_tool": decl},

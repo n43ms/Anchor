@@ -76,7 +76,7 @@ async def test_a_mismatched_revision_refuses_to_start_naming_both(
             await assert_schema_matches(conn)
 
     assert exc_info.value.applied == "not_a_real_revision"
-    assert exc_info.value.built_against == "003_journal"
+    assert exc_info.value.built_against == built_against_revision()
     message = str(exc_info.value)
     assert "not_a_real_revision" in message
-    assert "003_journal" in message
+    assert built_against_revision() in message

@@ -51,6 +51,7 @@ async def test_a_crash_during_invocation_leaves_a_committed_intent(db_pool: asyn
             worker_id="worker-a#1",
             step_index=0,
             input={},
+            step_timeout_ms=5000,
             run_context=RunContext(),
             conn=conn,
             tool_registry={"test_crashing_tool": decl},

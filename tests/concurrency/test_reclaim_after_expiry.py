@@ -74,7 +74,7 @@ async def test_reclaim_carries_correct_reason_and_epoch_and_keeps_status_running
         assert mid_row is not None
         assert mid_row["status"] == "running"
 
-        await asyncio.sleep(0.2)  # let the 50ms lease expire
+        await asyncio.sleep(1.0)  # let the 50ms lease expire
 
         second = await claim_one(
             conn,
