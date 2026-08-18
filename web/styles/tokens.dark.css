@@ -1,0 +1,43 @@
+/*
+ * Dark token set — anchor-spec.md §22.1, §22.3, §24.7.
+ * Values are measured, not chosen for taste; do not edit without re-running
+ * the colorblind/contrast validation this file's numbers came from.
+ */
+:root,
+[data-theme="dark"] {
+  /* surfaces + ink */
+  --surface-page: #0d0d0d;
+  --surface-panel: #1a1a19;
+  --ink-primary: #ffffff;
+  --ink-secondary: #c3c2b7;
+  --ink-muted: #898781;
+  --gridline: #2c2c2a;
+  --baseline: #383835;
+  --hairline-ring: rgba(255, 255, 255, 0.1);
+
+  /* channel 1 — worker identity hues, fixed order, never cycled */
+  --worker-1: #3987e5;
+  --worker-2: #d95926;
+  --worker-3: #199e70;
+
+  /* channel 2 — step/run state, fixed, never themed */
+  --status-pending: #898781;
+  --status-executing: #3987e5;
+  --status-good: #0ca30c;
+  --status-warning: #fab219;
+  --status-critical: #d03b3b;
+
+  /* RunThread — gold belongs to the strand alone (§24.8) */
+  --strand-gold: #f6c453;
+
+  /* RunThread event markers (§24.7 corrected values) */
+  --marker-ordinary: #898781;
+  --marker-side-effect: #d03b3b;
+  --marker-reconciled: #0ca30c;
+
+  /* motion timing — the small fixed set of transition tokens */
+  --transition-fast: 150ms;
+  --transition-base: 200ms;
+  --transition-emphatic: 250ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}

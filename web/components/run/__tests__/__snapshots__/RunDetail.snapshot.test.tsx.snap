@@ -1,0 +1,414 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`RunDetail snapshot > matches the reference mock with now injected 1`] = `
+<div
+  class="rounded-lg border border-gridline bg-surface-panel p-5"
+  data-run-status="running"
+  data-testid="run-detail"
+>
+  <header
+    class="flex items-start justify-between"
+  >
+    <div>
+      <h2
+        class="font-ui text-base text-ink-primary"
+      >
+        run_47
+         · 
+        refund-agent
+      </h2>
+      <p
+        class="mt-1 text-xs text-ink-secondary"
+      >
+        started 
+        41
+        s ago · 
+        5
+         steps
+      </p>
+    </div>
+    <span
+      class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors duration-base "
+      data-status="running"
+      style="color: var(--status-executing); border-color: var(--status-executing); background-color: color-mix(in srgb, var(--status-executing) 12%, transparent);"
+    >
+      <span
+        aria-hidden="true"
+      >
+        ◐
+      </span>
+      <span>
+        running
+      </span>
+    </span>
+  </header>
+  <div
+    class="mt-5 space-y-1"
+  >
+    <div>
+      <div
+        class="flex items-start gap-3"
+      >
+        <span
+          class="w-24 shrink-0 pt-0.5 font-data text-xs font-bold"
+          style="color: var(--worker-1);"
+        >
+          worker-a#3
+        </span>
+        <div
+          class="min-w-0 flex-1"
+        >
+          <div
+            class="relative h-3 w-full overflow-hidden rounded-full bg-surface-page"
+          >
+            <div
+              aria-valuemax="100"
+              aria-valuemin="0"
+              aria-valuenow="100"
+              class="h-full rounded-full transition-[width] duration-base ease-out"
+              role="progressbar"
+              style="width: 100%; background-color: var(--worker-1);"
+            />
+          </div>
+          <div
+            class="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs"
+          >
+            <span
+              class="text-ink-secondary"
+              data-step-status="done"
+            >
+              read ticket
+            </span>
+            <span
+              class="text-ink-secondary"
+              data-step-status="done"
+            >
+              check order
+            </span>
+            <span
+              class="text-ink-secondary"
+              data-step-status="done"
+            >
+              decide
+            </span>
+          </div>
+          <div
+            class="mt-1 space-y-0.5 font-data text-[11px]"
+            data-testid="segment-log"
+          >
+            <div
+              style="color: var(--ink-muted);"
+            >
+              <span
+                class="text-ink-muted"
+              >
+                14:02:11
+              </span>
+               
+              run_claimed worker-a#3 epoch=5
+            </div>
+            <div
+              style="color: var(--ink-muted);"
+            >
+              <span
+                class="text-ink-muted"
+              >
+                14:02:13
+              </span>
+               
+              tool_intent fetch_order key=r47:s2:c1e
+            </div>
+            <div
+              style="color: var(--status-good);"
+            >
+              <span
+                class="text-ink-muted"
+              >
+                14:02:14
+              </span>
+               
+              tool_result fetch_order ok
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div
+        class="relative my-3 flex items-center"
+        data-testid="handoff-divider"
+      >
+        <div
+          class="h-px flex-1 border-t border-dashed border-status-critical/40"
+        />
+        <span
+          class="mx-3 rounded-full bg-status-critical/15 px-3 py-1 text-xs text-status-critical"
+        >
+          worker-a#3
+           lease expired
+        </span>
+        <div
+          class="h-px flex-1 border-t border-dashed border-status-critical/40"
+        />
+      </div>
+      <div
+        class="flex items-start gap-3"
+      >
+        <span
+          class="w-24 shrink-0 pt-0.5 font-data text-xs font-bold"
+          style="color: var(--worker-2);"
+        >
+          worker-c#1
+        </span>
+        <div
+          class="min-w-0 flex-1"
+        >
+          <div
+            class="relative h-3 w-full overflow-hidden rounded-full bg-surface-page"
+          >
+            <div
+              aria-valuemax="100"
+              aria-valuemin="0"
+              aria-valuenow="50"
+              class="h-full rounded-full transition-[width] duration-base ease-out"
+              role="progressbar"
+              style="width: 50%; background-color: var(--worker-2);"
+            />
+          </div>
+          <div
+            class="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs"
+          >
+            <span
+              class="font-bold text-ink-primary"
+              data-step-status="active"
+            >
+              issue refund
+              …
+            </span>
+            <span
+              class="text-ink-secondary"
+              data-step-status="pending"
+            >
+              notify customer
+            </span>
+          </div>
+          <div
+            class="mt-1 space-y-0.5 font-data text-[11px]"
+            data-testid="segment-log"
+          >
+            <div
+              style="color: var(--ink-muted);"
+            >
+              <span
+                class="text-ink-muted"
+              >
+                14:02:17
+              </span>
+               
+              run_claimed worker-c#1 epoch=6 reclaimed
+            </div>
+            <div
+              style="color: var(--ink-muted);"
+            >
+              <span
+                class="text-ink-muted"
+              >
+                14:02:17
+              </span>
+               
+              replayed 3 steps from log
+            </div>
+            <div
+              style="color: var(--ink-muted);"
+            >
+              <span
+                class="text-ink-muted"
+              >
+                14:02:18
+              </span>
+               
+              tool_intent send_refund key=r47:s4:9a1
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div
+    class="mt-4 border-t border-gridline pt-3"
+  >
+    <div
+      class="mb-2 text-xs text-ink-muted"
+    >
+      thread view
+    </div>
+    <svg
+      aria-label="run thread, 5 steps, 2 segments"
+      data-testid="run-thread"
+      height="70"
+      role="img"
+      viewBox="0 0 620 70"
+      width="100%"
+    >
+      <path
+        class="strand-path"
+        d="M0,35 C51.666666666666664,35 103.33333333333333,47.476903040860094 155,47.476903040860094 C206.66666666666666,47.476903040860094 258.3333333333333,46.31894965347426 310,46.31894965347426 C361.6666666666667,46.31894965347426 413.3333333333333,32.79156028199452 465,32.79156028199452 C516.6666666666666,32.79156028199452 568.3333333333334,21.677570965546774 620,21.677570965546774"
+        data-flowing="true"
+        fill="none"
+        stroke="var(--strand-gold)"
+        stroke-linecap="round"
+        stroke-width="2.5"
+      />
+      <g>
+        <g
+          data-marker-kind="side_effect"
+          data-marker-label="read"
+        >
+          <rect
+            data-shape="square"
+            fill="var(--marker-side-effect)"
+            height="8"
+            width="8"
+            x="-4"
+            y="31"
+          />
+          <text
+            class="font-ui"
+            fill="var(--ink-muted)"
+            font-size="11"
+            text-anchor="middle"
+            x="0"
+            y="25"
+          >
+            read
+          </text>
+        </g>
+        <g
+          data-marker-kind="side_effect"
+          data-marker-label="check"
+        >
+          <rect
+            data-shape="square"
+            fill="var(--marker-side-effect)"
+            height="8"
+            width="8"
+            x="120"
+            y="31"
+          />
+          <text
+            class="font-ui"
+            fill="var(--ink-muted)"
+            font-size="11"
+            text-anchor="middle"
+            x="124"
+            y="25"
+          >
+            check
+          </text>
+        </g>
+        <g
+          data-marker-kind="ordinary"
+          data-marker-label="decide"
+        >
+          <circle
+            cx="248"
+            cy="35"
+            data-shape="circle"
+            fill="var(--marker-ordinary)"
+            r="4"
+          />
+          <text
+            class="font-ui"
+            fill="var(--ink-muted)"
+            font-size="11"
+            text-anchor="middle"
+            x="248"
+            y="25"
+          >
+            decide
+          </text>
+        </g>
+        <g
+          data-marker-kind="handoff"
+          data-marker-label="handoff"
+        >
+          <circle
+            cx="372"
+            cy="35"
+            data-handoff="true"
+            data-shape="circle"
+            fill="var(--strand-gold)"
+            r="6"
+          />
+          <text
+            class="font-ui"
+            fill="var(--strand-gold)"
+            font-size="12"
+            text-anchor="middle"
+            x="372"
+            y="23"
+          >
+            handoff
+          </text>
+        </g>
+        <g
+          data-marker-kind="side_effect"
+          data-marker-label="issue"
+        >
+          <rect
+            data-shape="square"
+            fill="var(--marker-side-effect)"
+            height="8"
+            width="8"
+            x="368"
+            y="31"
+          />
+        </g>
+        <g
+          data-marker-kind="ordinary"
+          data-marker-label="notify"
+        >
+          <circle
+            cx="496"
+            cy="35"
+            data-shape="circle"
+            fill="var(--marker-ordinary)"
+            r="4"
+          />
+          <text
+            class="font-ui"
+            fill="var(--ink-muted)"
+            font-size="11"
+            text-anchor="middle"
+            x="496"
+            y="25"
+          >
+            notify
+          </text>
+        </g>
+      </g>
+    </svg>
+  </div>
+  <footer
+    class="mt-4 flex items-center justify-between border-t border-gridline pt-3"
+  >
+    <p
+      class="text-xs text-ink-muted"
+      data-testid="run-detail-footer"
+    >
+      0
+       duplicate side effects · 
+      1
+       handoff
+       · 3.1s recovery
+    </p>
+    <button
+      class="rounded bg-status-critical/15 px-3 py-1.5 text-xs text-status-critical transition-colors duration-fast hover:bg-status-critical/25 disabled:cursor-not-allowed disabled:opacity-40"
+      type="button"
+    >
+      kill 
+      worker-c#1
+    </button>
+  </footer>
+</div>
+`;

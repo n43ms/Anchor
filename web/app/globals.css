@@ -1,0 +1,35 @@
+@import "tailwindcss";
+@config "../tailwind.config.ts";
+
+@import "../styles/tokens.dark.css";
+@import "../styles/tokens.light.css";
+@import "../styles/typography.css";
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background: var(--surface-page);
+  color: var(--ink-primary);
+}
+
+* {
+  border-color: var(--gridline);
+}
+
+/* prefers-reduced-motion is honored globally: any transition/animation not
+   explicitly re-declared for reduced motion collapses to instant. Individual
+   components additionally freeze meaningful motion (the strand, pulses)
+   rather than removing information — see RunThread.tsx and StatusPill.tsx. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

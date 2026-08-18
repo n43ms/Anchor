@@ -1,0 +1,27 @@
+/*
+ * The strand's flow — the single permitted exception to the ban on ambient
+ * motion (anchor-spec.md §24.3). It represents execution in progress, so it
+ * must stop the instant the run reaches a terminal state (RunThread.tsx
+ * toggles [data-flowing="false"] there) — a strand that keeps flowing after
+ * the run finished is decoration, and it also lies.
+ */
+@keyframes strand-flow {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+.strand-path[data-flowing="true"] {
+  stroke-dasharray: 6 4;
+  animation: strand-flow 3s linear infinite;
+}
+
+.strand-path[data-flowing="false"] {
+  stroke-dasharray: none;
+}
+
+/* Live extension: a new step revealed via stroke-dashoffset transition
+   rather than snapping straight to the new length. */
+.strand-path {
+  transition: stroke-dashoffset var(--transition-base, 200ms) var(--ease-out, ease-out);
+}

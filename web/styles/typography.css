@@ -1,0 +1,29 @@
+/*
+ * Two families, no more (anchor-spec.md §22.2). Proportional for the hero
+ * figure and stat values; monospace only where alignment carries meaning.
+ */
+:root {
+  --font-ui: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-data: ui-monospace, "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+}
+
+body {
+  font-family: var(--font-ui);
+}
+
+.font-data {
+  font-family: var(--font-data);
+}
+
+/* Proportional figures for large standalone numbers (hero figure, stat
+   tiles) — tabular-nums makes a number like 121 look loose at 48px. */
+.figures-proportional {
+  font-variant-numeric: proportional-nums;
+}
+
+/* tabular-nums only where a column must align vertically: table rows,
+   axis ticks, the elapsed-time column. */
+.figures-tabular {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-data);
+}

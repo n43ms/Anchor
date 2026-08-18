@@ -1,0 +1,40 @@
+/*
+ * Light token set — anchor-spec.md §22.1, §22.3, §24.7.
+ * Selected and validated per surface, never an automatic inversion of dark.
+ * Shipping this mode is not required for phases 1-8, but tokens stay
+ * dual-valued from the start per constitution Principle VIII.
+ */
+[data-theme="light"] {
+  --surface-page: #f9f9f7;
+  --surface-panel: #fcfcfb;
+  --ink-primary: #0b0b0b;
+  --ink-secondary: #52514e;
+  --ink-muted: #898781;
+  --gridline: #e1e0d9;
+  --baseline: #c3c2b7;
+  --hairline-ring: rgba(11, 11, 11, 0.1);
+
+  --worker-1: #2a78d6;
+  --worker-2: #eb6834;
+  /* light-mode aqua measures 2.74:1, just under 3:1 — a documented,
+     carried-over relief: the worker-id label and step labels beside/under
+     this hue are the required visible text, never removed as decorative. */
+  --worker-3: #1baf7a;
+
+  --status-pending: #898781;
+  --status-executing: #2a78d6;
+  --status-good: #0ca30c;
+  --status-warning: #fab219;
+  --status-critical: #d03b3b;
+
+  --strand-gold: #7a6300;
+
+  --marker-ordinary: #898781;
+  --marker-side-effect: #d03b3b;
+  --marker-reconciled: #0ca30c;
+
+  --transition-fast: 150ms;
+  --transition-base: 200ms;
+  --transition-emphatic: 250ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+}
