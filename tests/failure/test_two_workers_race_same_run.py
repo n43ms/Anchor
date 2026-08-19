@@ -80,3 +80,9 @@ async def test_two_workers_never_both_win_the_same_run_across_many_repetitions(
         results = await asyncio.gather(_attempt("worker-race-a#1"), _attempt("worker-race-b#1"))
         winners = [r for r in results if r is not None]
         assert winners == [run_id], f"exactly one worker must win run {run_id}, got {results}"
+        async with db_pool.acquire() as conn:
+            await conn.execute(
+                "UPDATE runs SET status = 'completed', owner_worker_id = NULL, "
+                "lease_expires_at = NULL, finished_at = now() WHERE id = $1",
+                run_id,
+            )

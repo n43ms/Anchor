@@ -54,6 +54,7 @@ async def test_a_crash_during_invocation_leaves_a_committed_intent(db_pool: asyn
             run_context=RunContext(),
             conn=conn,
             tool_registry={"test_crashing_tool": decl},
+            step_timeout_ms=5000,
         )
 
         with pytest.raises(_SimulatedCrash):

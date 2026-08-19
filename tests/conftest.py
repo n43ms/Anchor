@@ -56,6 +56,39 @@ _ALL_TABLES = (
 )
 
 
+async def _do_truncate_and_reseed(conn: asyncpg.Connection) -> None:
+    """Truncate all test tables and re-seed `runtime_config` in one shot.
+
+    Extracted so both the session-start and between-tests fixtures share
+    exactly the same logic without duplication.
+
+    The runtime_config re-seed uses `ON CONFLICT DO UPDATE` rather than
+    `DO NOTHING` so that if rows survived a partial truncation they are
+    always reset to the current profile's defaults.
+    """
+    import json
+
+    from anchor.core.config.profiles import ConfigProfile, profile_settings
+
+    existing = await conn.fetch("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")
+    names = {row["tablename"] for row in existing}
+    to_truncate = [t for t in _ALL_TABLES if t in names]
+    if to_truncate:
+        await conn.execute(f"TRUNCATE {', '.join(to_truncate)} RESTART IDENTITY CASCADE")
+        if "runtime_config" in to_truncate:
+            profile_name = os.environ.get("ANCHOR_CONFIG_PROFILE", "demo")
+            settings = profile_settings(ConfigProfile(profile_name))
+            for key, value in settings.model_dump(mode="json").items():
+                await conn.execute(
+                    "INSERT INTO runtime_config (key, value, updated_by) "
+                    "VALUES ($1, CAST($2 AS jsonb), 'seed') "
+                    "ON CONFLICT (key) DO UPDATE "
+                    "SET value = EXCLUDED.value, updated_by = 'seed'",
+                    key,
+                    json.dumps(value),
+                )
+
+
 @pytest.fixture(scope="session")
 async def db_pool() -> AsyncIterator[asyncpg.Pool]:
     """A session-scoped connection pool against the real test database.
@@ -75,6 +108,38 @@ async def db_pool() -> AsyncIterator[asyncpg.Pool]:
         yield pool
     finally:
         await pool.close()
+
+
+@pytest.fixture(scope="session", autouse=True)
+async def _truncate_at_session_start() -> AsyncIterator[None]:
+    """Truncate all tables ONCE at the very start of the test session.
+
+    This handles leftover state from a previous run that was killed or
+    crashed before its own between-tests truncation could complete. Without
+    this, re-running pytest on a dirty database causes ordering-dependent
+    failures: tests that assume a clean slate (e.g. expecting `run_id = 1`
+    from RESTART IDENTITY, or expecting zero `running` rows before inserting
+    their own) will fail when old rows are present.
+
+    The function-scoped `_truncate_between_tests` handles isolation between
+    individual tests within a single run; this fixture handles isolation
+    between runs.
+
+    Like `_truncate_between_tests`, this deliberately does NOT depend on
+    `db_pool` so that pure unit tests (no DB needed) are not skipped when
+    PostgreSQL is unreachable.
+    """
+    try:
+        conn = await asyncpg.connect(TEST_DATABASE_URL, timeout=CONNECT_TIMEOUT_S)
+    except (OSError, asyncpg.PostgresError, TimeoutError):
+        yield
+        return
+
+    try:
+        await _do_truncate_and_reseed(conn)
+    finally:
+        await conn.close()
+    yield
 
 
 @pytest.fixture(autouse=True)
@@ -100,24 +165,7 @@ async def _truncate_between_tests() -> AsyncIterator[None]:
         return
 
     try:
-        existing = await conn.fetch("SELECT tablename FROM pg_tables WHERE schemaname = 'public'")
-        names = {row["tablename"] for row in existing}
-        to_truncate = [t for t in _ALL_TABLES if t in names]
-        if to_truncate:
-            await conn.execute(f"TRUNCATE {', '.join(to_truncate)} RESTART IDENTITY CASCADE")
-            if "runtime_config" in to_truncate:
-                import json
-
-                from anchor.core.config.profiles import ConfigProfile, profile_settings
-
-                profile_name = os.environ.get("ANCHOR_CONFIG_PROFILE", "demo")
-                settings = profile_settings(ConfigProfile(profile_name))
-                for key, value in settings.model_dump(mode="json").items():
-                    await conn.execute(
-                        "INSERT INTO runtime_config (key, value, updated_by) VALUES ($1, CAST($2 AS jsonb), 'seed') ON CONFLICT DO NOTHING",
-                        key,
-                        json.dumps(value),
-                    )
+        await _do_truncate_and_reseed(conn)
     finally:
         await conn.close()
     yield

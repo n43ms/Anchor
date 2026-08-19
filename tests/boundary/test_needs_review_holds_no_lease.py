@@ -44,6 +44,10 @@ async def test_needs_review_transition_matching_halt_needs_review_is_valid(
     accepts, so a real halt never trips the constraint it must satisfy.
     """
     async with db_pool.acquire() as conn:
+        await conn.execute(
+            "INSERT INTO workers (id, label, incarnation, hostname, pid, capacity, code_version) "
+            "VALUES ('worker-a#1', 'worker-a', 1, 'localhost', 123, 1, 'dev')"
+        )
         run_id: int = await conn.fetchval(
             "INSERT INTO runs (agent_type, status, owner_worker_id, lease_expires_at) "
             "VALUES ('demo_short', 'running', 'worker-a#1', now() + interval '1 minute') "

@@ -18,6 +18,7 @@ import asyncpg
 import redis.asyncio as redis_asyncio
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -164,9 +165,19 @@ def create_app() -> FastAPI:
     register_all()
     # Order matters: middleware is applied outermost-registered-last, so
     # registering rate limiting after logging means an over-limit request
-    # is still logged (T359) before being rejected.
+    # is still logged (T359) before being rejected. CORSMiddleware is added
+    # last so it wraps outermost, handling preflights immediately and attaching
+    # headers to every response.
     app.middleware("http")(rate_limit_requests)
     app.middleware("http")(log_requests)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+        expose_headers=["*"],
+    )
     app.include_router(health.router)
     app.include_router(runs.router)
     app.include_router(workers.router)

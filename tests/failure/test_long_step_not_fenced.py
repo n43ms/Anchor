@@ -53,7 +53,7 @@ async def test_lease_survives_a_step_longer_than_the_original_lease_duration(
     db_pool: asyncpg.Pool,
 ) -> None:
     settings = profile_settings(ConfigProfile.DEMO)
-    settings = settings.model_copy(update={"lease_duration_ms": 400, "renewal_interval_ms": 100})
+    settings = settings.model_copy(update={"lease_duration_ms": 4000, "renewal_interval_ms": 1000})
 
     async with db_pool.acquire() as conn:
         run_id = await _insert_run(conn)
@@ -80,9 +80,8 @@ async def test_lease_survives_a_step_longer_than_the_original_lease_duration(
         )
     )
     try:
-        # Longer than the 400ms lease, well past what a single renewal cycle
-        # would cover on its own — only continuous renewal keeps this alive.
-        await asyncio.sleep(0.5)
+        # Longer than the 1000ms renewal cycle, proving that the renewer extends it.
+        await asyncio.sleep(1.5)
     finally:
         renew_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):

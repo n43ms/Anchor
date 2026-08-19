@@ -17,12 +17,12 @@ from collections.abc import Mapping
 import asyncpg
 import pytest
 
-import anchor.runtime.agents  # noqa: F401 - registers "demo_minimal" as a side effect
 from anchor.core.config.profiles import ConfigProfile, profile_settings
 from anchor.core.events.append import append
 from anchor.core.events.types import EventType
 from anchor.core.leases.claim import claim_one
 from anchor.core.replay.load import load_run_events
+from anchor.runtime.agents import register_all
 from anchor.worker.loop import execute_run
 
 MAX_PAYLOAD = 1_000_000
@@ -41,6 +41,7 @@ async def _insert_run(
 
 @pytest.mark.asyncio
 async def test_different_worker_resumes_after_reclaim(db_pool: asyncpg.Pool) -> None:
+    register_all()
     input_payload = {"query": "durable execution", "recipient": "ops@example.com"}
 
     async with db_pool.acquire() as conn:

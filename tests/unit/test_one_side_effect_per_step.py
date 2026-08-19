@@ -46,6 +46,7 @@ async def test_second_tool_call_in_the_same_step_raises(db_pool: asyncpg.Pool) -
             run_context=RunContext(),
             conn=conn,
             tool_registry={"test_one_effect_tool": decl},
+            step_timeout_ms=30_000,  # required by call_tool() since FR-055 (T328)
         )
 
         first = await ctx.call_tool("test_one_effect_tool", {"call": 1})

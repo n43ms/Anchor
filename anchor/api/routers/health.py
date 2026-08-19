@@ -64,7 +64,7 @@ async def _check_redis(request: Request) -> bool:
     try:
         await redis_client.ping()
         return True
-    except (OSError, TimeoutError):
+    except Exception:
         return False
 
 

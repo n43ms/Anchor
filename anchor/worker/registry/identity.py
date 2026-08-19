@@ -54,9 +54,12 @@ async def claim_identity(conn: asyncpg.Connection[Any], label_pool: list[str]) -
         incarnation = await conn.fetchval(
             """
             INSERT INTO worker_label_incarnations (label, next_incarnation)
-            VALUES ($1, 2)
+            VALUES ($1, (SELECT COALESCE(MAX(incarnation), 0) + 1 FROM workers WHERE label = $1) + 1)
             ON CONFLICT (label) DO UPDATE
-                SET next_incarnation = worker_label_incarnations.next_incarnation + 1
+                SET next_incarnation = GREATEST(
+                    worker_label_incarnations.next_incarnation,
+                    (SELECT COALESCE(MAX(incarnation), 0) + 1 FROM workers WHERE label = $1)
+                ) + 1
             RETURNING next_incarnation - 1
             """,
             label,

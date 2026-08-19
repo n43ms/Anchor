@@ -6,6 +6,7 @@ guess (D-24, FR-050).
 
 from __future__ import annotations
 
+import json
 from typing import Any
 
 import asyncpg
@@ -34,6 +35,10 @@ async def _make_needs_review_run(db_pool: asyncpg.Pool, *, is_demo: bool = True)
 
     async with db_pool.acquire() as conn:
         await register_tool(conn, decl, code_version="test")
+        await conn.execute(
+            "INSERT INTO workers (id, label, incarnation, hostname, pid, capacity, code_version) "
+            "VALUES ('worker-a#1', 'worker-a', 1, 'localhost', 123, 1, 'dev')"
+        )
         run_id: int = await conn.fetchval(
             "INSERT INTO runs (agent_type, status, owner_worker_id, lease_expires_at, is_demo) "
             "VALUES ('demo_unsafe', 'running', 'worker-a#1', now() + interval '1 minute', $1) "
@@ -41,6 +46,17 @@ async def _make_needs_review_run(db_pool: asyncpg.Pool, *, is_demo: bool = True)
             is_demo,
         )
         key = derive_key(run_id, 0, decl.name, args)
+        await conn.execute(
+            """
+            INSERT INTO tool_journal
+                (idempotency_key, run_id, step_index, tool_name, args_canonical, args_hash, intent_epoch)
+            VALUES ($1, $2, 0, $3, $4::jsonb, 'h', 0)
+            """,
+            key,
+            run_id,
+            decl.name,
+            json.dumps(args),
+        )
         with pytest.raises(NeedsReviewHalted):
             await execute_tool_call(
                 conn,

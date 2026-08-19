@@ -19,6 +19,7 @@ build/
 uv.lock.bak
 
 # --- Node / Next.js (web/) ---
+node_modules/
 web/node_modules/
 web/.next/
 web/out/
