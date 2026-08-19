@@ -71,7 +71,7 @@ workers on the same commit resolved different dependency versions.
 
 **Decision.** Runtime: `fastapi`, `uvicorn[standard]`, `asyncpg`, `redis`, `pydantic`,
 `pydantic-settings`. Migrations only: `alembic`, `sqlalchemy`. Dev: `pytest`, `pytest-asyncio`,
-`hypothesis`, `ruff`, `mypy`. Frontend: Next.js, React, TypeScript, Tailwind. **Nothing else without
+`hypothesis`, `ruff`, `mypy`. Frontend: React, Vite, TypeScript, Tailwind. **Nothing else without
 maintainer approval.**
 
 **Rationale.** The constitution requires approval for any dependency. Two candidates were rejected
@@ -101,7 +101,7 @@ because ordering, idempotent application, and "which migrations ran" all get rei
 Autogenerate from models — rejected outright; there are no models, and autogenerate cannot express
 the epoch trigger.
 
-### D-06 — Node 22 LTS, `pnpm`, Next.js App Router, TypeScript strict, Tailwind v4
+### D-06 — Node 22 LTS, `pnpm`, React + Vite, TypeScript strict, Tailwind v4
 
 **Decision.** Tailwind v4 with tokens declared as CSS custom properties in a single theme layer,
 carrying a dark set and a light set.

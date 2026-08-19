@@ -54,7 +54,7 @@ D-02).
 **Primary Dependencies**: FastAPI · uvicorn[standard] · asyncpg (explicit SQL, no ORM on the hot
 path) · redis · pydantic · pydantic-settings · Alembic + SQLAlchemy (migrations only, confined to
 `ops/migrations/` and asserted by a test) · pytest · pytest-asyncio · hypothesis · ruff · mypy ·
-Next.js (App Router) · React · Tailwind v4. **Nothing else without maintainer approval** (D-04).
+Next.js (App Router) / React · Vite · react-router-dom · Tailwind v4. **Nothing else without maintainer approval** (D-04).
 
 **Storage**: PostgreSQL 16, single instance, single writer — the source of truth for the log, the
 lease, the epoch, and the journal. Redis 7 for pub/sub fan-out and worker kill delivery only,
@@ -169,7 +169,7 @@ anchor/
     └── report.py               #   metric computation and the published report
 
 web/
-├── app/                        # Next.js App Router: landing + console route groups
+├── app/                        # React operator console route components
 ├── components/
 │   ├── run/                    #   RunDetail, RunThread, timeline track, segments, markers
 │   ├── fleet/                  #   worker cards, kill control, deployments

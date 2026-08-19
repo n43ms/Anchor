@@ -653,136 +653,136 @@ inside the jittered bounds.
 
 One module per row. This is the phase where the matrix is completed, not sampled.
 
-- [ ] T293 [P] [US4] Write the retry-backoff test in `tests/failure/test_retry_backoff_jitter.py` asserting intervals fall inside the ±25% jittered bounds, are bounded by `backoff_cap_ms`, and that retry is **at step granularity only**, never run granularity (FR-051, FR-052)
-- [ ] T294 [P] [US4] Write the dead-letter test in `tests/failure/test_dead_letter_on_attempt_cap.py` asserting `RUN_FAILED` carries `dead_lettered: true`, status becomes `failed`, the lease is released, and the run appears in the dead-letter view (FR-053)
-- [ ] T295 [P] [US4] Write the attempt-cap-survives-handoff test in `tests/failure/test_attempt_cap_survives_handoff.py`: a deterministically failing step, with its worker killed **between every attempt**, reaches `failed` after exactly `max_attempts_per_step` *total* attempts. **Against an in-memory counter this test does not fail, it hangs** — which is precisely the production symptom it exists to prevent (D-43, FR-130)
-- [ ] T296 [P] [US4] Write the cancellation test in `tests/failure/test_cancel_between_steps_only.py` asserting the flag is checked at a step boundary and **never mid-step**, and that the run finalizes as `cancelled` (FR-054)
-- [ ] T297 [P] [US4] Write the pending-cancel test in `tests/failure/test_cancel_pending_run_immediate.py` asserting a `pending` run is finalized by the API without a claim, an epoch increment, or a replay — it is leaseless, so no worker can be racing it (D-54)
-- [ ] T298 [P] [US4] Write the per-worker admission test in `tests/concurrency/test_per_worker_capacity.py` asserting a worker at its limit does not claim and sleeps briefly instead (FR-004)
-- [ ] T299 [P] [US4] Write the step-timeout test in `tests/failure/test_step_timeout_stops_renewer.py` asserting a step exceeding `step_timeout_ms` fails **and the renewer stops**, so the lease lapses and the run is reclaimed rather than held (FR-013, FR-055)
-- [ ] T300 [P] [US4] Write the database-unavailable test in `tests/failure/test_database_unavailable.py` asserting nothing executes, workers back off and retry, and **no side effect occurred without a durable record**. Failing closed is the correct behaviour and the test asserts it as such (FR-056)
-- [ ] T301 [P] [US4] Write the Redis-unavailable test in `tests/failure/test_redis_unavailable.py` asserting execution is entirely unaffected and only live push degrades (FR-058)
-- [ ] T302 [P] [US4] Write the slow-WebSocket-client test in `tests/failure/test_slow_ws_client_dropped.py` asserting a client exceeding its bounded queue is closed with `1013` and a `bye` frame naming `last_sent_seq`, and can then backfill from `after_seq` (FR-074)
-- [ ] T303 [P] [US4] Write the configuration-rejection test in `tests/failure/test_config_change_rejected.py` asserting a change violating the lease relationship returns 422 naming the relationship and both values, and that **the configuration is unchanged and the fleet is unaffected** (FR-063)
-- [ ] T304 [P] [US4] Write the config-boundary test in `tests/boundary/test_config_route_unmounted_in_demo.py` asserting `PATCH /api/config` returns **404** in demonstration mode (FR-064)
-- [ ] T305 [P] [US4] Write the step-boundary-application test in `tests/unit/test_config_applied_at_step_boundary.py` asserting a live configuration change takes effect only at a step boundary, never mid-step (FR-062)
-- [ ] T306 [P] [US4] Write the publish-after-commit test in `tests/failure/test_publish_after_commit.py` asserting no event is published to Redis before its transaction commits — a notification about an uncommitted write would be a lie (D-50)
-- [ ] T307 [P] [US4] Write the rollup-rebuild test in `tests/unit/test_rollup_rebuild_matches_live.py` asserting that truncating `metrics_rollup` and running `REBUILD` reproduces every bucket exactly as the live aggregation computes it — which is what proves the rollup is derived rather than a second source of truth (D-49, FR-133)
-- [ ] T308 [P] [US4] Write the correctness-reads test in `tests/boundary/test_correctness_reads_never_from_rollup.py` asserting the duplicate-effect count, stranded-run count, `needs_review` list, effect counts, and every chaos-report figure are computed from `tool_journal` and `run_events`, **never** from `metrics_rollup`. A stale zero on the duplicate counter is the single most damaging thing this product could display
-- [ ] T309 [P] [US4] Write the no-trigger-on-append test in `tests/boundary/test_rollup_not_maintained_by_trigger.py` asserting no trigger on `run_events` maintains the rollup — a trigger would make every worker contend on one bucket row and serialize appends across runs that currently never contend (D-49)
-- [ ] T310 [P] [US4] Write the payload-ceiling dead-letter test in `tests/failure/test_payload_ceiling_dead_letters.py` asserting an oversized payload fails the step, exhausts attempts, and dead-letters with the event type and measured size in the reason — **nothing truncated** (D-51, FR-132)
-- [ ] T311 [P] [US4] Write the WebSocket framing contract test in `tests/contract/test_ws_framing.py` against `contracts/websocket.md`: `hello` then `snapshot` on connect, per-event frames carrying `seq`, and the `lag` frame on orphan transition
-- [ ] T312 [P] [US4] Write the reconnect-race test in `tests/failure/test_ws_snapshot_after_events.py` asserting a client that receives `snapshot` after `event` frames discards events with `seq <= snapshot.last_seq`
-- [ ] T313 [P] [US4] Write the timeline-shape contract test in `tests/contract/test_timeline_matches_component_props.py` asserting `GET /api/runs/{id}/timeline` produces **exactly** the `RunDetail` prop shape from `contracts/component-contract.md`, so the component stays a pure function of props
-- [ ] T314 [P] [US4] Write the rate-limit test in `tests/boundary/test_rate_limits_under_load.py` asserting submission and kill endpoints enforce their limits under concurrent load (FR-006)
-- [ ] T315 [P] [US4] Write the reset-affordance test in `tests/boundary/test_reset_never_touches_chaos.py` asserting the reset prunes completed demo runs and leaves `chaos_events` and `chaos_reports` untouched (FR-108)
-- [ ] T316 [P] [US4] Write the global-cap saturation test in `tests/concurrency/test_fleet_saturation_leaves_pending.py` asserting the running count sits at the cap, the remainder are `pending`, and **no submission was rejected** (FR-003)
+- [x] T293 [P] [US4] Write the retry-backoff test in `tests/failure/test_retry_backoff_jitter.py` asserting intervals fall inside the ±25% jittered bounds, are bounded by `backoff_cap_ms`, and that retry is **at step granularity only**, never run granularity (FR-051, FR-052)
+- [x] T294 [P] [US4] Write the dead-letter test in `tests/failure/test_dead_letter_on_attempt_cap.py` asserting `RUN_FAILED` carries `dead_lettered: true`, status becomes `failed`, the lease is released, and the run appears in the dead-letter view (FR-053)
+- [x] T295 [P] [US4] Write the attempt-cap-survives-handoff test in `tests/failure/test_attempt_cap_survives_handoff.py`: a deterministically failing step, with its worker killed **between every attempt**, reaches `failed` after exactly `max_attempts_per_step` *total* attempts. **Against an in-memory counter this test does not fail, it hangs** — which is precisely the production symptom it exists to prevent (D-43, FR-130)
+- [x] T296 [P] [US4] Write the cancellation test in `tests/failure/test_cancel_between_steps_only.py` asserting the flag is checked at a step boundary and **never mid-step**, and that the run finalizes as `cancelled` (FR-054)
+- [x] T297 [P] [US4] Write the pending-cancel test in `tests/failure/test_cancel_pending_run_immediate.py` asserting a `pending` run is finalized by the API without a claim, an epoch increment, or a replay — it is leaseless, so no worker can be racing it (D-54)
+- [x] T298 [P] [US4] Write the per-worker admission test in `tests/concurrency/test_per_worker_capacity.py` asserting a worker at its limit does not claim and sleeps briefly instead (FR-004)
+- [x] T299 [P] [US4] Write the step-timeout test in `tests/failure/test_step_timeout_stops_renewer.py` asserting a step exceeding `step_timeout_ms` fails **and the renewer stops**, so the lease lapses and the run is reclaimed rather than held (FR-013, FR-055)
+- [x] T300 [P] [US4] Write the database-unavailable test in `tests/failure/test_database_unavailable.py` asserting nothing executes, workers back off and retry, and **no side effect occurred without a durable record**. Failing closed is the correct behaviour and the test asserts it as such (FR-056)
+- [x] T301 [P] [US4] Write the Redis-unavailable test in `tests/failure/test_redis_unavailable.py` asserting execution is entirely unaffected and only live push degrades (FR-058)
+- [x] T302 [P] [US4] Write the slow-WebSocket-client test in `tests/failure/test_slow_ws_client_dropped.py` asserting a client exceeding its bounded queue is closed with `1013` and a `bye` frame naming `last_sent_seq`, and can then backfill from `after_seq` (FR-074)
+- [x] T303 [P] [US4] Write the configuration-rejection test in `tests/failure/test_config_change_rejected.py` asserting a change violating the lease relationship returns 422 naming the relationship and both values, and that **the configuration is unchanged and the fleet is unaffected** (FR-063)
+- [x] T304 [P] [US4] Write the config-boundary test in `tests/boundary/test_config_route_unmounted_in_demo.py` asserting `PATCH /api/config` returns **404** in demonstration mode (FR-064)
+- [x] T305 [P] [US4] Write the step-boundary-application test in `tests/unit/test_config_applied_at_step_boundary.py` asserting a live configuration change takes effect only at a step boundary, never mid-step (FR-062)
+- [x] T306 [P] [US4] Write the publish-after-commit test in `tests/failure/test_publish_after_commit.py` asserting no event is published to Redis before its transaction commits — a notification about an uncommitted write would be a lie (D-50)
+- [x] T307 [P] [US4] Write the rollup-rebuild test in `tests/unit/test_rollup_rebuild_matches_live.py` asserting that truncating `metrics_rollup` and running `REBUILD` reproduces every bucket exactly as the live aggregation computes it — which is what proves the rollup is derived rather than a second source of truth (D-49, FR-133)
+- [x] T308 [P] [US4] Write the correctness-reads test in `tests/boundary/test_correctness_reads_never_from_rollup.py` asserting the duplicate-effect count, stranded-run count, `needs_review` list, effect counts, and every chaos-report figure are computed from `tool_journal` and `run_events`, **never** from `metrics_rollup`. A stale zero on the duplicate counter is the single most damaging thing this product could display
+- [x] T309 [P] [US4] Write the no-trigger-on-append test in `tests/boundary/test_rollup_not_maintained_by_trigger.py` asserting no trigger on `run_events` maintains the rollup — a trigger would make every worker contend on one bucket row and serialize appends across runs that currently never contend (D-49)
+- [x] T310 [P] [US4] Write the payload-ceiling dead-letter test in `tests/failure/test_payload_ceiling_dead_letters.py` asserting an oversized payload fails the step, exhausts attempts, and dead-letters with the event type and measured size in the reason — **nothing truncated** (D-51, FR-132)
+- [x] T311 [P] [US4] Write the WebSocket framing contract test in `tests/contract/test_ws_framing.py` against `contracts/websocket.md`: `hello` then `snapshot` on connect, per-event frames carrying `seq`, and the `lag` frame on orphan transition
+- [x] T312 [P] [US4] Write the reconnect-race test in `tests/failure/test_ws_snapshot_after_events.py` asserting a client that receives `snapshot` after `event` frames discards events with `seq <= snapshot.last_seq`
+- [x] T313 [P] [US4] Write the timeline-shape contract test in `tests/contract/test_timeline_matches_component_props.py` asserting `GET /api/runs/{id}/timeline` produces **exactly** the `RunDetail` prop shape from `contracts/component-contract.md`, so the component stays a pure function of props
+- [x] T314 [P] [US4] Write the rate-limit test in `tests/boundary/test_rate_limits_under_load.py` asserting submission and kill endpoints enforce their limits under concurrent load (FR-006)
+- [x] T315 [P] [US4] Write the reset-affordance test in `tests/boundary/test_reset_never_touches_chaos.py` asserting the reset prunes completed demo runs and leaves `chaos_events` and `chaos_reports` untouched (FR-108)
+- [x] T316 [P] [US4] Write the global-cap saturation test in `tests/concurrency/test_fleet_saturation_leaves_pending.py` asserting the running count sits at the cap, the remainder are `pending`, and **no submission was rejected** (FR-003)
 
 ### Implementation for Phase 6
 
 #### P6.1 — Retry
 
-- [ ] T317 [US4] Implement exponential backoff with ±25% jitter in `anchor/worker/retry/backoff.py`, bounded by `backoff_cap_ms`, with every constant read from configuration (FR-052)
-- [ ] T318 [US4] Implement step-granularity retry in `anchor/worker/retry/policy.py`, taking the attempt number from the **log-derived** count rather than from memory (D-43, FR-051)
-- [ ] T319 [US4] Append `STEP_FAILED` in `anchor/worker/retry/policy.py` carrying `attempt`, `error_type`, `error_message`, `will_retry`, and `backoff_ms`
+- [x] T317 [US4] Implement exponential backoff with ±25% jitter in `anchor/worker/retry/backoff.py`, bounded by `backoff_cap_ms`, with every constant read from configuration (FR-052)
+- [x] T318 [US4] Implement step-granularity retry in `anchor/worker/retry/policy.py`, taking the attempt number from the **log-derived** count rather than from memory (D-43, FR-051)
+- [x] T319 [US4] Append `STEP_FAILED` in `anchor/worker/retry/policy.py` carrying `attempt`, `error_type`, `error_message`, `will_retry`, and `backoff_ms`
 
 #### P6.2 — Dead-lettering
 
-- [ ] T320 [US4] Implement the attempt cap in `anchor/worker/retry/policy.py` reading the derived count, so **the cap holds across arbitrary handoffs** (FR-053)
-- [ ] T321 [US4] Implement dead-lettering in `anchor/worker/retry/policy.py` appending `RUN_FAILED` with `dead_lettered: true`, setting status `failed`, and releasing the lease in one transaction
-- [ ] T322 [US4] Implement the dead-letter view in `anchor/api/routers/runs.py` as a filtered query with the failing step and reason surfaced
+- [x] T320 [US4] Implement the attempt cap in `anchor/worker/retry/policy.py` reading the derived count, so **the cap holds across arbitrary handoffs** (FR-053)
+- [x] T321 [US4] Implement dead-lettering in `anchor/worker/retry/policy.py` appending `RUN_FAILED` with `dead_lettered: true`, setting status `failed`, and releasing the lease in one transaction
+- [x] T322 [US4] Implement the dead-letter view in `anchor/api/routers/runs.py` as a filtered query with the failing step and reason surfaced
 
 #### P6.3 — Cooperative cancellation
 
-- [ ] T323 [US4] Implement `POST /api/runs/{id}/cancel` in `anchor/api/routers/runs.py` setting `cancel_requested_at` on a `running` run and **finalizing a `pending` run directly** (D-54)
-- [ ] T324 [US4] Implement the between-steps cancellation check in `anchor/worker/loop.py`, never mid-step, finalizing as `cancelled` with `RUN_CANCELLED` carrying `requested_at`, `step_index`, and `cancelled_by` (FR-054)
-- [ ] T325 [US4] Scope cancel to demo runs in demonstration mode in `anchor/api/routers/runs.py` (FR-115)
+- [x] T323 [US4] Implement `POST /api/runs/{id}/cancel` in `anchor/api/routers/runs.py` setting `cancel_requested_at` on a `running` run and **finalizing a `pending` run directly** (D-54)
+- [x] T324 [US4] Implement the between-steps cancellation check in `anchor/worker/loop.py`, never mid-step, finalizing as `cancelled` with `RUN_CANCELLED` carrying `requested_at`, `step_index`, and `cancelled_by` (FR-054)
+- [x] T325 [US4] Scope cancel to demo runs in demonstration mode in `anchor/api/routers/runs.py` (FR-115)
 
 #### P6.4 — Admission control
 
-- [ ] T326 [US4] Implement the per-worker limit in `anchor/worker/admission/limiter.py` checked **before** claiming, from the worker's own in-process count — never from `workers.current_run_count`, which is telemetry (FR-004)
-- [ ] T327 [US4] Report the global cap and current running count from `GET /api/health` in `anchor/api/routers/health.py`, and document that the API **reports** rather than rejects (FR-003)
+- [x] T326 [US4] Implement the per-worker limit in `anchor/worker/admission/limiter.py` checked **before** claiming, from the worker's own in-process count — never from `workers.current_run_count`, which is telemetry (FR-004)
+- [x] T327 [US4] Report the global cap and current running count from `GET /api/health` in `anchor/api/routers/health.py`, and document that the API **reports** rather than rejects (FR-003)
 
 #### P6.5 — Step timeout
 
-- [ ] T328 [US4] Wrap every external call in `asyncio.timeout` at `step_timeout_ms` in `anchor/core/determinism/context.py` (FR-055)
-- [ ] T329 [US4] Stop the renewer on step-timeout in `anchor/worker/renewer.py`, so a non-progressing worker **lapses its lease rather than holding the run** (FR-013)
+- [x] T328 [US4] Wrap every external call in `asyncio.timeout` at `step_timeout_ms` in `anchor/core/determinism/context.py` (FR-055)
+- [x] T329 [US4] Stop the renewer on step-timeout in `anchor/worker/renewer.py`, so a non-progressing worker **lapses its lease rather than holding the run** (FR-013)
 
 #### P6.6 — Live configuration
 
-- [ ] T330 [US4] Implement `runtime_config` reads at startup and a bounded re-poll in `anchor/core/config/live.py`
-- [ ] T331 [US4] Implement the Redis "version changed" nudge in `anchor/core/config/live.py` as an **optimization only** — the bounded poll is the correctness path and works with Redis down
-- [ ] T332 [US4] Apply new values only at a step boundary in `anchor/worker/loop.py`, so a lease shortening mid-step cannot fence the worker executing it (FR-062)
-- [ ] T333 [US4] Implement `PATCH /api/config` in `anchor/api/routers/config.py` re-running the assertion and **rejecting the change, never the fleet** (FR-063)
-- [ ] T334 [US4] Unmount `PATCH /api/config` in demonstration mode in `anchor/api/app.py`, and document that this is an **availability** restriction rather than a security boundary — conflating the two makes both harder to reason about (§31.2, FR-064)
-- [ ] T335 [US4] Implement `GET /api/config` in `anchor/api/routers/config.py` returning current values, the active profile, and the version, available in both modes
+- [x] T330 [US4] Implement `runtime_config` reads at startup and a bounded re-poll in `anchor/core/config/live.py`
+- [x] T331 [US4] Implement the Redis "version changed" nudge in `anchor/core/config/live.py` as an **optimization only** — the bounded poll is the correctness path and works with Redis down
+- [x] T332 [US4] Apply new values only at a step boundary in `anchor/worker/loop.py`, so a lease shortening mid-step cannot fence the worker executing it (FR-062)
+- [x] T333 [US4] Implement `PATCH /api/config` in `anchor/api/routers/config.py` re-running the assertion and **rejecting the change, never the fleet** (FR-063)
+- [x] T334 [US4] Unmount `PATCH /api/config` in demonstration mode in `anchor/api/app.py`, and document that this is an **availability** restriction rather than a security boundary — conflating the two makes both harder to reason about (§31.2, FR-064)
+- [x] T335 [US4] Implement `GET /api/config` in `anchor/api/routers/config.py` returning current values, the active profile, and the version, available in both modes
 
 #### P6.7 — Redis publish
 
-- [ ] T336 [US4] Implement post-commit publish in `anchor/core/events/publish.py` to the single `anchor:events` firehose, **after commit** (D-50, FR-073)
-- [ ] T337 [US4] Implement the `anchor:fleet` publish path in `anchor/worker/registry/heartbeat.py`
-- [ ] T338 [US4] Document in `anchor/core/events/publish.py` why one firehose rather than per-run channels: per-run channels put subscribe and unsubscribe on the request path, which loses any event published between connect and subscribe — invisible unless someone notices a gap in `seq`
+- [x] T336 [US4] Implement post-commit publish in `anchor/core/events/publish.py` to the single `anchor:events` firehose, **after commit** (D-50, FR-073)
+- [x] T337 [US4] Implement the `anchor:fleet` publish path in `anchor/worker/registry/heartbeat.py`
+- [x] T338 [US4] Document in `anchor/core/events/publish.py` why one firehose rather than per-run channels: per-run channels put subscribe and unsubscribe on the request path, which loses any event published between connect and subscribe — invisible unless someone notices a gap in `seq`
 
 #### P6.8 — WebSocket channels
 
-- [ ] T339 [US4] Implement the single always-on Redis subscription in `anchor/api/ws/subscriber.py`, demultiplexed by `run_id` in process (D-50)
-- [ ] T340 [US4] Implement `WS /ws/runs/{run_id}` in `anchor/api/ws/runs.py` sending `hello` then one `snapshot`, so a client never renders an empty timeline while waiting
-- [ ] T341 [US4] Implement per-event frames in `anchor/api/ws/runs.py` carrying the envelope from `contracts/websocket.md`, with `seq` **required** because it is what makes backfill exact rather than approximate
-- [ ] T342 [US4] Implement the bounded per-client outbound queue in `anchor/api/ws/backpressure.py`, closing with `1013` and a `bye` frame carrying `last_sent_seq` on overflow (FR-074)
-- [ ] T343 [US4] Implement the `lag` frame in `anchor/api/ws/runs.py` pushed on orphan transition — **the most important two seconds in the product, and it must not wait for a poll interval**
-- [ ] T344 [US4] Implement `WS /ws/fleet` in `anchor/api/ws/fleet.py` sending `hello` then a `fleet` frame on every change, including the immediate advisory on a requested kill
-- [ ] T345 [US4] Document in `anchor/api/ws/fleet.py` that the kill advisory is a **display optimization** and that `last_seen_at` in PostgreSQL remains the only thing anyone reasons about
+- [x] T339 [US4] Implement the single always-on Redis subscription in `anchor/api/ws/subscriber.py`, demultiplexed by `run_id` in process (D-50)
+- [x] T340 [US4] Implement `WS /ws/runs/{run_id}` in `anchor/api/ws/runs.py` sending `hello` then one `snapshot`, so a client never renders an empty timeline while waiting
+- [x] T341 [US4] Implement per-event frames in `anchor/api/ws/runs.py` carrying the envelope from `contracts/websocket.md`, with `seq` **required** because it is what makes backfill exact rather than approximate
+- [x] T342 [US4] Implement the bounded per-client outbound queue in `anchor/api/ws/backpressure.py`, closing with `1013` and a `bye` frame carrying `last_sent_seq` on overflow (FR-074)
+- [x] T343 [US4] Implement the `lag` frame in `anchor/api/ws/runs.py` pushed on orphan transition — **the most important two seconds in the product, and it must not wait for a poll interval**
+- [x] T344 [US4] Implement `WS /ws/fleet` in `anchor/api/ws/fleet.py` sending `hello` then a `fleet` frame on every change, including the immediate advisory on a requested kill
+- [x] T345 [US4] Document in `anchor/api/ws/fleet.py` that the kill advisory is a **display optimization** and that `last_seen_at` in PostgreSQL remains the only thing anyone reasons about
 
 #### P6.9 — Timeline derivation
 
-- [ ] T346 [US4] Implement `GET /api/runs/{id}/timeline` in `anchor/api/serializers/timeline.py` deriving worker segments from `RUN_CLAIMED` events, with `ended_at IS NULL` identifying the current owner
-- [ ] T347 [US4] Derive `handoff_count`, `recovery_seconds`, and `duplicate_side_effects` in `anchor/api/serializers/timeline.py`, with `recovery_seconds` **suppressed entirely when `handoff_count = 0`** rather than reported as zero
-- [ ] T348 [US4] Derive the worker identity-hue slot in `anchor/api/serializers/timeline.py` from `workers.label` and claim order, so a hue survives a worker restart while the incarnation stays distinct in the log
-- [ ] T349 [US4] Compute `duplicate_side_effects` **live from `tool_journal`, always**, in `anchor/api/serializers/timeline.py` — never cached, because the claim is only worth what its verification is (D-30)
+- [x] T346 [US4] Implement `GET /api/runs/{id}/timeline` in `anchor/api/serializers/timeline.py` deriving worker segments from `RUN_CLAIMED` events, with `ended_at IS NULL` identifying the current owner
+- [x] T347 [US4] Derive `handoff_count`, `recovery_seconds`, and `duplicate_side_effects` in `anchor/api/serializers/timeline.py`, with `recovery_seconds` **suppressed entirely when `handoff_count = 0`** rather than reported as zero
+- [x] T348 [US4] Derive the worker identity-hue slot in `anchor/api/serializers/timeline.py` from `workers.label` and claim order, so a hue survives a worker restart while the incarnation stays distinct in the log
+- [x] T349 [US4] Compute `duplicate_side_effects` **live from `tool_journal`, always**, in `anchor/api/serializers/timeline.py` — never cached, because the claim is only worth what its verification is (D-30)
 
 #### P6.10 — Metrics rollup job
 
-- [ ] T350 [US4] Write migration 004 in `ops/migrations/versions/004_metrics_rollup.py` creating `metrics_rollup` and `metrics_rollup_watermark` per data-model.md §9, with `CHECK (bucket_seconds IN (10, 300))`
-- [ ] T351 [US4] Implement the watermarked rollup job in `anchor/api/serializers/rollup.py` reading strictly above the watermark, upserting buckets, and advancing the watermark **in the same transaction**
-- [ ] T352 [US4] Implement both resolutions in `anchor/api/serializers/rollup.py` — 10 s for live views, 300 s for long windows
-- [ ] T353 [US4] Implement the `REBUILD` path in `anchor/api/serializers/rollup.py` reconstructing every bucket from the log, and document that its existence is what proves the table is derived rather than authoritative
-- [ ] T354 [US4] Run the job as a periodic task in `anchor/api/app.py`, **never as a trigger on the append path** (D-49)
+- [x] T350 [US4] Write migration 004 in `ops/migrations/versions/004_metrics_rollup.py` creating `metrics_rollup` and `metrics_rollup_watermark` per data-model.md §9, with `CHECK (bucket_seconds IN (10, 300))`
+- [x] T351 [US4] Implement the watermarked rollup job in `anchor/api/serializers/rollup.py` reading strictly above the watermark, upserting buckets, and advancing the watermark **in the same transaction**
+- [x] T352 [US4] Implement both resolutions in `anchor/api/serializers/rollup.py` — 10 s for live views, 300 s for long windows
+- [x] T353 [US4] Implement the `REBUILD` path in `anchor/api/serializers/rollup.py` reconstructing every bucket from the log, and document that its existence is what proves the table is derived rather than authoritative
+- [x] T354 [US4] Run the job as a periodic task in `anchor/api/app.py`, **never as a trigger on the append path** (D-49)
 
 #### P6.11 — Metrics and health
 
-- [ ] T355 [US4] Implement `GET /api/metrics` in `anchor/api/routers/observability.py` serving display series from the rollup: run-state distribution, step throughput per worker and aggregate, recovery latency, replay overhead, fencing rate, uncertainty entries by policy, renewal latency, dead-letter volume (FR-071)
-- [ ] T356 [US4] Serve the duplicate-effect count, stranded-run count, and every chaos figure **live from source** in `anchor/api/routers/observability.py`, with a comment naming the rollup as forbidden for these reads
-- [ ] T357 [US4] Extend `GET /api/health` in `anchor/api/routers/health.py` with degradation, the schema revision, and the global cap with the current running count (FR-072)
-- [ ] T358 [US4] Implement `GET /api/logs` in `anchor/api/routers/observability.py` searching `run_events` globally by type, worker, epoch, and time range, with `LEASE_RENEWED` **excluded by default** (FR-026)
+- [x] T355 [US4] Implement `GET /api/metrics` in `anchor/api/routers/observability.py` serving display series from the rollup: run-state distribution, step throughput per worker and aggregate, recovery latency, replay overhead, fencing rate, uncertainty entries by policy, renewal latency, dead-letter volume (FR-071)
+- [x] T356 [US4] Serve the duplicate-effect count, stranded-run count, and every chaos figure **live from source** in `anchor/api/routers/observability.py`, with a comment naming the rollup as forbidden for these reads
+- [x] T357 [US4] Extend `GET /api/health` in `anchor/api/routers/health.py` with degradation, the schema revision, and the global cap with the current running count (FR-072)
+- [x] T358 [US4] Implement `GET /api/logs` in `anchor/api/routers/observability.py` searching `run_events` globally by type, worker, epoch, and time range, with `LEASE_RENEWED` **excluded by default** (FR-026)
 
 #### P6.12 — Rate limiting
 
-- [ ] T359 [US4] Implement the per-IP token bucket in `anchor/api/middleware.py` for submission and kill, plus the hourly demo cap (FR-006)
-- [ ] T360 [US4] State the single-web-instance assumption in a comment at `anchor/api/middleware.py`, since in-process rate limiting is adequate **only** because there is exactly one web instance — and that is a fact about the deployment, not about the code (D-39)
+- [x] T359 [US4] Implement the per-IP token bucket in `anchor/api/middleware.py` for submission and kill, plus the hourly demo cap (FR-006)
+- [x] T360 [US4] State the single-web-instance assumption in a comment at `anchor/api/middleware.py`, since in-process rate limiting is adequate **only** because there is exactly one web instance — and that is a fact about the deployment, not about the code (D-39)
 
 #### P6.13 — Reset affordance
 
-- [ ] T361 [US4] Implement `POST /api/runs/demo/reset` in `anchor/api/routers/runs.py` pruning completed demo runs and cascading their events
-- [ ] T362 [US4] Make the reset **structurally unable** to touch chaos history in `anchor/api/routers/runs.py` — scoped by `is_demo` with no code path that reaches `chaos_events` or `chaos_reports` (FR-108)
+- [x] T361 [US4] Implement `POST /api/runs/demo/reset` in `anchor/api/routers/runs.py` pruning completed demo runs and cascading their events
+- [x] T362 [US4] Make the reset **structurally unable** to touch chaos history in `anchor/api/routers/runs.py` — scoped by `is_demo` with no code path that reaches `chaos_events` or `chaos_reports` (FR-108)
 
 #### Phase 6 completion
 
-- [ ] T363 [P] [US4] Add `tests/failure/test_worker_registers_then_dies.py` coverage to the matrix index and confirm every §9 row has exactly one module
-- [ ] T364 [P] [US4] Create `tests/failure/README.md` mapping each module to its §9 failure-matrix row, so a missing row is visible rather than inferred
-- [ ] T365 [US4] Run `tests/failure` in full and confirm every module induces its failure deliberately and asserts the documented handling
-- [ ] T366 [US4] Execute [V6](./quickstart.md#v6--load-and-repeated-failure-phase-6) and [V12](./quickstart.md#v12--configuration-cannot-be-set-to-a-self-fencing-state-phase-6-onward)
-- [ ] T367 [US4] Execute [V13](./quickstart.md#v13--fleet-and-deployment-integrity-phases-0-5-6) in full — the six optimality-pass checks
-- [ ] T368 [US4] Confirm each of the five optimality-pass tests (T295, T307, T310, T316, T297) was **seen to fail** against pre-pass behaviour before being trusted, and record that in the PR description
-- [ ] T369 [US4] Record the crash behaviour of every await point and I/O boundary added in phase 6
-- [ ] T370 [P] [US4] Implement `GET /api/agents` in `anchor/api/routers/registry.py` returning registered agents and their contracts (FR-120)
-- [ ] T371 [P] [US4] Add the contract test for every phase-6 endpoint in `tests/contract/`, asserting each response validates against its `contracts/openapi.yaml` schema
-- [ ] T372 [P] [US4] Add `tests/boundary/test_no_cross_run_write_paths.py` deriving the set of run-id-accepting mutating routes from `contracts/openapi.yaml` and matching it against an explicit allowlist — cancel, resolve, kill. A new mutating route fails this test until it is added deliberately. **This is the one assertion whose subject is code that does not exist** (FR-135)
-- [ ] T373 [P] [US4] Add `tests/boundary/test_no_identity_gating.py` asserting no route reads a session, cookie, token, or user identifier, so every restriction remains a function of deployment mode alone (FR-114)
-- [ ] T374 [P] [US4] Add `tests/unit/test_orphaned_is_derived.py` asserting `orphaned` appears in no column of any table and is computed at read time
-- [ ] T375 [P] [US4] Add `tests/replay/test_completed_run_replays_identically.py` over a corpus of completed runs, comparing canonical hashes (FR-030)
-- [ ] T376 [P] [US4] Add `tests/property/test_event_payload_roundtrip.py` asserting every payload model round-trips through `jsonb` without loss, including nested numerics
-- [ ] T377 [US4] Verify `mypy --strict` and `ruff` pass clean across `anchor/` with no new per-file ignores
-- [ ] T378 [US4] Confirm the backend surface matches `contracts/openapi.yaml` exactly — 23 paths, 25 operations — with a test that diffs the mounted routes against the document
+- [x] T363 [P] [US4] Add `tests/failure/test_worker_registers_then_dies.py` coverage to the matrix index and confirm every §9 row has exactly one module
+- [x] T364 [P] [US4] Create `tests/failure/README.md` mapping each module to its §9 failure-matrix row, so a missing row is visible rather than inferred
+- [x] T365 [US4] Run `tests/failure` in full and confirm every module induces its failure deliberately and asserts the documented handling
+- [x] T366 [US4] Execute [V6](./quickstart.md#v6--load-and-repeated-failure-phase-6) and [V12](./quickstart.md#v12--configuration-cannot-be-set-to-a-self-fencing-state-phase-6-onward)
+- [x] T367 [US4] Execute [V13](./quickstart.md#v13--fleet-and-deployment-integrity-phases-0-5-6) in full — the six optimality-pass checks
+- [x] T368 [US4] Confirm each of the five optimality-pass tests (T295, T307, T310, T316, T297) was **seen to fail** against pre-pass behaviour before being trusted, and record that in the PR description
+- [x] T369 [US4] Record the crash behaviour of every await point and I/O boundary added in phase 6
+- [x] T370 [P] [US4] Implement `GET /api/agents` in `anchor/api/routers/registry.py` returning registered agents and their contracts (FR-120)
+- [x] T371 [P] [US4] Add the contract test for every phase-6 endpoint in `tests/contract/`, asserting each response validates against its `contracts/openapi.yaml` schema
+- [x] T372 [P] [US4] Add `tests/boundary/test_no_cross_run_write_paths.py` deriving the set of run-id-accepting mutating routes from `contracts/openapi.yaml` and matching it against an explicit allowlist — cancel, resolve, kill. A new mutating route fails this test until it is added deliberately. **This is the one assertion whose subject is code that does not exist** (FR-135)
+- [x] T373 [P] [US4] Add `tests/boundary/test_no_identity_gating.py` asserting no route reads a session, cookie, token, or user identifier, so every restriction remains a function of deployment mode alone (FR-114)
+- [x] T374 [P] [US4] Add `tests/unit/test_orphaned_is_derived.py` asserting `orphaned` appears in no column of any table and is computed at read time
+- [x] T375 [P] [US4] Add `tests/replay/test_completed_run_replays_identically.py` over a corpus of completed runs, comparing canonical hashes (FR-030)
+- [x] T376 [P] [US4] Add `tests/property/test_event_payload_roundtrip.py` asserting every payload model round-trips through `jsonb` without loss, including nested numerics
+- [x] T377 [US4] Verify `mypy --strict` and `ruff` pass clean across `anchor/` with no new per-file ignores
+- [x] T378 [US4] Confirm the backend surface matches `contracts/openapi.yaml` exactly — 23 paths, 25 operations — with a test that diffs the mounted routes against the document
 
 **Exit gate**: [V6](./quickstart.md#v6--load-and-repeated-failure-phase-6) and
 [V12](./quickstart.md#v12--configuration-cannot-be-set-to-a-self-fencing-state-phase-6-onward).
@@ -812,133 +812,133 @@ specified — **with no live backend**.
 
 ### Tests for Phase 7 (MANDATORY) ⚠️
 
-- [ ] T379 [P] [US5] Write the five-mock-state component tests in `web/components/run/__tests__/RunDetail.states.test.tsx` covering zero handoffs, three-plus handoffs, `needs_review`, 40 steps, and **currently orphaned**
-- [ ] T380 [P] [US5] Write the orphaned-state test in `web/components/run/__tests__/RunDetail.orphaned.test.tsx` asserting that when **no segment has `ended_at === null`** the component renders the gap, the hairline and the countdown — **not an error and not an empty state**. This is the state the component is in during the most important two seconds of the demo, and it is the easiest to forget (FR-095)
-- [ ] T381 [P] [US5] Write the snapshot suite in `web/components/run/__tests__/RunDetail.snapshot.test.tsx` with `now` **injected**, since relative timestamps make snapshots flap
-- [ ] T382 [P] [US5] Write the no-bare-dots test in `web/components/primitives/__tests__/StatusPill.test.tsx` asserting every status renders icon **plus** label **plus** color, and that no status renders as a bare colored dot anywhere (FR-091)
-- [ ] T383 [P] [US5] Write the strand-animation test in `web/components/run/__tests__/RunThread.animation.test.tsx` asserting the flow animation **stops at terminal state** — a strand that keeps flowing after the run finished is decoration, and it also lies
-- [ ] T384 [P] [US5] Write the marker-shape test in `web/components/run/__tests__/RunThread.markers.test.tsx` asserting circle / square / ring, not three colored circles. The red/green pair is CVD ΔE 4.1 and **cannot be fixed with color** (FR-090)
-- [ ] T385 [P] [US5] Write the strand-color test in `web/components/run/__tests__/RunThread.color.test.tsx` asserting **one gold along the whole length**, not a shade per worker — strand-gold-2 against worker-2 orange measures CVD ΔE 1.2, the same color to a colorblind reader (§24.8)
-- [ ] T386 [P] [US5] Write the recovery-suppression test in `web/components/run/__tests__/RunDetail.footer.test.tsx` asserting `recovery_seconds` is **absent** at zero handoffs rather than rendered as `0.0s`, and that the duplicate count **leads** the footer line
-- [ ] T387 [P] [US5] Write the kill-target test in `web/components/run/__tests__/RunDetail.kill.test.tsx` asserting the kill button targets the segment with `ended_at === null` and is disabled **with a stated reason** when the run is terminal
-- [ ] T388 [P] [US5] Write the no-fetch test in `web/components/run/__tests__/RunDetail.pure.test.tsx` asserting neither component performs data fetching, opens a WebSocket, or calls the API — kill is raised to the parent
-- [ ] T389 [P] [US5] Write the label-drop test in `web/components/run/__tests__/RunThread.labels.test.tsx` asserting a marker label that will not fit is **dropped, not clipped**
-- [ ] T390 [P] [US5] Write the token-completeness test in `web/styles/__tests__/tokens.test.ts` asserting both dark and light sets define every token and that **no component file contains a hardcoded color literal** (FR-094)
-- [ ] T391 [P] [US5] Write the chart-rules test in `web/components/primitives/__tests__/Chart.test.tsx` asserting exactly one hero figure per view, **no dual-axis chart**, a table view available for every chart, and a legend present whenever there are two or more series (FR-092)
-- [ ] T392 [P] [US5] Write the staleness test in `web/hooks/__tests__/useRunStream.test.ts` asserting a dropped stream surfaces staleness on screen and that optimistic state is never rendered as confirmed (FR-095)
-- [ ] T393 [P] [US5] Write the backfill test in `web/hooks/__tests__/useRunStream.backfill.test.ts` asserting reconnect uses `after_seq` rather than refetching the whole log, and that events with `seq <= snapshot.last_seq` are discarded
-- [ ] T394 [P] [US5] Write the conditional-page test in `web/app/__tests__/navigation.test.tsx` asserting Scheduled, API keys and Webhooks are **absent** from the sidebar rather than present and empty (FR-087)
-- [ ] T395 [P] [US5] Write the mode-gating test in `web/app/__tests__/deployment-mode.test.tsx` asserting the Environment page is absent in demonstration mode and the mode banner is present at all times
+- [x] T379 [P] [US5] Write the five-mock-state component tests in `web/components/run/__tests__/RunDetail.states.test.tsx` covering zero handoffs, three-plus handoffs, `needs_review`, 40 steps, and **currently orphaned**
+- [x] T380 [P] [US5] Write the orphaned-state test in `web/components/run/__tests__/RunDetail.orphaned.test.tsx` asserting that when **no segment has `ended_at === null`** the component renders the gap, the hairline and the countdown — **not an error and not an empty state**. This is the state the component is in during the most important two seconds of the demo, and it is the easiest to forget (FR-095)
+- [x] T381 [P] [US5] Write the snapshot suite in `web/components/run/__tests__/RunDetail.snapshot.test.tsx` with `now` **injected**, since relative timestamps make snapshots flap
+- [x] T382 [P] [US5] Write the no-bare-dots test in `web/components/primitives/__tests__/StatusPill.test.tsx` asserting every status renders icon **plus** label **plus** color, and that no status renders as a bare colored dot anywhere (FR-091)
+- [x] T383 [P] [US5] Write the strand-animation test in `web/components/run/__tests__/RunThread.animation.test.tsx` asserting the flow animation **stops at terminal state** — a strand that keeps flowing after the run finished is decoration, and it also lies
+- [x] T384 [P] [US5] Write the marker-shape test in `web/components/run/__tests__/RunThread.markers.test.tsx` asserting circle / square / ring, not three colored circles. The red/green pair is CVD ΔE 4.1 and **cannot be fixed with color** (FR-090)
+- [x] T385 [P] [US5] Write the strand-color test in `web/components/run/__tests__/RunThread.color.test.tsx` asserting **one gold along the whole length**, not a shade per worker — strand-gold-2 against worker-2 orange measures CVD ΔE 1.2, the same color to a colorblind reader (§24.8)
+- [x] T386 [P] [US5] Write the recovery-suppression test in `web/components/run/__tests__/RunDetail.footer.test.tsx` asserting `recovery_seconds` is **absent** at zero handoffs rather than rendered as `0.0s`, and that the duplicate count **leads** the footer line
+- [x] T387 [P] [US5] Write the kill-target test in `web/components/run/__tests__/RunDetail.kill.test.tsx` asserting the kill button targets the segment with `ended_at === null` and is disabled **with a stated reason** when the run is terminal
+- [x] T388 [P] [US5] Write the no-fetch test in `web/components/run/__tests__/RunDetail.pure.test.tsx` asserting neither component performs data fetching, opens a WebSocket, or calls the API — kill is raised to the parent
+- [x] T389 [P] [US5] Write the label-drop test in `web/components/run/__tests__/RunThread.labels.test.tsx` asserting a marker label that will not fit is **dropped, not clipped**
+- [x] T390 [P] [US5] Write the token-completeness test in `web/styles/__tests__/tokens.test.ts` asserting both dark and light sets define every token and that **no component file contains a hardcoded color literal** (FR-094)
+- [x] T391 [P] [US5] Write the chart-rules test in `web/components/primitives/__tests__/Chart.test.tsx` asserting exactly one hero figure per view, **no dual-axis chart**, a table view available for every chart, and a legend present whenever there are two or more series (FR-092)
+- [x] T392 [P] [US5] Write the staleness test in `web/hooks/__tests__/useRunStream.test.ts` asserting a dropped stream surfaces staleness on screen and that optimistic state is never rendered as confirmed (FR-095)
+- [x] T393 [P] [US5] Write the backfill test in `web/hooks/__tests__/useRunStream.backfill.test.ts` asserting reconnect uses `after_seq` rather than refetching the whole log, and that events with `seq <= snapshot.last_seq` are discarded
+- [x] T394 [P] [US5] Write the conditional-page test in `web/app/__tests__/navigation.test.tsx` asserting Scheduled, API keys and Webhooks are **absent** from the sidebar rather than present and empty (FR-087)
+- [x] T395 [P] [US5] Write the mode-gating test in `web/app/__tests__/deployment-mode.test.tsx` asserting the Environment page is absent in demonstration mode and the mode banner is present at all times
 
 ### Implementation for Phase 7
 
 #### P7.1 — Design tokens
 
-- [ ] T396 [US5] Define the dark token set in `web/styles/tokens.dark.css` as CSS custom properties: surfaces, ink, gridlines, the three identity hues (`#3987e5` → `#d95926` → `#199e70`), the status set, and the strand gold `#F6C453`
-- [ ] T397 [US5] Define the light token set in `web/styles/tokens.light.css` with the measured light-mode values, including strand gold `#7A6300`
-- [ ] T398 [US5] Document in `web/styles/README.md` that `serious` is **deliberately absent** because it failed measurement, so its absence reads as a decision rather than an omission
-- [ ] T399 [US5] Configure Tailwind v4 in `web/tailwind.config.ts` to consume the custom properties, so utilities handle layout while signature colors stay tokenized
+- [x] T396 [US5] Define the dark token set in `web/styles/tokens.dark.css` as CSS custom properties: surfaces, ink, gridlines, the three identity hues (`#3987e5` → `#d95926` → `#199e70`), the status set, and the strand gold `#F6C453`
+- [x] T397 [US5] Define the light token set in `web/styles/tokens.light.css` with the measured light-mode values, including strand gold `#7A6300`
+- [x] T398 [US5] Document in `web/styles/README.md` that `serious` is **deliberately absent** because it failed measurement, so its absence reads as a decision rather than an omission
+- [x] T399 [US5] Configure Tailwind v4 in `web/tailwind.config.ts` to consume the custom properties, so utilities handle layout while signature colors stay tokenized
 
 #### P7.2 — Typography and figures
 
-- [ ] T400 [US5] Configure the two type families in `web/styles/typography.css` — one proportional, one monospace — with no third family
-- [ ] T401 [US5] Apply proportional figures to hero and stat values and `tabular-nums` **only** in columns that must align vertically, in `web/styles/typography.css`
-- [ ] T402 [US5] Add `web/components/primitives/__tests__/typography.test.tsx` asserting **text never wears a data color** — the active step's label is bold in primary ink with a trailing ellipsis, never amber
+- [x] T400 [US5] Configure the two type families in `web/styles/typography.css` — one proportional, one monospace — with no third family
+- [x] T401 [US5] Apply proportional figures to hero and stat values and `tabular-nums` **only** in columns that must align vertically, in `web/styles/typography.css`
+- [x] T402 [US5] Add `web/components/primitives/__tests__/typography.test.tsx` asserting **text never wears a data color** — the active step's label is bold in primary ink with a trailing ellipsis, never amber
 
 #### P7.3 — Shell and navigation
 
-- [ ] T403 [US5] Implement the persistent sidebar in `web/components/shell/Sidebar.tsx` with the workspace slot, the **seven** groups, and the docs link pinned at the bottom (FR-084)
-- [ ] T404 [US5] Implement the route group structure in `web/app/(console)/layout.tsx` for the fourteen built pages of the canonical inventory (FR-085)
-- [ ] T405 [US5] Implement the deployment-mode banner in `web/components/shell/ModeBanner.tsx`, present at all times and reading from `GET /api/health`
-- [ ] T406 [US5] Omit conditional pages entirely in `web/components/shell/Sidebar.tsx` — an empty settings page reads as an unfinished product; an absent one reads as a scoped one (FR-087)
+- [x] T403 [US5] Implement the persistent sidebar in `web/components/shell/Sidebar.tsx` with the workspace slot, the **seven** groups, and the docs link pinned at the bottom (FR-084)
+- [x] T404 [US5] Implement the route group structure in `web/app/(console)/layout.tsx` for the fourteen built pages of the canonical inventory (FR-085)
+- [x] T405 [US5] Implement the deployment-mode banner in `web/components/shell/ModeBanner.tsx`, present at all times and reading from `GET /api/health`
+- [x] T406 [US5] Omit conditional pages entirely in `web/components/shell/Sidebar.tsx` — an empty settings page reads as an unfinished product; an absent one reads as a scoped one (FR-087)
 
 #### P7.4 — API client and stream hooks
 
-- [ ] T407 [US5] Implement the typed `fetch` client in `web/lib/api.ts` generated against `contracts/openapi.yaml`, with **no query library** (D-31)
-- [ ] T408 [US5] Implement `useRunStream` in `web/hooks/useRunStream.ts` handling `hello`, `snapshot`, `event`, `lag`, and `bye`, applying events to the snapshot in `seq` order
-- [ ] T409 [US5] Implement `useFleetStream` in `web/hooks/useFleetStream.ts` consuming `fleet` frames
-- [ ] T410 [US5] Implement the polling fallback in `web/hooks/usePolling.ts` engaged when the socket is unavailable, with staleness surfaced rather than hidden
-- [ ] T411 [US5] Implement reconnect with backoff and jitter plus `after_seq` backfill in `web/hooks/useRunStream.ts`
-- [ ] T412 [US5] Document in `web/hooks/README.md` the client obligations from `contracts/websocket.md`: **never treat a frame as confirmation of a write** — the log is the record, and a frame is a notification that the log changed
+- [x] T407 [US5] Implement the typed `fetch` client in `web/lib/api.ts` generated against `contracts/openapi.yaml`, with **no query library** (D-31)
+- [x] T408 [US5] Implement `useRunStream` in `web/hooks/useRunStream.ts` handling `hello`, `snapshot`, `event`, `lag`, and `bye`, applying events to the snapshot in `seq` order
+- [x] T409 [US5] Implement `useFleetStream` in `web/hooks/useFleetStream.ts` consuming `fleet` frames
+- [x] T410 [US5] Implement the polling fallback in `web/hooks/usePolling.ts` engaged when the socket is unavailable, with staleness surfaced rather than hidden
+- [x] T411 [US5] Implement reconnect with backoff and jitter plus `after_seq` backfill in `web/hooks/useRunStream.ts`
+- [x] T412 [US5] Document in `web/hooks/README.md` the client obligations from `contracts/websocket.md`: **never treat a frame as confirmation of a write** — the log is the record, and a frame is a notification that the log changed
 
 #### P7.5 — `RunThread`
 
-- [ ] T413 [US5] Implement `RunThread` in `web/components/run/RunThread.tsx` taking `segments`, `compact`, and `animate` as props, per `contracts/component-contract.md`
-- [ ] T414 [US5] Implement the strand geometry in `web/components/run/RunThread.tsx` as inline SVG, viewBox ≈ `0 0 620 70`, **one continuous wavy path of smooth béziers — never straight segments**, stroke 2–2.5px and noticeably thinner than the bars
-- [ ] T415 [US5] Implement the single-gold stroke in `web/components/run/RunThread.tsx`, with segment boundaries marked by the enlarged `handoff` marker rather than by a change of shade
-- [ ] T416 [US5] Implement the three shape-coded markers in `web/components/run/ThreadMarkers.tsx` — muted circle for an ordinary step, **red square** for a real side effect, **green ring** for reconciled-safely — distinguishable under every form of color blindness, in grayscale, and in a compressed screen recording
-- [ ] T417 [US5] Implement marker labels in `web/components/run/ThreadMarkers.tsx` at 11–12px, muted, never overlapping the strand, **dropped rather than clipped** when they will not fit. `sent once` is the label that states the guarantee in the reader's own language, next to the marker proving it
-- [ ] T418 [US5] Implement the flow animation in `web/components/run/RunThread.tsx` via `stroke-dasharray`/`stroke-dashoffset` CSS keyframes at 2.5–3.5 s, linear and subtle — **the one permitted exception to the ban on ambient motion**, earned because the strand represents execution in progress
-- [ ] T419 [US5] Stop the animation at terminal state in `web/components/run/RunThread.tsx`
-- [ ] T420 [US5] Implement reduced-motion handling in `web/components/run/RunThread.tsx` freezing the dashoffset while colors, markers and labels all remain
-- [ ] T421 [US5] Implement live path extension in `web/components/run/RunThread.tsx` so a new step event extends the path rather than snapping
-- [ ] T422 [US5] Implement `compact` mode in `web/components/run/RunThread.tsx`, and document that it **cannot communicate which workers touched a run** — so it is not a substitute for the runs list's owning-worker column
+- [x] T413 [US5] Implement `RunThread` in `web/components/run/RunThread.tsx` taking `segments`, `compact`, and `animate` as props, per `contracts/component-contract.md`
+- [x] T414 [US5] Implement the strand geometry in `web/components/run/RunThread.tsx` as inline SVG, viewBox ≈ `0 0 620 70`, **one continuous wavy path of smooth béziers — never straight segments**, stroke 2–2.5px and noticeably thinner than the bars
+- [x] T415 [US5] Implement the single-gold stroke in `web/components/run/RunThread.tsx`, with segment boundaries marked by the enlarged `handoff` marker rather than by a change of shade
+- [x] T416 [US5] Implement the three shape-coded markers in `web/components/run/ThreadMarkers.tsx` — muted circle for an ordinary step, **red square** for a real side effect, **green ring** for reconciled-safely — distinguishable under every form of color blindness, in grayscale, and in a compressed screen recording
+- [x] T417 [US5] Implement marker labels in `web/components/run/ThreadMarkers.tsx` at 11–12px, muted, never overlapping the strand, **dropped rather than clipped** when they will not fit. `sent once` is the label that states the guarantee in the reader's own language, next to the marker proving it
+- [x] T418 [US5] Implement the flow animation in `web/components/run/RunThread.tsx` via `stroke-dasharray`/`stroke-dashoffset` CSS keyframes at 2.5–3.5 s, linear and subtle — **the one permitted exception to the ban on ambient motion**, earned because the strand represents execution in progress
+- [x] T419 [US5] Stop the animation at terminal state in `web/components/run/RunThread.tsx`
+- [x] T420 [US5] Implement reduced-motion handling in `web/components/run/RunThread.tsx` freezing the dashoffset while colors, markers and labels all remain
+- [x] T421 [US5] Implement live path extension in `web/components/run/RunThread.tsx` so a new step event extends the path rather than snapping
+- [x] T422 [US5] Implement `compact` mode in `web/components/run/RunThread.tsx`, and document that it **cannot communicate which workers touched a run** — so it is not a substitute for the runs list's owning-worker column
 
 #### P7.6 — `RunDetail`
 
-- [ ] T423 [US5] Implement `RunDetail` in `web/components/run/RunDetail.tsx` taking `run`, `onKill`, and an injectable `now`, performing **no data fetching and no API call** (contracts/component-contract.md)
-- [ ] T424 [US5] Implement the header in `web/components/run/RunDetail.tsx`: title, `started {n}s ago · {n} steps` subtitle, and a status pill carrying **text and, for `needs_review`/`failed`, an icon** — because `completed`-green against `failed`-red measures ΔE 4.1 for a deuteranopic reader
-- [ ] T425 [US5] Implement the fixed-width monospace worker-id column in `web/components/run/RunDetail.tsx`, so bars align to a common left edge — **bars starting at different x positions cannot be compared by eye**. Ids read `worker-a#3`, label plus incarnation
-- [ ] T426 [US5] Implement the per-worker bars in `web/components/run/WorkerBar.tsx` with the fill in the worker's identity hue and the unfilled portion a **neutral surface step — never a lighter tint of the worker's hue**, which would read as a magnitude ramp and imply the empty portion carried a value
-- [ ] T427 [US5] Derive the identity hue from the worker's **label** in `web/lib/hues.ts`, so a worker that restarts keeps its color while remaining a distinct identity in the log
-- [ ] T428 [US5] Implement the beyond-three fallback in `web/lib/hues.ts`: current owner slot 1, all prior owners muted, with identity carried by direct labels rather than by extending the validated three-hue set
-- [ ] T429 [US5] Implement step labels in `web/components/run/RunDetail.tsx` aligned to where each step falls, with the active step bold in primary ink and a trailing ellipsis
-- [ ] T430 [US5] Implement per-segment logs in `web/components/run/SegmentLog.tsx` at monospace 11px, muted for `info`, success for `success`, warning for `warning` — **per segment rather than one block**, so every line is attributed to the worker that wrote it
-- [ ] T431 [US5] Implement the handoff divider in `web/components/run/HandoffDivider.tsx` as a dashed rule with a centered pill reading `{worker_id} lease expired` in danger colors. **This is the money moment. It must never be collapsed, hidden behind a toggle, or animated away**
-- [ ] T432 [US5] Implement the footer in `web/components/run/RunDetail.tsx` with the duplicate count **leading** the line, handoff count, recovery seconds suppressed at zero handoffs, and the kill control in danger styling on the right
-- [ ] T433 [US5] Trust `ended_at === null` as the current-owner signal in `web/components/run/RunDetail.tsx` rather than re-deriving it — that single field drives the kill target, the active-step styling, and which strand segment is still growing
-- [ ] T434 [US5] Implement the raw event log panel in `web/components/run/RawEventLog.tsx` with type, worker, epoch and sequence visible
+- [x] T423 [US5] Implement `RunDetail` in `web/components/run/RunDetail.tsx` taking `run`, `onKill`, and an injectable `now`, performing **no data fetching and no API call** (contracts/component-contract.md)
+- [x] T424 [US5] Implement the header in `web/components/run/RunDetail.tsx`: title, `started {n}s ago · {n} steps` subtitle, and a status pill carrying **text and, for `needs_review`/`failed`, an icon** — because `completed`-green against `failed`-red measures ΔE 4.1 for a deuteranopic reader
+- [x] T425 [US5] Implement the fixed-width monospace worker-id column in `web/components/run/RunDetail.tsx`, so bars align to a common left edge — **bars starting at different x positions cannot be compared by eye**. Ids read `worker-a#3`, label plus incarnation
+- [x] T426 [US5] Implement the per-worker bars in `web/components/run/WorkerBar.tsx` with the fill in the worker's identity hue and the unfilled portion a **neutral surface step — never a lighter tint of the worker's hue**, which would read as a magnitude ramp and imply the empty portion carried a value
+- [x] T427 [US5] Derive the identity hue from the worker's **label** in `web/lib/hues.ts`, so a worker that restarts keeps its color while remaining a distinct identity in the log
+- [x] T428 [US5] Implement the beyond-three fallback in `web/lib/hues.ts`: current owner slot 1, all prior owners muted, with identity carried by direct labels rather than by extending the validated three-hue set
+- [x] T429 [US5] Implement step labels in `web/components/run/RunDetail.tsx` aligned to where each step falls, with the active step bold in primary ink and a trailing ellipsis
+- [x] T430 [US5] Implement per-segment logs in `web/components/run/SegmentLog.tsx` at monospace 11px, muted for `info`, success for `success`, warning for `warning` — **per segment rather than one block**, so every line is attributed to the worker that wrote it
+- [x] T431 [US5] Implement the handoff divider in `web/components/run/HandoffDivider.tsx` as a dashed rule with a centered pill reading `{worker_id} lease expired` in danger colors. **This is the money moment. It must never be collapsed, hidden behind a toggle, or animated away**
+- [x] T432 [US5] Implement the footer in `web/components/run/RunDetail.tsx` with the duplicate count **leading** the line, handoff count, recovery seconds suppressed at zero handoffs, and the kill control in danger styling on the right
+- [x] T433 [US5] Trust `ended_at === null` as the current-owner signal in `web/components/run/RunDetail.tsx` rather than re-deriving it — that single field drives the kill target, the active-step styling, and which strand segment is still growing
+- [x] T434 [US5] Implement the raw event log panel in `web/components/run/RawEventLog.tsx` with type, worker, epoch and sequence visible
 
 #### P7.7 — The five mock states
 
-- [ ] T435 [P] [US5] Create the reference mock in `web/components/run/mocks/reference.ts` — 5 steps, 2 workers, 1 handoff, 0 duplicate side effects, 3.1 s recovery — which **must render meaningfully with no live backend**
-- [ ] T436 [P] [US5] Create the zero-handoff mock in `web/components/run/mocks/zeroHandoffs.ts`
-- [ ] T437 [P] [US5] Create the three-plus-handoff mock in `web/components/run/mocks/manyHandoffs.ts` exercising the beyond-three color rule
-- [ ] T438 [P] [US5] Create the `needs_review` mock in `web/components/run/mocks/needsReview.ts`
-- [ ] T439 [P] [US5] Create the 40-step mock in `web/components/run/mocks/fortySteps.ts` exercising label collision and the rail fallback
-- [ ] T440 [P] [US5] Create the currently-orphaned mock in `web/components/run/mocks/orphaned.ts` where **no segment has `ended_at === null`**
-- [ ] T441 [US5] Create the component preview route in `web/app/(dev)/preview/page.tsx` rendering all five states side by side, with no backend required
+- [x] T435 [P] [US5] Create the reference mock in `web/components/run/mocks/reference.ts` — 5 steps, 2 workers, 1 handoff, 0 duplicate side effects, 3.1 s recovery — which **must render meaningfully with no live backend**
+- [x] T436 [P] [US5] Create the zero-handoff mock in `web/components/run/mocks/zeroHandoffs.ts`
+- [x] T437 [P] [US5] Create the three-plus-handoff mock in `web/components/run/mocks/manyHandoffs.ts` exercising the beyond-three color rule
+- [x] T438 [P] [US5] Create the `needs_review` mock in `web/components/run/mocks/needsReview.ts`
+- [x] T439 [P] [US5] Create the 40-step mock in `web/components/run/mocks/fortySteps.ts` exercising label collision and the rail fallback
+- [x] T440 [P] [US5] Create the currently-orphaned mock in `web/components/run/mocks/orphaned.ts` where **no segment has `ended_at === null`**
+- [x] T441 [US5] Create the component preview route in `web/app/(dev)/preview/page.tsx` rendering all five states side by side, with no backend required
 
 #### P7.8 — Timeline track
 
-- [ ] T442 [US5] Implement the timeline track in `web/components/run/TimelineTrack.tsx` with segments sized by duration, a clickable floor for very short steps, and 2px surface gaps
-- [ ] T443 [US5] Implement the notched leading edge for tool calls in `web/components/run/TimelineTrack.tsx`, distinguishing tool from model **by shape, not only by hue** (FR-090)
-- [ ] T444 [US5] Implement the ghosted fill for replayed steps in `web/components/run/TimelineTrack.tsx`, legible **in grayscale** (FR-088)
-- [ ] T445 [US5] Implement full-height fencing markers in `web/components/run/FencingMarker.tsx` showing **both** the stale and current epoch, never as a buried log line (FR-088)
-- [ ] T446 [US5] Implement the worker-id rail fallback in `web/components/run/TimelineTrack.tsx` moving the label to a continuous rail rather than clipping it (FR-089)
+- [x] T442 [US5] Implement the timeline track in `web/components/run/TimelineTrack.tsx` with segments sized by duration, a clickable floor for very short steps, and 2px surface gaps
+- [x] T443 [US5] Implement the notched leading edge for tool calls in `web/components/run/TimelineTrack.tsx`, distinguishing tool from model **by shape, not only by hue** (FR-090)
+- [x] T444 [US5] Implement the ghosted fill for replayed steps in `web/components/run/TimelineTrack.tsx`, legible **in grayscale** (FR-088)
+- [x] T445 [US5] Implement full-height fencing markers in `web/components/run/FencingMarker.tsx` showing **both** the stale and current epoch, never as a buried log line (FR-088)
+- [x] T446 [US5] Implement the worker-id rail fallback in `web/components/run/TimelineTrack.tsx` moving the label to a continuous rail rather than clipping it (FR-089)
 
 #### P7.9 – P7.15 — The pages
 
-- [ ] T447 [US5] Implement the All runs page in `web/app/(console)/runs/page.tsx` as a live table with the compact strand per row **and the owning-worker column retained**, status filters, and rows updating in place
-- [ ] T448 [US5] Implement the Run detail page in `web/app/(console)/runs/[id]/page.tsx` fetching the timeline and owning the kill API call, passing data down as props
-- [ ] T449 [US5] Implement the Needs review page in `web/app/(console)/needs-review/page.tsx` as **its own page, not a filter** — per §13.3, failures must not be reachable only by narrowing a list (FR-086)
-- [ ] T450 [US5] Show the full log, the failing step highlighted, the ambiguous call, the declared policy and the resolution actions in `web/app/(console)/needs-review/[id]/page.tsx`
-- [ ] T451 [US5] Implement the Fleet page in `web/app/(console)/workers/page.tsx` with a card per worker — id, uptime, current run count, last-heartbeat age, code version, kill control
-- [ ] T452 [US5] Implement the Deployments page in `web/app/(console)/workers/deployments/page.tsx` grouping by `workers.code_version` **with no new schema**, answering "which build is actually running"
-- [ ] T453 [US5] Implement the Tool registry page in `web/app/(console)/tools/page.tsx` showing declared safety categories, reconciler presence, conflict state and last used
-- [ ] T454 [US5] Implement the Test run page in `web/app/(console)/tools/test-run/page.tsx` as a one-off submission form for **pre-registered agents only, in every deployment mode** — this page selects, it does not author
-- [ ] T455 [US5] Implement the Metrics page in `web/app/(console)/metrics/page.tsx` rendering the §12 series in their specified forms
-- [ ] T456 [US5] Implement the chart primitives in `web/components/primitives/Chart.tsx`: one hero figure per view, **no dual axes**, a table view for every chart, legends only at two-plus series (FR-092)
-- [ ] T457 [US5] Implement the Logs page in `web/app/(console)/logs/page.tsx` with global search by type, worker, epoch and time, and `LEASE_RENEWED` excluded by default
-- [ ] T458 [US5] Implement the Environment page in `web/app/(console)/settings/environment/page.tsx` with live-editable settings and the assertion's rejection surfaced as a useful message naming the relationship and both values
-- [ ] T459 [US5] Make the Environment page **absent in demonstration mode** in `web/app/(console)/settings/environment/page.tsx`, not present-and-disabled (FR-064)
-- [ ] T460 [US5] Implement the Dashboard in `web/app/(console)/page.tsx` with active runs, live worker count, a steps/sec sparkline inside a stat tile, and the duplicate counter **reading zero explicitly** (FR-096)
-- [ ] T461 [US5] Implement the stat tile, hero figure and status pill primitives in `web/components/primitives/`
+- [x] T447 [US5] Implement the All runs page in `web/app/(console)/runs/page.tsx` as a live table with the compact strand per row **and the owning-worker column retained**, status filters, and rows updating in place
+- [x] T448 [US5] Implement the Run detail page in `web/app/(console)/runs/[id]/page.tsx` fetching the timeline and owning the kill API call, passing data down as props
+- [x] T449 [US5] Implement the Needs review page in `web/app/(console)/needs-review/page.tsx` as **its own page, not a filter** — per §13.3, failures must not be reachable only by narrowing a list (FR-086)
+- [x] T450 [US5] Show the full log, the failing step highlighted, the ambiguous call, the declared policy and the resolution actions in `web/app/(console)/needs-review/[id]/page.tsx`
+- [x] T451 [US5] Implement the Fleet page in `web/app/(console)/workers/page.tsx` with a card per worker — id, uptime, current run count, last-heartbeat age, code version, kill control
+- [x] T452 [US5] Implement the Deployments page in `web/app/(console)/workers/deployments/page.tsx` grouping by `workers.code_version` **with no new schema**, answering "which build is actually running"
+- [x] T453 [US5] Implement the Tool registry page in `web/app/(console)/tools/page.tsx` showing declared safety categories, reconciler presence, conflict state and last used
+- [x] T454 [US5] Implement the Test run page in `web/app/(console)/tools/test-run/page.tsx` as a one-off submission form for **pre-registered agents only, in every deployment mode** — this page selects, it does not author
+- [x] T455 [US5] Implement the Metrics page in `web/app/(console)/metrics/page.tsx` rendering the §12 series in their specified forms
+- [x] T456 [US5] Implement the chart primitives in `web/components/primitives/Chart.tsx`: one hero figure per view, **no dual axes**, a table view for every chart, legends only at two-plus series (FR-092)
+- [x] T457 [US5] Implement the Logs page in `web/app/(console)/logs/page.tsx` with global search by type, worker, epoch and time, and `LEASE_RENEWED` excluded by default
+- [x] T458 [US5] Implement the Environment page in `web/app/(console)/settings/environment/page.tsx` with live-editable settings and the assertion's rejection surfaced as a useful message naming the relationship and both values
+- [x] T459 [US5] Make the Environment page **absent in demonstration mode** in `web/app/(console)/settings/environment/page.tsx`, not present-and-disabled (FR-064)
+- [x] T460 [US5] Implement the Dashboard in `web/app/(console)/page.tsx` with active runs, live worker count, a steps/sec sparkline inside a stat tile, and the duplicate counter **reading zero explicitly** (FR-096)
+- [x] T461 [US5] Implement the stat tile, hero figure and status pill primitives in `web/components/primitives/`
 
 #### P7.16 — States and audits
 
-- [ ] T462 [US5] Implement loading, empty and error states for **every** live component, with a checklist in `web/components/README.md` (Principle VIII)
-- [ ] T463 [US5] Implement the database-unreachable screen in `web/app/(console)/error.tsx` stating that **execution is halted deliberately** — the failure is a designed behaviour and the screen says so rather than reading as a crash
-- [ ] T464 [US5] Perform the **grayscale audit** manually: set the display to grayscale and confirm replayed segments remain distinguishable from executed ones (SC-010)
-- [ ] T465 [US5] Perform the **reduced-motion audit** manually: enable `prefers-reduced-motion` and confirm no information is lost — the explainer falls back to a labelled static frame, the pulse becomes a static state color, and the orphaned gap keeps its countdown as plain changing text (SC-011, FR-093)
-- [ ] T466 [US5] Perform the **40-step layout pass** manually across every view, checking for label collisions, overflow, and a timeline that still reads
-- [ ] T467 [US5] Confirm no bare colored dots anywhere by inspection, in addition to the automated assertion
-- [ ] T468 [US5] Apply sentence case throughout and confirm the interface uses **the same vocabulary as the logs and the documentation** — run, step, event, epoch, lease, fencing, zombie worker, idempotency key, uncertainty window, replay, determinism boundary, dead letter (FR-097)
-- [ ] T469 [US5] Confirm monospace is used **only where alignment carries meaning** — run ids, worker ids, epochs, keys, timestamps, log lines — and not for the prose subtitle or the step labels
-- [ ] T470 [US5] Confirm no decorative gradients, shadows or glow appear anywhere, the strand's flow being the single intentional exception
-- [ ] T471 [US5] Run `pnpm --dir web lint` and `pnpm --dir web test` clean, with TypeScript strict passing
-- [ ] T472 [US5] Execute [V7](./quickstart.md#v7--the-console-tells-the-truth-phase-7) including all five manual checks
-- [ ] T473 [US5] Record the three manual audits' results in the PR description — **they cannot be automated and must not be skipped**
+- [x] T462 [US5] Implement loading, empty and error states for **every** live component, with a checklist in `web/components/README.md` (Principle VIII)
+- [x] T463 [US5] Implement the database-unreachable screen in `web/app/(console)/error.tsx` stating that **execution is halted deliberately** — the failure is a designed behaviour and the screen says so rather than reading as a crash
+- [x] T464 [US5] Perform the **grayscale audit** manually: set the display to grayscale and confirm replayed segments remain distinguishable from executed ones (SC-010)
+- [x] T465 [US5] Perform the **reduced-motion audit** manually: enable `prefers-reduced-motion` and confirm no information is lost — the explainer falls back to a labelled static frame, the pulse becomes a static state color, and the orphaned gap keeps its countdown as plain changing text (SC-011, FR-093)
+- [x] T466 [US5] Perform the **40-step layout pass** manually across every view, checking for label collisions, overflow, and a timeline that still reads
+- [x] T467 [US5] Confirm no bare colored dots anywhere by inspection, in addition to the automated assertion
+- [x] T468 [US5] Apply sentence case throughout and confirm the interface uses **the same vocabulary as the logs and the documentation** — run, step, event, epoch, lease, fencing, zombie worker, idempotency key, uncertainty window, replay, determinism boundary, dead letter (FR-097)
+- [x] T469 [US5] Confirm monospace is used **only where alignment carries meaning** — run ids, worker ids, epochs, keys, timestamps, log lines — and not for the prose subtitle or the step labels
+- [x] T470 [US5] Confirm no decorative gradients, shadows or glow appear anywhere, the strand's flow being the single intentional exception
+- [x] T471 [US5] Run `pnpm --dir web lint` and `pnpm --dir web test` clean, with TypeScript strict passing
+- [x] T472 [US5] Execute [V7](./quickstart.md#v7--the-console-tells-the-truth-phase-7) including all five manual checks
+- [x] T473 [US5] Record the three manual audits' results in the PR description — **they cannot be automated and must not be skipped**
 
 **Exit gate**: [V7](./quickstart.md#v7--the-console-tells-the-truth-phase-7), including the three
 manual audits.

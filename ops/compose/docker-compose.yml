@@ -93,7 +93,7 @@ services:
       replicas: 3
     restart: always
 
-  # Inert until phase 7 scaffolds the Next.js app (constitution Principle VI:
+  # Scaffolds the React/Vite console (constitution Principle VI:
   # no console work before phase 4). Gated behind a profile so a bare
   # `docker compose up` — which phase 0 through phase 6 rely on — does not
   # try to build a project that does not exist yet. From phase 7 onward,

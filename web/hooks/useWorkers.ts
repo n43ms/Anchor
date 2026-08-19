@@ -16,5 +16,5 @@ export function useWorkers(): { workers: Worker[]; stale: boolean; degraded: boo
   if (stream.connected) {
     return { workers: stream.workers, stale: stream.stale, degraded: stream.degraded };
   }
-  return { workers: poll.data?.items ?? [], stale: true, degraded: false };
+  return { workers: poll.data?.items ?? [], stale: poll.stale, degraded: false };
 }

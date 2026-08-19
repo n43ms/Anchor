@@ -1,9 +1,9 @@
 @import "tailwindcss";
-@config "../tailwind.config.ts";
-
 @import "../styles/tokens.dark.css";
 @import "../styles/tokens.light.css";
 @import "../styles/typography.css";
+
+@config "../tailwind.config.ts";
 
 :root {
   color-scheme: dark;

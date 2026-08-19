@@ -1,11 +1,10 @@
-"use client";
-
 import { useCallback, useEffect, useRef, useState } from "react";
 
 export interface PollingState<T> {
   data: T | null;
   error: Error | null;
   stale: boolean;
+  refresh: () => void;
 }
 
 /**
@@ -42,5 +41,5 @@ export function usePolling<T>(fetcher: () => Promise<T>, intervalMs: number, ena
     return () => window.clearInterval(timer);
   }, [enabled, intervalMs, poll]);
 
-  return { data, error, stale };
+  return { data, error, stale, refresh: poll };
 }

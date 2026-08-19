@@ -285,7 +285,7 @@ No consensus protocol. No distributed lock manager. No external coordination ser
 | Workers | Plain processes running a hand-written loop | Writing the loop **is** the project. Using a task framework would hide the exact mechanism being demonstrated. Gave up: batteries-included retry and scheduling, which you are reimplementing on purpose. |
 | Agent workload | Any framework, or a hand-rolled loop, running *inside* the durable step boundary | The runtime must be agnostic to the agent framework. The agent is the payload, not the system. |
 | API | FastAPI with WebSocket endpoints | Async-native, typed models, automatic schema documentation. |
-| Frontend | Next.js with TypeScript and a WebSocket client | The dashboard is a real-time observability surface, not a CRUD screen, and should be built as one. |
+| Frontend | React with Vite, TypeScript, and a WebSocket client | The dashboard is a real-time observability surface, not a CRUD screen, and should be built as one. |
 | Local development | Docker Compose — API, Postgres, Redis, and three or more workers | Multiple workers locally from day one. A single-worker development environment hides every bug the project exists to solve. |
 | Hosting | Render: one web service, one Postgres, one Redis, **three or more always-on background workers** | Three minimum so a worker can be killed during a live demo. **Free tier is disqualifying** — a worker that sleeps is not a fault-tolerant runtime, it is a broken one. |
 | Chaos tooling | A kill endpoint on each worker, plus a scripted harness | You cannot reach a terminal on a hosted container mid-demo, so the kill switch must be part of the product. This constraint improves the demo rather than limiting it. |
@@ -388,7 +388,7 @@ anchor/
     invariants.py  the assertions that constitute the proof
     report.py      generates the published metrics
 
-  web/             Next.js operator console
+  web/             React + Vite operator console
 
   ops/             migrations, compose files, deployment config
 ```
@@ -872,7 +872,7 @@ Item six is the real bar.
 ### 17.1 The resume entry
 
 > **Anchor — Durable Execution Runtime for AI Agents**
-> Python · FastAPI · PostgreSQL · Redis · Next.js · Docker
+> Python · FastAPI · PostgreSQL · Redis · React (Vite) · Docker
 >
 > - Built an event-sourced execution engine checkpointing agent runs at step granularity, enabling automatic recovery from worker failure with median resumption in [X] seconds and no re-execution of completed work.
 > - Implemented effectively-once tool execution via a two-phase idempotency journal with canonical argument hashing and per-tool uncertainty policies, verified across [N] randomized worker kills with zero duplicate side effects.

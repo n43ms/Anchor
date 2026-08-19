@@ -1,9 +1,6 @@
-<!-- BEGIN:nextjs-agent-rules -->
+# Anchor Console — Agent Rules
 
-# This is NOT the Next.js you know
-
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
-
-This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
-
-<!-- END:nextjs-agent-rules -->
+- **Framework**: React 19 + Vite + `react-router-dom` + Tailwind CSS v4.
+- **Pure Client Architecture**: `web/` is a pure client observability console. Data fetching is performed via `web/lib/api.ts` and hooks in `web/hooks/`.
+- **Tokenized Design**: No hardcoded color literals (`#...` or `rgba(...)`) are allowed in component files. Use CSS custom properties from `web/styles/tokens.dark.css` and `tokens.light.css`.
+- **Motion & Accessibility**: Always respect `prefers-reduced-motion`. No bare colored dots for status — always include label and icon.

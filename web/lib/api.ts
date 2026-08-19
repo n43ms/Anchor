@@ -33,7 +33,17 @@ export class ApiRequestError extends Error {
   }
 }
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+const getBaseUrl = (): string => {
+  if (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+  if (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_API_BASE_URL) {
+    return process.env.NEXT_PUBLIC_API_BASE_URL;
+  }
+  return "http://localhost:8000";
+};
+
+const BASE_URL = getBaseUrl();
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
@@ -83,6 +93,32 @@ export const api = {
     );
   },
 
+  getRunEffects: (id: number | string) =>
+    request<{ run_id: number; total: number; items: Array<{ id: number; tool_name: string; idempotency_key: string; created_at: string; payload: unknown }> }>(
+      `/api/runs/${id}/effects`,
+    ),
+
+  listEvents: (params?: {
+    type?: string[];
+    worker_id?: string;
+    epoch?: number;
+    since?: string;
+    until?: string;
+    limit?: number;
+    cursor?: string;
+  }) => {
+    const qs = new URLSearchParams();
+    params?.type?.forEach((t) => qs.append("type", t));
+    if (params?.worker_id) qs.set("worker_id", params.worker_id);
+    if (params?.epoch !== undefined) qs.set("epoch", String(params.epoch));
+    if (params?.since) qs.set("since", params.since);
+    if (params?.until) qs.set("until", params.until);
+    if (params?.limit) qs.set("limit", String(params.limit));
+    if (params?.cursor) qs.set("cursor", params.cursor);
+    const suffix = qs.toString() ? `?${qs.toString()}` : "";
+    return request<{ items: RunEvent[]; next_cursor: string | null }>(`/api/events${suffix}`);
+  },
+
   cancelRun: (id: number | string) => request<Run>(`/api/runs/${id}/cancel`, { method: "POST" }),
 
   resolveRun: (id: number | string, resolution: "mark_executed" | "mark_not_executed" | "retry", note?: string) =>
@@ -105,7 +141,7 @@ export const api = {
 
   listTools: () => request<{ items: ToolDescriptor[] }>("/api/tools"),
 
-  getMetrics: () => request<Metrics>("/api/metrics"),
+  getMetrics: (window = "24h") => request<Metrics>(`/api/metrics?window=${window}`),
 
   getRuntimeConfig: () => request<RuntimeConfig>("/api/config"),
 
