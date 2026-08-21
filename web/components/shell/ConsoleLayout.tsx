@@ -5,13 +5,14 @@
  * - Top Navigation (h-14) with Inspector Toggle
  * - Left Navigation Sidebar (w-64) with Cluster & Mode status
  * - Center Dynamic Workspace Router Outlet (Spacious & Clean)
- * - Right System Inspector Panel (w-80, Toggle-closable Guards & Runtime Health)
+ * - Right System Inspector Panel (w-80, Toggle-closable Guards & Runtime Health with smooth spring drawer animations)
  * - Bottom Monospace Terminal Console (Collapsible)
  */
 "use client";
 
 import { useState } from "react";
 import { Outlet } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { TopNavigation } from "./TopNavigation";
 import { Sidebar } from "./Sidebar";
 import { ModeBanner } from "./ModeBanner";
@@ -49,29 +50,44 @@ export function ConsoleLayout() {
           </div>
         </main>
 
-        {/* Right: Toggle-closable System Inspector (Guards & Runtime Health) */}
-        {inspectorOpen ? (
-          <div className="hidden lg:flex">
-            <RightInspectorPanel onClose={() => setInspectorOpen(false)} />
-          </div>
-        ) : (
-          /* Slim Floating Re-open Button on the Right Edge */
-          <div className="hidden lg:flex items-center pr-2 py-4">
-            <button
-              type="button"
-              onClick={() => setInspectorOpen(true)}
-              className="group flex flex-col items-center gap-2 rounded-2xl border border-white/[0.08] bg-black/50 p-2.5 backdrop-blur-2xl text-zinc-400 hover:border-strand-gold/50 hover:bg-strand-gold/10 hover:text-strand-gold transition-all shadow-xl"
-              title="Open System Inspector"
-              aria-label="Open System Inspector"
+        {/* Right: Toggle-closable System Inspector with smooth spring drawer transitions */}
+        <AnimatePresence mode="wait">
+          {inspectorOpen ? (
+            <motion.div
+              key="inspector-open"
+              initial={{ width: 0, opacity: 0, x: 20 }}
+              animate={{ width: "20rem", opacity: 1, x: 0 }}
+              exit={{ width: 0, opacity: 0, x: 20 }}
+              transition={{ type: "spring", stiffness: 350, damping: 30 }}
+              className="hidden lg:flex overflow-hidden h-full"
             >
-              <ShieldCheck className="h-4 w-4 text-strand-gold" />
-              <span className="[writing-mode:vertical-rl] rotate-180 text-[10px] font-mono uppercase tracking-widest font-semibold py-1">
-                Inspector
-              </span>
-              <PanelRightOpen className="h-3.5 w-3.5 text-zinc-500 group-hover:text-strand-gold" />
-            </button>
-          </div>
-        )}
+              <RightInspectorPanel onClose={() => setInspectorOpen(false)} />
+            </motion.div>
+          ) : (
+            <motion.div
+              key="inspector-closed"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ type: "spring", stiffness: 350, damping: 30 }}
+              className="hidden lg:flex items-center pr-2 py-4"
+            >
+              <button
+                type="button"
+                onClick={() => setInspectorOpen(true)}
+                className="group flex flex-col items-center gap-2 rounded-2xl border border-white/[0.08] bg-black/50 p-2.5 backdrop-blur-2xl text-zinc-400 hover:border-strand-gold/50 hover:bg-strand-gold/10 hover:text-strand-gold transition-all shadow-xl"
+                title="Open System Inspector"
+                aria-label="Open System Inspector"
+              >
+                <ShieldCheck className="h-4 w-4 text-strand-gold" />
+                <span className="[writing-mode:vertical-rl] rotate-180 text-[10px] font-mono uppercase tracking-widest font-semibold py-1">
+                  Inspector
+                </span>
+                <PanelRightOpen className="h-3.5 w-3.5 text-zinc-500 group-hover:text-strand-gold" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Bottom: Terminal Console */}

@@ -7,6 +7,7 @@
 "use client";
 
 import { Link, useLocation } from "react-router-dom";
+import { motion } from "framer-motion";
 import { NAV_GROUPS, SETTINGS_GROUP_LOCAL_ONLY } from "@/lib/navigation";
 import { useHealth } from "@/hooks/useHealth";
 import {
@@ -33,6 +34,8 @@ export function Sidebar() {
     health?.deployment_mode === "local"
       ? [...NAV_GROUPS, SETTINGS_GROUP_LOCAL_ONLY]
       : NAV_GROUPS;
+
+  const allPages = groups.flatMap((g) => g.pages);
 
   const isHealthy = health?.database_reachable && !health.degraded && !stale;
 
@@ -98,23 +101,38 @@ export function Sidebar() {
             </div>
             <div className="space-y-0.5">
               {group.pages.map((page) => {
-                const active =
-                  pathname === page.href ||
-                  (page.href !== "/" && pathname.startsWith(page.href));
+                const isExact = pathname === page.href;
+                const isNestedChild =
+                  page.href !== "/" &&
+                  pathname.startsWith(page.href + "/") &&
+                  !allPages.some((p) => p.href !== page.href && pathname === p.href);
+                const active = isExact || isNestedChild;
+
                 return (
                   <Link
                     key={page.href}
                     to={page.href}
-                    className={`flex items-center justify-between rounded-xl px-3 py-2 text-xs font-mono transition-all ${
+                    className={`relative flex items-center justify-between rounded-xl px-3 py-2 text-xs font-mono transition-colors ${
                       active
-                        ? "bg-strand-gold/15 text-strand-gold font-bold border border-strand-gold/30 shadow-sm"
+                        ? "text-strand-gold font-bold"
                         : "text-zinc-400 hover:bg-white/[0.04] hover:text-white"
                     }`}
                     aria-current={active ? "page" : undefined}
                   >
-                    <span>{page.label}</span>
                     {active && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-strand-gold shadow-glow-gold" />
+                      <motion.div
+                        layoutId="sidebarActiveBackground"
+                        className="absolute inset-0 rounded-xl bg-strand-gold/15 border border-strand-gold/30 shadow-sm"
+                        transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                      />
+                    )}
+                    <span className="relative z-10">{page.label}</span>
+                    {active && (
+                      <motion.span
+                        layoutId="sidebarActiveDot"
+                        className="relative z-10 h-1.5 w-1.5 rounded-full bg-strand-gold shadow-glow-gold"
+                        transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                      />
                     )}
                   </Link>
                 );

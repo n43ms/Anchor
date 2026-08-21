@@ -9,7 +9,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Terminal, ChevronUp, ChevronDown, Trash2, Radio } from "lucide-react";
-import { api } from "@/lib/api";
 
 interface LogEntry {
   id: string;
@@ -52,7 +51,7 @@ const DEFAULT_LOGS: LogEntry[] = [
     id: "log-5",
     timestamp: "09:54:15",
     level: "INFO",
-    message: "Golden ownership thread checkpoint verified: CatmullRom spline c1-5 secured",
+    message: "Runtime thread checkpoint verified: CatmullRom spline c1-5 secured",
     source: "thread-gamma-1",
   },
 ];
@@ -160,42 +159,53 @@ export function TerminalConsole() {
         </div>
       </div>
 
-      {/* Terminal Log Stream */}
-      {!collapsed && (
-        <div
-          ref={scrollRef}
-          className="max-h-36 overflow-y-auto p-3 font-mono text-[11px] leading-relaxed space-y-1 scrollbar-thin"
-        >
-          <AnimatePresence initial={false}>
-            {logs.map((log) => (
-              <motion.div
-                key={log.id}
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                className="flex items-start gap-2 py-0.5 hover:bg-white/[0.02] rounded px-1 -mx-1"
-              >
-                {/* Timestamp in brackets */}
-                <span className="text-zinc-500 shrink-0 select-none">
-                  [{log.timestamp}]
-                </span>
+      {/* Terminal Log Stream with Smooth Height Collapse */}
+      <AnimatePresence initial={false}>
+        {!collapsed && (
+          <motion.div
+            key="terminal-drawer"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "9rem", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 350, damping: 30 }}
+            className="overflow-hidden"
+          >
+            <div
+              ref={scrollRef}
+              className="h-full overflow-y-auto p-3 font-mono text-[11px] leading-relaxed space-y-1 scrollbar-thin"
+            >
+              <AnimatePresence initial={false}>
+                {logs.map((log) => (
+                  <motion.div
+                    key={log.id}
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                    className="flex items-start gap-2 py-0.5 hover:bg-white/[0.02] rounded px-1 -mx-1"
+                  >
+                    {/* Timestamp in brackets */}
+                    <span className="text-zinc-500 shrink-0 select-none">
+                      [{log.timestamp}]
+                    </span>
 
-                {/* Level badge */}
-                <span
-                  className={`rounded border px-1.5 py-0.2 text-[9px] font-bold uppercase shrink-0 ${levelColor(
-                    log.level
-                  )}`}
-                >
-                  {log.level}
-                </span>
+                    {/* Level badge */}
+                    <span
+                      className={`rounded border px-1.5 py-0.2 text-[9px] font-bold uppercase shrink-0 ${levelColor(
+                        log.level
+                      )}`}
+                    >
+                      {log.level}
+                    </span>
 
-                {/* Log message */}
-                <span className="text-zinc-300 break-all">{log.message}</span>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
-      )}
+                    {/* Log message */}
+                    <span className="text-zinc-300 break-all">{log.message}</span>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

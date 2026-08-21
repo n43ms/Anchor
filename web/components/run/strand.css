@@ -1,35 +1,48 @@
 /*
- * The strand's flow — the single permitted exception to the ban on ambient
- * motion (anchor-spec.md §24.3). It represents execution in progress, so it
- * must stop the instant the run reaches a terminal state (RunThread.tsx
- * toggles [data-flowing="false"] there) — a strand that keeps flowing after
- * the run finished is decoration, and it also lies.
+ * Anchor Operator Console — Golden Execution Strand & Laser Core
  */
-@keyframes strand-flow {
-  to {
-    stroke-dashoffset: -24;
-  }
+
+.strand-bundle-container {
+  isolation: isolate;
 }
 
+/* Solid high-definition main spine (NOT dotted/dashed) */
 .strand-path {
-  filter: drop-shadow(0 0 5px var(--strand-gold-glow));
-  transition: stroke-dashoffset var(--transition-base, 200ms) var(--ease-out, ease-out);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.6)) drop-shadow(0 0 16px rgba(246, 196, 83, 0.4));
+  transition: opacity 200ms ease-out;
 }
 
 .strand-path[data-flowing="true"] {
-  stroke-dasharray: 6 4;
-  animation: strand-flow 3s linear infinite;
+  /* Solid continuous flowing line, no dasharray */
+  stroke-dasharray: none;
 }
 
 .strand-path[data-flowing="false"] {
   stroke-dasharray: none;
 }
 
+/* Additive ribbon paths for 3D silk ribbon bundle */
+.strand-ribbon-path {
+  mix-blend-mode: plus-lighter;
+  pointer-events: none;
+  stroke-linecap: round;
+}
+
+/* Marker nodes with high-contrast glow */
 .strand-marker-node {
-  transition: transform var(--transition-fast) var(--ease-out), filter var(--transition-fast);
+  transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1), filter 150ms ease-out;
   cursor: pointer;
 }
 
 .strand-marker-node:hover {
-  filter: drop-shadow(0 0 6px var(--strand-gold-glow));
+  filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.9));
+  transform: scale(1.15);
+}
+
+.strand-label-text {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  letter-spacing: 0.05em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.8);
 }

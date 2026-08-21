@@ -56,7 +56,7 @@ export default function AllRunsPage() {
               {filteredItems.length} WORKFLOWS
             </span>
           </div>
-          <p className="text-xs text-zinc-400 font-mono">Durable execution histories and golden strands across workers</p>
+          <p className="text-xs text-zinc-400 font-mono">Durable execution histories and runtime threads across workers</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -139,7 +139,7 @@ export default function AllRunsPage() {
                 <th className="py-3 pr-3 font-medium">Status</th>
                 <th className="py-3 pr-3 font-medium">Owner</th>
                 <th className="py-3 pr-3 font-medium">Elapsed</th>
-                <th className="py-3 pr-4 font-medium w-48">Thread Summary</th>
+                <th className="py-3 pr-4 font-medium w-48">Runtime Thread</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.04]">
@@ -168,7 +168,7 @@ export default function AllRunsPage() {
                     {Math.round(run.elapsed_ms / 1000)}s
                   </td>
                   <td className="py-3 pr-4 w-48">
-                    <RunThread segments={run.segments} compact animate={run.status === "running"} />
+                    <RunThread segments={run.segments} compact />
                   </td>
                 </tr>
               ))}

@@ -220,7 +220,7 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Execution Cockpit & Live Golden Threads Stream */}
+      {/* Execution Cockpit & Live Runtime Thread Stream */}
       <div className="rounded-2xl border border-white/[0.08] bg-black/40 p-5 space-y-4 backdrop-blur-2xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.06] pb-3">
           <div>
@@ -232,7 +232,7 @@ export default function DashboardPage() {
                 {allRuns.length} TOTAL
               </span>
             </div>
-            <p className="text-xs text-zinc-400">Live durable agent workflows and golden ownership threads</p>
+            <p className="text-xs text-zinc-400">Live durable agent workflows and runtime execution threads</p>
           </div>
 
           <div className="flex items-center gap-1.5">
@@ -274,7 +274,7 @@ export default function DashboardPage() {
                   <th className="py-2.5 pr-3 font-medium">State</th>
                   <th className="py-2.5 pr-3 font-medium">Owning Worker</th>
                   <th className="py-2.5 pr-3 font-medium">Elapsed</th>
-                  <th className="py-2.5 pr-4 font-medium w-48">Golden Strand</th>
+                  <th className="py-2.5 pr-4 font-medium w-48">Runtime Thread</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.04]">
@@ -306,7 +306,7 @@ export default function DashboardPage() {
                       {Math.round(run.elapsed_ms / 1000)}s
                     </td>
                     <td className="py-3 pr-4 w-48">
-                      <RunThread segments={run.segments} compact animate={run.status === "running"} />
+                      <RunThread segments={run.segments} compact />
                     </td>
                   </tr>
                 ))}

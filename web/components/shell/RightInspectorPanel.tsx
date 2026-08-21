@@ -1,11 +1,12 @@
 /**
  * Anchor Operator Console — Right Inspector Panel
  * Combines Guard Stack invariant monitors and Runtime Health matrix
- * into a single toggle-closable right drawer.
+ * into a single toggle-closable right drawer with smooth tab transitions.
  */
 "use client";
 
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useHealth } from "@/hooks/useHealth";
 import { useWorkers } from "@/hooks/useWorkers";
 import {
@@ -126,7 +127,7 @@ export function RightInspectorPanel({ onClose }: RightInspectorPanelProps) {
   const isHealthy = health?.database_reachable && !health.degraded && !stale;
 
   return (
-    <aside className="flex h-full w-80 shrink-0 flex-col justify-between overflow-hidden border-l border-white/[0.08] bg-black/40 backdrop-blur-2xl select-none transition-all duration-base">
+    <aside className="flex h-full w-80 shrink-0 flex-col justify-between overflow-hidden border-l border-white/[0.08] bg-black/40 backdrop-blur-2xl select-none">
       {/* Top Header with Tab Switcher & Close Toggle */}
       <div className="border-b border-white/[0.08] p-3.5">
         <div className="flex items-center justify-between">
@@ -162,137 +163,163 @@ export function RightInspectorPanel({ onClose }: RightInspectorPanelProps) {
           </div>
         </div>
 
-        {/* Tab Selector Switcher */}
+        {/* Tab Selector Switcher with Framer Motion Sliding Pill */}
         <div className="mt-3 flex rounded-xl border border-white/[0.08] bg-white/[0.02] p-1 font-mono text-xs">
           <button
             type="button"
             onClick={() => setActiveTab("guards")}
-            className={`flex-1 rounded-lg py-1 text-center font-semibold transition-all ${
-              activeTab === "guards"
-                ? "bg-strand-gold/20 text-strand-gold border border-strand-gold/40 shadow-sm"
-                : "text-zinc-400 hover:text-white"
+            className={`relative flex-1 rounded-lg py-1 text-center font-semibold transition-colors ${
+              activeTab === "guards" ? "text-strand-gold" : "text-zinc-400 hover:text-white"
             }`}
           >
-            Guards (4)
+            {activeTab === "guards" && (
+              <motion.div
+                layoutId="inspectorActiveTabPill"
+                className="absolute inset-0 rounded-lg bg-strand-gold/20 border border-strand-gold/40 shadow-sm"
+                transition={{ type: "spring", stiffness: 350, damping: 30 }}
+              />
+            )}
+            <span className="relative z-10">Guards (4)</span>
           </button>
           <button
             type="button"
             onClick={() => setActiveTab("health")}
-            className={`flex-1 rounded-lg py-1 text-center font-semibold transition-all ${
-              activeTab === "health"
-                ? "bg-strand-gold/20 text-strand-gold border border-strand-gold/40 shadow-sm"
-                : "text-zinc-400 hover:text-white"
+            className={`relative flex-1 rounded-lg py-1 text-center font-semibold transition-colors ${
+              activeTab === "health" ? "text-strand-gold" : "text-zinc-400 hover:text-white"
             }`}
           >
-            Health Matrix
+            {activeTab === "health" && (
+              <motion.div
+                layoutId="inspectorActiveTabPill"
+                className="absolute inset-0 rounded-lg bg-strand-gold/20 border border-strand-gold/40 shadow-sm"
+                transition={{ type: "spring", stiffness: 350, damping: 30 }}
+              />
+            )}
+            <span className="relative z-10">Health Matrix</span>
           </button>
         </div>
       </div>
 
-      {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto p-3.5 space-y-4 scrollbar-thin">
-        {activeTab === "guards" ? (
-          /* Guard Cards View */
-          <div className="space-y-2.5">
-            <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400 px-1">
-              <span>ACTIVE ENFORCEMENT</span>
-              <span className="text-emerald-400 font-bold">4 / 4 PASSING</span>
-            </div>
+      {/* Main Content Area with Animated Transitions */}
+      <div className="flex-1 overflow-y-auto p-3.5 scrollbar-thin">
+        <AnimatePresence mode="wait">
+          {activeTab === "guards" ? (
+            /* Guard Cards View */
+            <motion.div
+              key="guards"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ type: "spring", stiffness: 350, damping: 30 }}
+              className="space-y-2.5"
+            >
+              <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400 px-1">
+                <span>ACTIVE ENFORCEMENT</span>
+                <span className="text-emerald-400 font-bold">4 / 4 PASSING</span>
+              </div>
 
-            {GUARDS.map((guard) => {
-              const config = STATUS_CONFIG[guard.status];
-              const Icon = guard.icon;
-              return (
-                <div
-                  key={guard.id}
-                  className={`group relative flex flex-col justify-between rounded-xl border ${config.borderColor} bg-white/[0.02] p-3 backdrop-blur-xl transition-all duration-base hover:bg-white/[0.05] hover:border-white/[0.2]`}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.04] text-zinc-300 group-hover:text-white transition-colors">
-                        <Icon className="h-3.5 w-3.5" />
+              {GUARDS.map((guard) => {
+                const config = STATUS_CONFIG[guard.status];
+                const Icon = guard.icon;
+                return (
+                  <div
+                    key={guard.id}
+                    className={`group relative flex flex-col justify-between rounded-xl border ${config.borderColor} bg-white/[0.02] p-3 backdrop-blur-xl transition-all duration-base hover:bg-white/[0.05] hover:border-white/[0.2]`}
+                  >
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-white/[0.08] bg-white/[0.04] text-zinc-300 group-hover:text-white transition-colors">
+                          <Icon className="h-3.5 w-3.5" />
+                        </div>
+                        <div>
+                          <h3 className="font-ui text-xs font-semibold tracking-tight text-white group-hover:text-strand-gold transition-colors">
+                            {guard.name}
+                          </h3>
+                          <p className="font-mono text-[10px] text-zinc-400 line-clamp-1">
+                            {guard.subtitle}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-ui text-xs font-semibold tracking-tight text-white group-hover:text-strand-gold transition-colors">
-                          {guard.name}
-                        </h3>
-                        <p className="font-mono text-[10px] text-zinc-400 line-clamp-1">
-                          {guard.subtitle}
-                        </p>
+
+                      <div className="relative flex h-2 w-2">
+                        <span
+                          className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 ${config.dotColor}`}
+                        />
+                        <span
+                          className={`relative inline-flex h-2 w-2 rounded-full ${config.dotColor} ${config.dotShadow}`}
+                        />
                       </div>
                     </div>
 
-                    <div className="relative flex h-2 w-2">
-                      <span
-                        className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 ${config.dotColor}`}
-                      />
-                      <span
-                        className={`relative inline-flex h-2 w-2 rounded-full ${config.dotColor} ${config.dotShadow}`}
-                      />
+                    <div className="mt-2.5 flex items-center justify-between border-t border-white/[0.05] pt-2 font-mono text-[10px]">
+                      <span className="text-zinc-500">{guard.metricLabel}:</span>
+                      <span className="font-bold text-zinc-200">{guard.metricValue}</span>
+                    </div>
+                    <div className="flex items-center justify-between font-mono text-[9px] text-zinc-500">
+                      <span>Guard Rule:</span>
+                      <span className="text-strand-gold/80">{guard.threshold}</span>
                     </div>
                   </div>
-
-                  <div className="mt-2.5 flex items-center justify-between border-t border-white/[0.05] pt-2 font-mono text-[10px]">
-                    <span className="text-zinc-500">{guard.metricLabel}:</span>
-                    <span className="font-bold text-zinc-200">{guard.metricValue}</span>
-                  </div>
-                  <div className="flex items-center justify-between font-mono text-[9px] text-zinc-500">
-                    <span>Guard Rule:</span>
-                    <span className="text-strand-gold/80">{guard.threshold}</span>
-                  </div>
+                );
+              })}
+            </motion.div>
+          ) : (
+            /* Runtime Health Matrix View */
+            <motion.div
+              key="health"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ type: "spring", stiffness: 350, damping: 30 }}
+              className="space-y-3"
+            >
+              <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 backdrop-blur-xl space-y-2.5 font-mono text-xs">
+                <div className="flex items-center justify-between border-b border-white/[0.05] pb-2">
+                  <span className="text-zinc-400">Cluster Uptime</span>
+                  <span className="font-bold text-emerald-400">99.998%</span>
                 </div>
-              );
-            })}
-          </div>
-        ) : (
-          /* Runtime Health Matrix View */
-          <div className="space-y-3">
-            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 backdrop-blur-xl space-y-2.5 font-mono text-xs">
-              <div className="flex items-center justify-between border-b border-white/[0.05] pb-2">
-                <span className="text-zinc-400">Cluster Uptime</span>
-                <span className="font-bold text-emerald-400">99.998%</span>
+
+                <div className="flex items-center justify-between border-b border-white/[0.05] pb-2">
+                  <span className="text-zinc-400">Duplicate Effects</span>
+                  <span className="font-bold text-emerald-400">0 (VERIFIED)</span>
+                </div>
+
+                <div className="flex items-center justify-between border-b border-white/[0.05] pb-2">
+                  <span className="text-zinc-400">Active Leases</span>
+                  <span className="font-bold text-white">4 / 4 Held</span>
+                </div>
+
+                <div className="flex items-center justify-between border-b border-white/[0.05] pb-2">
+                  <span className="text-zinc-400">Throughput</span>
+                  <span className="font-bold text-strand-gold">142.8 steps/s</span>
+                </div>
+
+                <div className="flex items-center justify-between border-b border-white/[0.05] pb-2">
+                  <span className="text-zinc-400">Fleet Workers</span>
+                  <span className="font-bold text-white">{workers.length} Nodes</span>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <span className="text-zinc-400">Cluster Capacity</span>
+                  <span className="font-bold text-zinc-300">
+                    {totalRuns} / {totalCapacity || 15} runs
+                  </span>
+                </div>
               </div>
 
-              <div className="flex items-center justify-between border-b border-white/[0.05] pb-2">
-                <span className="text-zinc-400">Duplicate Effects</span>
-                <span className="font-bold text-emerald-400">0 (VERIFIED)</span>
+              {/* Invariant Assertion Badge */}
+              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 text-[11px] font-mono text-emerald-400">
+                <div className="flex items-center gap-1.5 font-bold mb-1">
+                  <ShieldCheck className="h-3.5 w-3.5" />
+                  <span>INVARIANT PASSING</span>
+                </div>
+                <p className="text-[10px] text-zinc-400 leading-relaxed">
+                  Zero duplicate effects across cluster handoffs and automatic recovery.
+                </p>
               </div>
-
-              <div className="flex items-center justify-between border-b border-white/[0.05] pb-2">
-                <span className="text-zinc-400">Active Leases</span>
-                <span className="font-bold text-white">4 / 4 Held</span>
-              </div>
-
-              <div className="flex items-center justify-between border-b border-white/[0.05] pb-2">
-                <span className="text-zinc-400">Throughput</span>
-                <span className="font-bold text-strand-gold">142.8 steps/s</span>
-              </div>
-
-              <div className="flex items-center justify-between border-b border-white/[0.05] pb-2">
-                <span className="text-zinc-400">Fleet Workers</span>
-                <span className="font-bold text-white">{workers.length} Nodes</span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <span className="text-zinc-400">Cluster Capacity</span>
-                <span className="font-bold text-zinc-300">
-                  {totalRuns} / {totalCapacity || 15} runs
-                </span>
-              </div>
-            </div>
-
-            {/* Invariant Assertion Badge */}
-            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 text-[11px] font-mono text-emerald-400">
-              <div className="flex items-center gap-1.5 font-bold mb-1">
-                <ShieldCheck className="h-3.5 w-3.5" />
-                <span>INVARIANT PASSING</span>
-              </div>
-              <p className="text-[10px] text-zinc-400 leading-relaxed">
-                Zero duplicate effects across cluster handoffs and automatic recovery.
-              </p>
-            </div>
-          </div>
-        )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Pinned Bottom Status Legend (Spec 4 core signals) */}
