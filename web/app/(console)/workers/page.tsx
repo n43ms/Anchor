@@ -27,7 +27,7 @@ export default function FleetPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="font-ui text-base font-bold uppercase tracking-wider text-white">Worker Fleet Cluster</h1>
-            <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 font-mono text-[10px] text-emerald-400 border border-emerald-500/30 font-semibold">
+            <span className="ml-3.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 font-mono text-[10px] text-emerald-400 border border-emerald-500/30 font-semibold">
               {workers.length} NODES
             </span>
           </div>

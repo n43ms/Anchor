@@ -33,16 +33,29 @@ export function StatTile({
     }
   }, [value]);
 
+  const badgeTheme =
+    badge === "degraded"
+      ? "bg-amber-500/15 text-amber-400 border-amber-500/30"
+      : badge === "executing"
+        ? "bg-indigo-500/15 text-indigo-300 border-indigo-500/30"
+        : badge === "idle"
+          ? "bg-zinc-500/15 text-zinc-400 border-zinc-500/30"
+          : "bg-emerald-500/15 text-emerald-400 border-emerald-500/30";
+
   return (
     <div
-      className={`group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-black/40 p-5 backdrop-blur-2xl transition-all duration-base hover:border-white/[0.2] hover:bg-white/[0.02] shadow-sm ${
+      className={`group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-black/40 p-4 sm:p-5 backdrop-blur-2xl transition-all duration-base hover:border-white/[0.2] hover:bg-white/[0.02] shadow-sm ${
         emphasize ? "ring-1 ring-strand-gold/40 border-strand-gold/30" : ""
       }`}
     >
-      <div className="flex items-center justify-between">
-        <div className="text-xs font-mono font-medium text-zinc-400 uppercase tracking-wider">{label}</div>
+      <div className="flex items-start justify-between gap-2.5">
+        <div className="min-w-0 flex-1 text-xs font-mono font-medium text-zinc-400 uppercase tracking-wider leading-snug">
+          {label}
+        </div>
         {badge && (
-          <span className="rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-mono font-semibold text-emerald-400 border border-emerald-500/30">
+          <span
+            className={`shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[9.5px] font-mono font-semibold border ${badgeTheme}`}
+          >
             {badge}
           </span>
         )}
@@ -63,33 +76,38 @@ export function StatTile({
 }
 
 function Sparkline({ values }: { values: number[] }) {
-  const gradId = useId();
-  const width = 96;
-  const height = 20;
-  const max = Math.max(...values, 1);
-  const min = Math.min(...values, 0);
+  const pathId = useId();
+  const width = 64;
+  const height = 14;
+  const min = Math.min(...values);
+  const max = Math.max(...values);
   const range = max - min || 1;
 
   const points = values
     .map((v, i) => {
       const x = (i / (values.length - 1)) * width;
-      const y = height - 2 - ((v - min) / range) * (height - 4);
-      return `${x},${y}`;
+      const y = height - ((v - min) / range) * height;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
     })
     .join(" ");
 
-  const areaPoints = `0,${height} ${points} ${width},${height}`;
-
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} width={width} height={height} className="overflow-visible" aria-hidden="true">
-      <defs>
-        <linearGradient id={gradId} x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="var(--status-executing)" stopOpacity="0.35" />
-          <stop offset="100%" stopColor="var(--status-executing)" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <polygon points={areaPoints} fill={`url(#${gradId})`} />
-      <polyline points={points} fill="none" stroke="var(--status-executing)" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" />
+    <svg
+      width={width}
+      height={height}
+      viewBox={`0 0 ${width} ${height}`}
+      className="overflow-visible"
+      aria-hidden="true"
+    >
+      <polyline
+        id={pathId}
+        points={points}
+        fill="none"
+        stroke="var(--strand-gold)"
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   );
 }

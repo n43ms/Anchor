@@ -111,7 +111,7 @@ export default function DashboardPage() {
               <h1 className="font-ui text-base font-bold tracking-tight text-white uppercase">
                 Operator Telemetry Cockpit
               </h1>
-              <span className="rounded-full bg-strand-gold/10 px-2.5 py-0.5 text-[10px] font-semibold text-strand-gold border border-strand-gold/30 font-mono">
+              <span className="ml-3.5 rounded-full bg-strand-gold/10 px-2.5 py-0.5 text-[10px] font-semibold text-strand-gold border border-strand-gold/30 font-mono">
                 DURABLE RUNTIME
               </span>
             </div>
@@ -192,7 +192,7 @@ export default function DashboardPage() {
       )}
 
       {/* Hero KPI Telemetry Matrix */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <StatTile
           label="duplicate side effects"
           value={metrics?.duplicate_side_effects ?? 0}
@@ -228,7 +228,7 @@ export default function DashboardPage() {
               <h2 className="font-ui text-sm font-bold uppercase tracking-wider text-white">
                 Execution Stream Cockpit
               </h2>
-              <span className="rounded bg-white/[0.05] px-2 py-0.5 text-[10px] font-mono text-zinc-400">
+              <span className="ml-3.5 rounded bg-white/[0.05] px-2 py-0.5 text-[10px] font-mono text-zinc-400 border border-white/[0.08]">
                 {allRuns.length} TOTAL
               </span>
             </div>
@@ -324,7 +324,7 @@ export default function DashboardPage() {
               <h2 className="font-ui text-sm font-bold uppercase tracking-wider text-white">
                 Worker Fleet Grid
               </h2>
-              <span className="rounded bg-emerald-500/10 px-2 py-0.5 text-[10px] font-mono text-emerald-400 border border-emerald-500/30">
+              <span className="ml-3.5 rounded bg-emerald-500/10 px-2 py-0.5 text-[10px] font-mono text-emerald-400 border border-emerald-500/30">
                 {workers.length} NODES
               </span>
             </div>

@@ -52,7 +52,7 @@ export default function AllRunsPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="font-ui text-base font-bold uppercase tracking-wider text-white">All Runs</h1>
-            <span className="rounded-full bg-strand-gold/10 px-2 py-0.5 font-mono text-[10px] text-strand-gold border border-strand-gold/30">
+            <span className="ml-3.5 rounded-full bg-strand-gold/10 px-2.5 py-0.5 font-mono text-[10px] text-strand-gold border border-strand-gold/30 font-semibold">
               {filteredItems.length} WORKFLOWS
             </span>
           </div>

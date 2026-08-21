@@ -17,7 +17,7 @@ export default function ToolRegistryPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="font-ui text-base font-bold uppercase tracking-wider text-white">Tool Registry & Safety Guardrails</h1>
-            <span className="rounded-full bg-strand-gold/10 px-2.5 py-0.5 font-mono text-[10px] text-strand-gold border border-strand-gold/30">
+            <span className="ml-3.5 rounded-full bg-strand-gold/10 px-2.5 py-0.5 font-mono text-[10px] text-strand-gold border border-strand-gold/30 font-semibold">
               {data?.items.length ?? 0} REGISTERED
             </span>
           </div>

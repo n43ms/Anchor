@@ -3,12 +3,13 @@
  * Styled with 75% opaque Deep Indigo & Glowing Blue Ambiance matching the timeline track.
  */
 import type { TimelineSegment } from "@/lib/types";
+import type { WorkerHueSlot } from "@/lib/hues";
 
 export function WorkerBar({
   segment,
 }: {
   segment: TimelineSegment;
-  hueSlot?: string;
+  hueSlot?: WorkerHueSlot;
 }) {
   const total = segment.steps.length || 1;
   const doneOrActive = segment.steps.filter((s) => s.status === "done" || s.status === "active").length;

@@ -17,7 +17,7 @@ export default function NeedsReviewPage() {
         <div>
           <div className="flex items-center gap-2">
             <h1 className="font-ui text-base font-bold uppercase tracking-wider text-white">Needs Review Queue</h1>
-            <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 font-mono text-[10px] text-amber-400 border border-amber-500/30 font-semibold">
+            <span className="ml-3.5 rounded-full bg-amber-500/10 px-2.5 py-0.5 font-mono text-[10px] text-amber-400 border border-amber-500/30 font-semibold">
               {data?.items.length ?? 0} PENDING
             </span>
           </div>
