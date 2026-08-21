@@ -42,13 +42,13 @@ async def fleet_ws(websocket: WebSocket) -> None:
     hub: Hub = websocket.app.state.ws_hub
     deployment_mode: str = websocket.app.state.deployment_mode
 
-    await websocket.send_json({"kind": "hello", "data": {"deployment_mode": deployment_mode}})
-    await websocket.send_json(await _fetch_fleet_frame(pool))
-
     queue = BoundedClientQueue()
     hub.subscribe_fleet(queue)
 
     try:
+        await websocket.send_json({"kind": "hello", "data": {"deployment_mode": deployment_mode}})
+        await websocket.send_json(await _fetch_fleet_frame(pool))
+
         while True:
             get_task: asyncio.Task[dict[str, object]] = asyncio.ensure_future(queue.get())
             overflow_task: asyncio.Task[bool] = asyncio.ensure_future(queue.overflowed.wait())
@@ -75,7 +75,7 @@ async def fleet_ws(websocket: WebSocket) -> None:
                 # A kill advisory or another already-fully-formed `fleet`
                 # frame pushed directly (T345) — sent as-is.
                 await websocket.send_json(nudge)
-    except WebSocketDisconnect:
+    except (WebSocketDisconnect, RuntimeError, asyncio.CancelledError):
         pass
     finally:
         hub.unsubscribe_fleet(queue)

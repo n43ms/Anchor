@@ -49,13 +49,19 @@ async def run_events_ws(websocket: WebSocket, run_id: int) -> None:
             "data": {"run_id": run_id, "last_seq": last_seq, "deployment_mode": deployment_mode},
         }
     )
-    await websocket.send_json({"kind": "snapshot", "data": timeline.model_dump()})
-
     queue = BoundedClientQueue()
     queue.last_sent_seq = last_seq
     hub.subscribe_run(run_id, queue)
 
     try:
+        await websocket.send_json(
+            {
+                "kind": "hello",
+                "data": {"run_id": run_id, "last_seq": last_seq, "deployment_mode": deployment_mode},
+            }
+        )
+        await websocket.send_json({"kind": "snapshot", "data": timeline.model_dump()})
+
         while True:
             get_task: asyncio.Task[dict[str, object]] = asyncio.ensure_future(queue.get())
             overflow_task: asyncio.Task[bool] = asyncio.ensure_future(queue.overflowed.wait())
@@ -83,7 +89,7 @@ async def run_events_ws(websocket: WebSocket, run_id: int) -> None:
 
             frame = get_task.result()
             await websocket.send_json(frame)
-    except WebSocketDisconnect:
+    except (WebSocketDisconnect, RuntimeError, asyncio.CancelledError):
         pass
     finally:
         hub.unsubscribe_run(run_id, queue)

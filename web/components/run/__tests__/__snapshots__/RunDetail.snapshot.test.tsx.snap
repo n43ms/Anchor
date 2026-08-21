@@ -28,12 +28,13 @@ exports[`RunDetail snapshot > matches the reference mock with now injected 1`] =
       </p>
     </div>
     <span
-      class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors duration-base "
+      class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium backdrop-blur-md transition-all duration-base glow-status-running ring-1 ring-status-executing/30 "
       data-status="running"
       style="color: var(--status-executing); border-color: var(--status-executing); background-color: color-mix(in srgb, var(--status-executing) 12%, transparent);"
     >
       <span
         aria-hidden="true"
+        class="animate-spin"
       >
         ◐
       </span>
@@ -244,12 +245,35 @@ exports[`RunDetail snapshot > matches the reference mock with now injected 1`] =
     </div>
     <svg
       aria-label="run thread, 5 steps, 2 segments"
+      class="overflow-visible"
       data-testid="run-thread"
       height="70"
       role="img"
       viewBox="0 0 620 70"
       width="100%"
     >
+      <defs>
+        <filter
+          height="180%"
+          id="strand-golden-glow"
+          width="140%"
+          x="-20%"
+          y="-40%"
+        >
+          <fegaussianblur
+            result="blur"
+            stdDeviation="2.5"
+          />
+          <femerge>
+            <femergenode
+              in="blur"
+            />
+            <femergenode
+              in="SourceGraphic"
+            />
+          </femerge>
+        </filter>
+      </defs>
       <path
         class="strand-path"
         d="M0,35 C51.666666666666664,35 103.33333333333333,47.476903040860094 155,47.476903040860094 C206.66666666666666,47.476903040860094 258.3333333333333,46.31894965347426 310,46.31894965347426 C361.6666666666667,46.31894965347426 413.3333333333333,32.79156028199452 465,32.79156028199452 C516.6666666666666,32.79156028199452 568.3333333333334,21.677570965546774 620,21.677570965546774"
@@ -261,9 +285,13 @@ exports[`RunDetail snapshot > matches the reference mock with now injected 1`] =
       />
       <g>
         <g
+          class="strand-marker-node"
           data-marker-kind="side_effect"
           data-marker-label="read"
         >
+          <title>
+            read
+          </title>
           <rect
             data-shape="square"
             fill="var(--marker-side-effect)"
@@ -284,9 +312,13 @@ exports[`RunDetail snapshot > matches the reference mock with now injected 1`] =
           </text>
         </g>
         <g
+          class="strand-marker-node"
           data-marker-kind="side_effect"
           data-marker-label="check"
         >
+          <title>
+            check
+          </title>
           <rect
             data-shape="square"
             fill="var(--marker-side-effect)"
@@ -307,9 +339,13 @@ exports[`RunDetail snapshot > matches the reference mock with now injected 1`] =
           </text>
         </g>
         <g
+          class="strand-marker-node"
           data-marker-kind="ordinary"
           data-marker-label="decide"
         >
+          <title>
+            decide
+          </title>
           <circle
             cx="248"
             cy="35"
@@ -329,9 +365,13 @@ exports[`RunDetail snapshot > matches the reference mock with now injected 1`] =
           </text>
         </g>
         <g
+          class="strand-marker-node"
           data-marker-kind="handoff"
           data-marker-label="handoff"
         >
+          <title>
+            handoff
+          </title>
           <circle
             cx="372"
             cy="35"
@@ -352,9 +392,13 @@ exports[`RunDetail snapshot > matches the reference mock with now injected 1`] =
           </text>
         </g>
         <g
+          class="strand-marker-node"
           data-marker-kind="side_effect"
           data-marker-label="issue"
         >
+          <title>
+            issue
+          </title>
           <rect
             data-shape="square"
             fill="var(--marker-side-effect)"
@@ -365,9 +409,13 @@ exports[`RunDetail snapshot > matches the reference mock with now injected 1`] =
           />
         </g>
         <g
+          class="strand-marker-node"
           data-marker-kind="ordinary"
           data-marker-label="notify"
         >
+          <title>
+            notify
+          </title>
           <circle
             cx="496"
             cy="35"

@@ -6,13 +6,15 @@
 :root,
 [data-theme="dark"] {
   /* surfaces + ink */
-  --surface-page: #0d0d0d;
-  --surface-panel: #1a1a19;
+  --surface-page: #08090d;
+  --surface-panel: #11141d;
+  --surface-elevated: #181d2a;
+  --surface-highlight: #202738;
   --ink-primary: #ffffff;
   --ink-secondary: #c3c2b7;
   --ink-muted: #898781;
-  --gridline: #2c2c2a;
-  --baseline: #383835;
+  --gridline: #202534;
+  --baseline: #2d3448;
   --hairline-ring: rgba(255, 255, 255, 0.1);
 
   /* channel 1 — worker identity hues, fixed order, never cycled */
@@ -29,6 +31,8 @@
 
   /* RunThread — gold belongs to the strand alone (§24.8) */
   --strand-gold: #f6c453;
+  --strand-gold-glow: rgba(246, 196, 83, 0.45);
+  --strand-gold-bg: rgba(246, 196, 83, 0.08);
 
   /* RunThread event markers (§24.7 corrected values) */
   --marker-ordinary: #898781;
@@ -39,5 +43,7 @@
   --transition-fast: 150ms;
   --transition-base: 200ms;
   --transition-emphatic: 250ms;
+  --transition-smooth: 350ms;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
 }

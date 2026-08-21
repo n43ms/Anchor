@@ -17,9 +17,13 @@ const RUN_STATUS_META: Record<RunStatus, { label: string; icon: string; colorVar
 
 export function StatusPill({ status, className = "" }: { status: RunStatus; className?: string }) {
   const meta = RUN_STATUS_META[status];
+  const isRunning = status === "running";
+
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs transition-colors duration-base ${className}`}
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium backdrop-blur-md transition-all duration-base ${
+        isRunning ? "glow-status-running ring-1 ring-status-executing/30" : ""
+      } ${className}`}
       style={{
         color: `var(${meta.colorVar})`,
         borderColor: `var(${meta.colorVar})`,
@@ -27,7 +31,9 @@ export function StatusPill({ status, className = "" }: { status: RunStatus; clas
       }}
       data-status={status}
     >
-      <span aria-hidden="true">{meta.icon}</span>
+      <span aria-hidden="true" className={isRunning ? "animate-spin" : ""}>
+        {meta.icon}
+      </span>
       <span>{meta.label}</span>
     </span>
   );

@@ -41,7 +41,8 @@ export function ThreadMarkers({ markers }: { markers: ThreadMarker[] }) {
         const size = isHandoff ? 6 : 4;
 
         return (
-          <g key={marker.key} data-marker-kind={marker.kind} data-marker-label={marker.label}>
+          <g key={marker.key} data-marker-kind={marker.kind} data-marker-label={marker.label} className="strand-marker-node">
+            <title>{marker.label}</title>
             <MarkerShape kind={marker.kind} x={x} y={STRAND_Y} size={size} color={color} />
             {!dropped && (
               <text

@@ -4,7 +4,7 @@ import { ModeBanner } from "./ModeBanner";
 
 export function ConsoleLayout() {
   return (
-    <div className="flex h-screen w-screen overflow-hidden bg-surface-page font-ui text-ink-primary">
+    <div className="flex h-screen w-screen overflow-hidden cyber-bg font-ui text-ink-primary">
       <Sidebar />
       <div className="flex flex-1 flex-col overflow-hidden">
         <ModeBanner />

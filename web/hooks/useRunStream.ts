@@ -27,12 +27,8 @@ export interface RunStreamState {
 }
 
 function wsUrl(runId: number | string): string {
-  const envWs =
-    (typeof import.meta !== "undefined" && import.meta.env?.VITE_WS_BASE_URL) ||
-    (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_WS_BASE_URL);
-  const envApi =
-    (typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE_URL) ||
-    (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_API_BASE_URL);
+  const envWs = typeof import.meta !== "undefined" && import.meta.env?.VITE_WS_BASE_URL;
+  const envApi = typeof import.meta !== "undefined" && import.meta.env?.VITE_API_BASE_URL;
   const base = envWs || (envApi ? envApi.replace(/^http/, "ws") : "ws://localhost:8000");
   return `${base}/ws/runs/${runId}`;
 }

@@ -7,6 +7,8 @@
 [data-theme="light"] {
   --surface-page: #f9f9f7;
   --surface-panel: #fcfcfb;
+  --surface-elevated: #f0efe9;
+  --surface-highlight: #e8e7df;
   --ink-primary: #0b0b0b;
   --ink-secondary: #52514e;
   --ink-muted: #898781;
@@ -28,6 +30,8 @@
   --status-critical: #d03b3b;
 
   --strand-gold: #7a6300;
+  --strand-gold-glow: rgba(122, 99, 0, 0.25);
+  --strand-gold-bg: rgba(122, 99, 0, 0.08);
 
   --marker-ordinary: #898781;
   --marker-side-effect: #d03b3b;
@@ -36,5 +40,7 @@
   --transition-fast: 150ms;
   --transition-base: 200ms;
   --transition-emphatic: 250ms;
+  --transition-smooth: 350ms;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
 }

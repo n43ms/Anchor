@@ -1,6 +1,6 @@
 """T380 — CORS middleware is mounted and permits frontend access from browser origins.
 
-Browser requests from the Next.js console (e.g. http://localhost:3000) or other
+Browser requests from the React Vite console (e.g. http://localhost:3000) or other
 origins require proper CORS preflight and response headers.
 """
 

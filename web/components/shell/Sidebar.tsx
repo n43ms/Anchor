@@ -15,7 +15,6 @@ export function Sidebar() {
 
   const repoUrl =
     (typeof import.meta !== "undefined" && import.meta.env?.VITE_REPO_URL) ||
-    (typeof process !== "undefined" && process.env?.NEXT_PUBLIC_REPO_URL) ||
     "https://github.com/n43ms/Anchor";
 
   return (

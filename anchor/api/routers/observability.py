@@ -106,7 +106,7 @@ async def get_metrics(
         duplicate_side_effects = await conn.fetchval(
             """
             SELECT count(*) FROM run_events
-            WHERE type = 'STEP_SKIPPED_ON_REPLAY' AND created_at > now() - ($1 || ' seconds')::interval
+            WHERE type = 'STEP_SKIPPED_ON_REPLAY' AND created_at > now() - ($1 * interval '1 second')
             """,
             window_seconds,
         )
@@ -116,7 +116,7 @@ async def get_metrics(
         runs_total = await conn.fetchval(
             """
             SELECT count(*) FROM run_events
-            WHERE type = 'RUN_SUBMITTED' AND created_at > now() - ($1 || ' seconds')::interval
+            WHERE type = 'RUN_SUBMITTED' AND created_at > now() - ($1 * interval '1 second')
             """,
             window_seconds,
         )
@@ -126,7 +126,7 @@ async def get_metrics(
             """
             SELECT bucket_start, metric, dimension, count, sum_value, histogram
             FROM metrics_rollup
-            WHERE bucket_seconds = $1 AND bucket_start > now() - ($2 || ' seconds')::interval
+            WHERE bucket_seconds = $1 AND bucket_start > now() - ($2 * interval '1 second')
             ORDER BY bucket_start ASC
             """,
             bucket_seconds,

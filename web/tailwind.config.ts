@@ -16,6 +16,8 @@ const config: Config = {
       colors: {
         "surface-page": "var(--surface-page)",
         "surface-panel": "var(--surface-panel)",
+        "surface-elevated": "var(--surface-elevated)",
+        "surface-highlight": "var(--surface-highlight)",
         "ink-primary": "var(--ink-primary)",
         "ink-secondary": "var(--ink-secondary)",
         "ink-muted": "var(--ink-muted)",
@@ -42,6 +44,7 @@ const config: Config = {
         fast: "150ms",
         base: "200ms",
         emphatic: "250ms",
+        smooth: "350ms",
       },
     },
   },

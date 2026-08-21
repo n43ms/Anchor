@@ -66,7 +66,17 @@ export function RunThread({
       role="img"
       aria-label={`run thread, ${totalSteps} steps, ${segments.length} segment${segments.length === 1 ? "" : "s"}`}
       data-testid="run-thread"
+      className="overflow-visible"
     >
+      <defs>
+        <filter id="strand-golden-glow" x="-20%" y="-40%" width="140%" height="180%">
+          <feGaussianBlur stdDeviation="2.5" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
       <path
         className="strand-path"
         data-flowing={flowing ? "true" : "false"}

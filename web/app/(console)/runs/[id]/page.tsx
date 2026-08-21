@@ -63,15 +63,19 @@ export default function RunDetailPage() {
     <div data-testid="run-detail-page" className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 text-xs text-ink-muted">
-          <Link to="/runs" className="hover:text-ink-primary transition-colors">runs</Link>
+          <Link to="/runs" className="hover:text-strand-gold transition-colors">runs</Link>
           <span>/</span>
-          <span className="font-data text-ink-primary">{timeline.display_id ?? `run_${timeline.id}`}</span>
+          <span className="font-data text-ink-primary font-bold">{timeline.display_id ?? `run_${timeline.id}`}</span>
+          <span className="ml-2 inline-flex items-center gap-1.5 rounded-full border border-gridline bg-surface-panel px-2 py-0.5 text-[10px] text-ink-secondary font-medium">
+            <span className={`h-1.5 w-1.5 rounded-full ${connected ? "bg-status-good animate-pulse" : "bg-status-warning"}`} />
+            {connected ? "live stream" : "polling fallback"}
+          </span>
         </div>
         {!isTerminal && (
           <button
             type="button"
             onClick={handleCancel}
-            className="rounded border border-gridline bg-surface-panel px-2.5 py-1 text-xs text-status-critical hover:bg-status-critical/15 transition-colors"
+            className="rounded border border-status-critical/30 bg-surface-panel px-3 py-1 text-xs text-status-critical hover:bg-status-critical/15 hover:border-status-critical transition-all shadow-sm"
           >
             cancel run
           </button>
@@ -79,8 +83,9 @@ export default function RunDetailPage() {
       </div>
 
       {!connected && (
-        <div className="rounded-md border border-status-warning bg-status-warning/10 p-3 text-xs text-status-warning" data-testid="run-detail-connection-warning">
-          {stale ? "connection stale — showing last known state from store" : "connecting live stream…"}
+        <div className="rounded-md border border-status-warning/40 bg-status-warning/10 p-3 text-xs text-status-warning flex items-center gap-2" data-testid="run-detail-connection-warning">
+          <span className="h-2 w-2 rounded-full bg-status-warning animate-ping" />
+          <span>{stale ? "connection stale — showing last known state from store" : "connecting live stream…"}</span>
         </div>
       )}
 
