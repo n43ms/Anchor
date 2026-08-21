@@ -9,13 +9,20 @@
  * 5. Unique phase & radial offset per strand creating interwoven 3D twisting ribbon
  * 6. Additive blending creating a luminous hot-white core at overlaps
  * 7. Edge alpha fading to complete transparency at canvas boundaries
- * 8. Agent Step Diamonds mathematically anchored ON the main golden strand
+ *
+ * This is a decorative background only (aria-hidden, pointer-events-none,
+ * behind every surface). It previously anchored four floating "STEP 1:
+ * LEASE ACQUIRED" style labels on the strand with invented values (a fixed
+ * "seq 4092", "0 duplicate effects" regardless of actual run state) —
+ * removed, because a background element rendering fabricated telemetry
+ * text is still telemetry a viewer could read as real (constitution
+ * Principle VIII: the console must never appear to have data it does not
+ * have). The strand motion itself carries no factual claim and stays.
  */
 "use client";
 
 import { useMemo, useRef, useState, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Html } from "@react-three/drei";
 import * as THREE from "three";
 
 const STRAND_COUNT = 64;
@@ -77,34 +84,6 @@ function getStrandDisplacement(
 
   return { y: yDisp, z: zDisp };
 }
-
-// Agent Step metadata anchored on the main strand
-const AGENT_STEPS = [
-  {
-    id: "step-1",
-    label: "STEP 1: LEASE ACQUIRED",
-    subLabel: "worker-1 held",
-    x: -9.5,
-  },
-  {
-    id: "step-2",
-    label: "STEP 2: AST EXECUTION",
-    subLabel: "step 14 durable",
-    x: -3.2,
-  },
-  {
-    id: "step-3",
-    label: "STEP 3: FENCE VERIFIED",
-    subLabel: "seq 4092 assigned",
-    x: 3.2,
-  },
-  {
-    id: "step-4",
-    label: "STEP 4: CHECKPOINT SECURED",
-    subLabel: "0 duplicate effects",
-    x: 9.5,
-  },
-];
 
 function StrandBundleMesh() {
   const lineMeshRef = useRef<THREE.LineSegments>(null);
@@ -261,52 +240,6 @@ function StrandBundleMesh() {
   );
 }
 
-function AnchoredAgentStepNode({ step }: { step: (typeof AGENT_STEPS)[0] }) {
-  const meshRef = useRef<THREE.Mesh>(null);
-
-  useFrame(({ clock }) => {
-    const t = clock.getElapsedTime();
-    if (!meshRef.current) return;
-
-    // Calculate exact mathematical coordinates ON the Main Golden Strand (strandIndex = 0)
-    const baseY = baseTrajectory(step.x);
-    const { y: yDisp, z: zDisp } = getStrandDisplacement(step.x, t, 0, STRAND_COUNT);
-
-    meshRef.current.position.set(step.x, baseY + yDisp, zDisp);
-    meshRef.current.rotation.x += 0.018;
-    meshRef.current.rotation.y += 0.024;
-  });
-
-  return (
-    <mesh ref={meshRef}>
-      {/* Radiant Diamond Checkpoint */}
-      <icosahedronGeometry args={[0.2, 0]} />
-      <meshStandardMaterial
-        color={0xffffff}
-        emissive={0xffd700}
-        emissiveIntensity={3.5}
-        roughness={0.05}
-        metalness={0.95}
-      />
-
-      {/* Floating Operator Data Label pinned directly above the node */}
-      <Html
-        position={[0.35, 0.4, 0]}
-        distanceFactor={13}
-        center
-        style={{ pointerEvents: "none", userSelect: "none" }}
-      >
-        <div className="flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-strand-gold/40 bg-black/80 px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider text-white shadow-2xl backdrop-blur-xl">
-          <span className="h-1.5 w-1.5 animate-ping rounded-full bg-strand-gold shadow-glow-gold" />
-          <span className="font-bold text-strand-gold">{step.label}</span>
-          <span className="text-zinc-500">|</span>
-          <span className="text-zinc-300 font-medium">{step.subLabel}</span>
-        </div>
-      </Html>
-    </mesh>
-  );
-}
-
 function Scene() {
   return (
     <>
@@ -318,11 +251,6 @@ function Scene() {
 
       {/* 3D Moving Strand Bundle */}
       <StrandBundleMesh />
-
-      {/* Agent Step Checkpoints anchored directly ON the main strand */}
-      {AGENT_STEPS.map((step) => (
-        <AnchoredAgentStepNode key={step.id} step={step} />
-      ))}
     </>
   );
 }

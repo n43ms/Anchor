@@ -11,7 +11,7 @@ import { ArrowLeft, Radio, AlertTriangle, CheckCircle2 } from "lucide-react";
 export default function RunDetailPage() {
   const params = useParams<{ id: string }>();
   const runId = params.id ?? "";
-  const { timeline, connected, stale } = useRunStream(runId);
+  const { timeline, connected, stale, refresh } = useRunStream(runId);
   const events = usePolling(
     () =>
       runId
@@ -47,6 +47,7 @@ export default function RunDetailPage() {
       .cancelRun(runId)
       .then(() => {
         setActionSuccess("Cancellation requested");
+        refresh();
       })
       .catch((err: unknown) => {
         setActionError(
@@ -65,6 +66,7 @@ export default function RunDetailPage() {
       .resolveRun(runId, resolution)
       .then(() => {
         setActionSuccess(`Resolution recorded: ${resolution.replace("_", " ")}`);
+        refresh();
       })
       .catch((err: unknown) => {
         setActionError(

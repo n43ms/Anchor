@@ -20,6 +20,7 @@ export function Chart({ title, series, height = 160 }: { title: string; series: 
   const width = 480;
   const allY = series.flatMap((s) => s.points.map((p) => p.y));
   const maxY = Math.max(...allY, 1);
+  const isEmpty = series.length === 0 || series.every((s) => s.points.length === 0);
 
   return (
     <div className="rounded-md border border-gridline bg-surface-panel p-4" aria-labelledby={titleId}>
@@ -47,7 +48,15 @@ export function Chart({ title, series, height = 160 }: { title: string; series: 
         </div>
       </div>
 
-      {view === "chart" ? (
+      {isEmpty ? (
+        <div
+          className="mt-3 flex items-center justify-center rounded border border-dashed border-gridline text-xs text-ink-muted"
+          style={{ height }}
+          data-testid="chart-empty-state"
+        >
+          no data in this window yet
+        </div>
+      ) : view === "chart" ? (
         <svg viewBox={`0 0 ${width} ${height}`} width="100%" height={height} className="mt-3" role="img">
           {series.map((s) => {
             const pts = s.points
