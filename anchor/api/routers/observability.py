@@ -181,6 +181,26 @@ async def get_metrics(
                 edge_index = HISTOGRAM_EDGES_MS.index(int(edge_str))
                 target_bins[edge_index] += bin_count
 
+    # Live aggregation fallback for fresh local setups where rollup hasn't ticked yet
+    if not rollup_rows:
+        async with pool.acquire() as conn:
+            live_steps = await conn.fetchval(
+                "SELECT count(*) FROM run_events WHERE type = 'STEP_COMPLETED' AND created_at > now() - ($1 * interval '1 second')",
+                window_seconds,
+            )
+            steps_total = int(live_steps or 0)
+            status_rows = await conn.fetch("SELECT status, count(*) as count FROM runs GROUP BY status")
+            if status_rows:
+                run_state_by_bucket[datetime.utcnow().isoformat()] = {
+                    row["status"]: int(row["count"]) for row in status_rows
+                }
+            live_fencing = await conn.fetchval(
+                "SELECT count(*) FROM run_events WHERE type = 'WORKER_FENCED' AND created_at > now() - ($1 * interval '1 second')",
+                window_seconds,
+            )
+            if live_fencing:
+                fencing_events_series = [{"bucket": datetime.utcnow().isoformat(), "count": int(live_fencing)}]
+
     steps_per_second = steps_total / window_seconds if window_seconds else 0.0
     for worker_id in steps_per_second_by_worker:
         steps_per_second_by_worker[worker_id] = (

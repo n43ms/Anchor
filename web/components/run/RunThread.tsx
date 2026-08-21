@@ -14,21 +14,25 @@ import { deriveMarkers } from "./types";
 import { ThreadMarkers } from "./ThreadMarkers";
 
 const VIEW_WIDTH = 620;
-const STRAND_COUNT = 11; // 1 Main + 10 Background strands for full detail view
+const STRAND_COUNT = 15; // 1 Main + 14 Background strands for rich ribbon density
 const SAMPLES_PER_STRAND = 90;
 
-// 10 Dark Golden Background Strands for full view
+// 14 Dark Golden Background Strands (delicate, highly translucent silk paths)
 const BACKGROUND_STRAND_CONFIGS = [
-  { id: 1, opacity: 0.34, width: 1.1, phaseMult: 0.8, radialOffset: -1.4 },
-  { id: 2, opacity: 0.22, width: 0.85, phaseMult: 1.6, radialOffset: 1.5 },
-  { id: 3, opacity: 0.38, width: 1.2, phaseMult: 2.5, radialOffset: -0.9 },
-  { id: 4, opacity: 0.16, width: 0.75, phaseMult: 3.4, radialOffset: 1.1 },
-  { id: 5, opacity: 0.30, width: 1.0, phaseMult: 4.2, radialOffset: -1.7 },
-  { id: 6, opacity: 0.35, width: 1.1, phaseMult: 5.1, radialOffset: 0.7 },
-  { id: 7, opacity: 0.19, width: 0.8, phaseMult: 5.9, radialOffset: -1.2 },
-  { id: 8, opacity: 0.28, width: 0.95, phaseMult: 6.8, radialOffset: 1.8 },
-  { id: 9, opacity: 0.40, width: 1.25, phaseMult: 7.6, radialOffset: -0.5 },
-  { id: 10, opacity: 0.24, width: 0.85, phaseMult: 8.5, radialOffset: 1.3 },
+  { id: 1, opacity: 0.22, width: 1.1, phaseMult: 0.8, radialOffset: -1.4 },
+  { id: 2, opacity: 0.14, width: 0.85, phaseMult: 1.6, radialOffset: 1.5 },
+  { id: 3, opacity: 0.25, width: 1.2, phaseMult: 2.5, radialOffset: -0.9 },
+  { id: 4, opacity: 0.10, width: 0.75, phaseMult: 3.4, radialOffset: 1.1 },
+  { id: 5, opacity: 0.20, width: 1.0, phaseMult: 4.2, radialOffset: -1.7 },
+  { id: 6, opacity: 0.23, width: 1.1, phaseMult: 5.1, radialOffset: 0.7 },
+  { id: 7, opacity: 0.13, width: 0.8, phaseMult: 5.9, radialOffset: -1.2 },
+  { id: 8, opacity: 0.18, width: 0.95, phaseMult: 6.8, radialOffset: 1.8 },
+  { id: 9, opacity: 0.26, width: 1.25, phaseMult: 7.6, radialOffset: -0.5 },
+  { id: 10, opacity: 0.16, width: 0.85, phaseMult: 8.5, radialOffset: 1.3 },
+  { id: 11, opacity: 0.13, width: 0.9, phaseMult: 9.3, radialOffset: -1.5 },
+  { id: 12, opacity: 0.18, width: 1.05, phaseMult: 10.1, radialOffset: 0.9 },
+  { id: 13, opacity: 0.11, width: 0.8, phaseMult: 11.0, radialOffset: -0.7 },
+  { id: 14, opacity: 0.15, width: 0.95, phaseMult: 11.8, radialOffset: 1.4 },
 ];
 
 // Macroscopic base trajectory for full ribbon

@@ -1,13 +1,12 @@
 /**
  * anchor-spec.md §13.4, §22.3: "orphaned is the absence of fill, not a
  * color." No segment has ended_at === null — the run lost its worker and
- * has not yet been reclaimed. This is the single most persuasive moment in
- * the product and must never be hidden, smoothed over, or rendered as an
- * error/empty state.
+ * has not yet been reclaimed.
  */
 "use client";
 
 import { useEffect, useState } from "react";
+import { AlertCircle } from "lucide-react";
 
 export function OrphanedGap({ leaseExpiresAt, now = new Date() }: { leaseExpiresAt: string | null; now?: Date }) {
   const [tick, setTick] = useState(0);
@@ -21,12 +20,18 @@ export function OrphanedGap({ leaseExpiresAt, now = new Date() }: { leaseExpires
 
   return (
     <div
-      className="my-3 flex items-center justify-center gap-3 rounded-md border border-dashed border-gridline bg-transparent py-6"
+      className="my-3.5 flex items-center justify-center gap-2.5 rounded-2xl border border-dashed border-amber-500/30 bg-amber-500/5 py-4 backdrop-blur-xl"
       data-testid="orphaned-gap"
     >
-      <span className="h-2 w-2 animate-pulse rounded-full border border-ink-muted" aria-hidden="true" />
-      <span className="text-sm text-ink-secondary">
-        orphaned — {seconds !== null ? `lease expiring in ${seconds}s` : "lease expired, awaiting reclaim"}
+      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse shadow-glow-amber">
+        <AlertCircle className="h-3 w-3 text-amber-300" />
+      </span>
+      <span className="font-mono text-xs font-bold text-amber-300 uppercase tracking-wider text-[10.5px]">
+        Run Orphaned
+      </span>
+      <span className="text-zinc-600 font-mono text-xs">·</span>
+      <span className="font-mono text-xs text-zinc-300">
+        {seconds !== null ? `lease expiring in ${seconds}s` : "lease expired, awaiting reclaim"}
       </span>
     </div>
   );
