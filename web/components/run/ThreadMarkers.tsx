@@ -1,9 +1,10 @@
 /**
- * Anchor Operator Console — Glowy Indigo & Warm Dark-Orange Amber HUD Thread Markers
- * - Model Calls: Glowy Blue Deep Indigo (#6366f1 / #4f46e5)
- * - Tool Calls: Glowy Warm Dark-Orange Amber (#d97706 / #ea580c / #f97316)
- * - Handoff Beacons: Radiant Sun Gold & Diamond White (#fef08a)
- * - Reconciled: Emerald Mint Reticle (#34d399)
+ * Anchor Operator Console — Minimal HUD Thread Markers
+ * Clean, minimal geometric shapes with ambient glow:
+ * - Tool Calls: Minimal Warm Amber Square with ambient glow
+ * - Model Calls: Minimal Deep Indigo Circle with ambient glow
+ * - Handoff Beacons: Radiant Sun Gold Circle
+ * - Reconciled: Emerald Mint Ring
  */
 import type { MarkerKind, ThreadMarker } from "./types";
 
@@ -32,16 +33,16 @@ export function ThreadMarkers({
 }) {
   return (
     <g className="strand-markers-layer">
-      {/* SVG Glow Filters for Deep Indigo & Dark Warm Amber */}
+      {/* SVG Glow Filters for Ambient Lighting */}
       <defs>
-        <filter id="glow-indigo" x="-40%" y="-40%" width="180%" height="180%">
-          <feDropShadow dx="0" dy="0" stdDeviation="2.5" floodColor="#6366f1" floodOpacity="0.85" />
+        <filter id="glow-indigo" x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#6366f1" floodOpacity="0.9" />
         </filter>
-        <filter id="glow-amber" x="-40%" y="-40%" width="180%" height="180%">
-          <feDropShadow dx="0" dy="0" stdDeviation="2.5" floodColor="#d97706" floodOpacity="0.9" />
+        <filter id="glow-amber" x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#d97706" floodOpacity="0.9" />
         </filter>
-        <filter id="glow-gold" x="-40%" y="-40%" width="180%" height="180%">
-          <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#fef08a" floodOpacity="0.9" />
+        <filter id="glow-gold" x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="0" dy="0" stdDeviation="3.5" floodColor="#fef08a" floodOpacity="0.95" />
         </filter>
       </defs>
 
@@ -52,7 +53,7 @@ export function ThreadMarkers({
         const isHandoff = marker.kind === "handoff";
         const isToolCall = marker.kind === "side_effect";
         const isReconciled = marker.kind === "reconciled";
-        const size = isHandoff ? 6.5 : 4.5;
+        const size = isHandoff ? 5.5 : 4;
         const labelText = marker.label;
         const textWidth = Math.max(labelText.length * 6.4 + 10, 30);
 
@@ -60,10 +61,10 @@ export function ThreadMarkers({
         const badgeBorder = isHandoff
           ? "rgba(254, 240, 138, 0.75)"
           : isToolCall
-            ? "rgba(217, 119, 6, 0.85)" // Glowy Warm Dark-Orange Amber for Tool Calls
+            ? "rgba(217, 119, 6, 0.85)"
             : isReconciled
               ? "rgba(52, 211, 153, 0.65)"
-              : "rgba(99, 102, 241, 0.75)"; // Glowy Blue Deep Indigo for Model Calls
+              : "rgba(99, 102, 241, 0.75)";
 
         const badgeFill = isHandoff
           ? "#0a0802"
@@ -76,10 +77,10 @@ export function ThreadMarkers({
         const textColor = isHandoff
           ? "#fef08a"
           : isToolCall
-            ? "#fed7aa" // Warm Orangey-Amber text
+            ? "#fed7aa"
             : isReconciled
               ? "#d1fae5"
-              : "#c7d2fe"; // Light Indigo-Ice text for Model Calls
+              : "#c7d2fe";
 
         return (
           <g
@@ -90,7 +91,7 @@ export function ThreadMarkers({
           >
             <title>{marker.label}</title>
 
-            {/* Precision Marker Shape */}
+            {/* Minimal Ambient Marker Shape */}
             <MarkerShape kind={marker.kind} x={x} y={y} size={size} />
 
             {/* Sleek HUD Text Badge with Leader Line */}
@@ -148,104 +149,60 @@ function MarkerShape({
   size: number;
 }) {
   if (kind === "side_effect") {
-    // Tool Call: Glowy Warm Dark-Orange Amber Square (#d97706 / #ea580c)
+    // Minimal Warm Amber Square with ambient glow
     return (
-      <g filter="url(#glow-amber)">
-        <rect
-          x={x - size - 1.2}
-          y={y - size - 1.2}
-          width={(size + 1.2) * 2}
-          height={(size + 1.2) * 2}
-          rx={2}
-          fill="#0d0601"
-          fillOpacity={0.95}
-          stroke="rgba(217, 119, 6, 0.7)"
-          strokeWidth={0.8}
-        />
-        <rect
-          x={x - size}
-          y={y - size}
-          width={size * 2}
-          height={size * 2}
-          rx={1.5}
-          fill="#d97706"
-          stroke="#fed7aa"
-          strokeWidth={0.9}
-          data-shape="square"
-        />
-      </g>
+      <rect
+        x={x - size}
+        y={y - size}
+        width={size * 2}
+        height={size * 2}
+        rx={1.5}
+        fill="#d97706"
+        filter="url(#glow-amber)"
+        data-shape="square"
+      />
     );
   }
 
   if (kind === "reconciled") {
-    // Reconciled Step: Emerald Mint Reticle Ring (#34d399)
+    // Minimal Emerald Mint Ring
     return (
-      <g>
-        <circle cx={x} cy={y} r={size + 1.2} fill="#020a06" fillOpacity={0.95} />
-        <circle
-          cx={x}
-          cy={y}
-          r={size}
-          fill="none"
-          stroke="#34d399"
-          strokeWidth={1.8}
-          data-shape="ring"
-        />
-        <circle cx={x} cy={y} r={1.3} fill="#6ee7b7" />
-      </g>
+      <circle
+        cx={x}
+        cy={y}
+        r={size}
+        fill="none"
+        stroke="#34d399"
+        strokeWidth={1.8}
+        data-shape="ring"
+      />
     );
   }
 
   if (kind === "handoff") {
-    // Handoff Beacon: Radiant Sun Gold & Diamond White Core
+    // Minimal Radiant Gold Circle Beacon with ambient glow
     return (
-      <g filter="url(#glow-gold)">
-        <circle
-          cx={x}
-          cy={y}
-          r={size + 1.8}
-          fill="#0a0802"
-          fillOpacity={0.95}
-          stroke="rgba(254, 240, 138, 0.7)"
-          strokeWidth={0.9}
-        />
-        <circle
-          cx={x}
-          cy={y}
-          r={size}
-          fill="var(--strand-gold)"
-          stroke="#ffffff"
-          strokeWidth={1.3}
-          data-shape="circle"
-          data-handoff="true"
-        />
-        <circle cx={x} cy={y} r={2} fill="#ffffff" />
-      </g>
+      <circle
+        cx={x}
+        cy={y}
+        r={size}
+        fill="var(--strand-gold)"
+        filter="url(#glow-gold)"
+        data-shape="circle"
+        data-handoff="true"
+      />
     );
   }
 
-  // Model Call (Ordinary Step): Glowy Blue Deep Indigo (#6366f1 / #4f46e5 / #818cf8)
+  // Model Call (Ordinary Step): Minimal Deep Indigo Circle with ambient glow
   return (
-    <g filter="url(#glow-indigo)">
-      <circle
-        cx={x}
-        cy={y}
-        r={size + 1.2}
-        fill="#04050d"
-        fillOpacity={0.95}
-        stroke="rgba(99, 102, 241, 0.6)"
-        strokeWidth={0.8}
-      />
-      <circle
-        cx={x}
-        cy={y}
-        r={size - 0.8}
-        fill="#6366f1"
-        stroke="#c7d2fe"
-        strokeWidth={0.8}
-        data-shape="circle"
-      />
-      <circle cx={x} cy={y} r={1.2} fill="#ffffff" />
-    </g>
+    <circle
+      cx={x}
+      cy={y}
+      r={size}
+      fill="#6366f1"
+      filter="url(#glow-indigo)"
+      data-shape="circle"
+    />
   );
 }

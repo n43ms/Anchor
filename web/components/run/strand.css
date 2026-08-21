@@ -1,12 +1,12 @@
 /*
- * Anchor Operator Console — Golden Execution Strand & Laser Core
+ * Anchor Operator Console — Runtime Execution Strand & Clean Markers
  */
 
 .strand-bundle-container {
   isolation: isolate;
 }
 
-/* Solid high-definition main spine (NOT dotted/dashed) */
+/* Solid high-definition main spine */
 .strand-path {
   stroke-linecap: round;
   stroke-linejoin: round;
@@ -15,7 +15,6 @@
 }
 
 .strand-path[data-flowing="true"] {
-  /* Solid continuous flowing line, no dasharray */
   stroke-dasharray: none;
 }
 
@@ -30,15 +29,9 @@
   stroke-linecap: round;
 }
 
-/* Marker nodes with high-contrast glow */
+/* Marker nodes without hover effects */
 .strand-marker-node {
-  transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1), filter 150ms ease-out;
-  cursor: pointer;
-}
-
-.strand-marker-node:hover {
-  filter: drop-shadow(0 0 10px rgba(56, 189, 248, 0.9));
-  transform: scale(1.15);
+  pointer-events: auto;
 }
 
 .strand-label-text {

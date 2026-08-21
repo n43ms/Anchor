@@ -380,45 +380,57 @@ function CompactRunShape({
       <path d={pathD} fill="none" stroke="var(--strand-gold)" strokeWidth={1.35} strokeLinecap="round" />
       <path d={pathD} fill="none" stroke="rgb(254, 240, 138)" strokeWidth={0.7} strokeLinecap="round" />
 
-      {/* Enlarged Step Markers Matching the Golden Thread Color */}
+      {/* Minimal Step Markers Matching the Golden Thread Color */}
       {pts.map((p) => {
         if (p.isHandoff) {
-          // Handoff Beacon Node: Enlarged Golden Beacon with White Core
+          // Handoff: Clean Golden Circle with White Core
           return (
             <g key={p.key}>
-              <circle cx={p.x} cy={p.y} r={5.2} fill="#050505" fillOpacity={0.92} stroke="rgba(254, 240, 138, 0.85)" strokeWidth={0.9} />
-              <circle cx={p.x} cy={p.y} r={3.4} fill="var(--strand-gold)" stroke="#ffffff" strokeWidth={0.8} />
+              <circle cx={p.x} cy={p.y} r={3.6} fill="var(--strand-gold)" stroke="#ffffff" strokeWidth={0.8} />
               <circle cx={p.x} cy={p.y} r={1.2} fill="#ffffff" />
             </g>
           );
         }
 
         if (p.actionKind === "tool") {
-          // Tool Call: Enlarged Golden Chamfered Square Node (Same color as thread)
+          // Tool Call: Simple Minimal Golden Square
           return (
-            <g key={p.key}>
-              <rect x={p.x - 3.8} y={p.y - 3.8} width={7.6} height={7.6} rx={1.6} fill="#050505" fillOpacity={0.92} stroke="rgba(254, 240, 138, 0.8)" strokeWidth={0.85} />
-              <rect x={p.x - 2.5} y={p.y - 2.5} width={5.0} height={5.0} rx={1.0} fill="var(--strand-gold)" stroke="#ffffff" strokeWidth={0.65} />
-            </g>
+            <rect
+              key={p.key}
+              x={p.x - 2.8}
+              y={p.y - 2.8}
+              width={5.6}
+              height={5.6}
+              rx={1.2}
+              fill="var(--strand-gold)"
+            />
           );
         }
 
         if (p.status === "skipped_on_replay") {
-          // Replayed Step: Enlarged Concentric Golden Reticle
+          // Replayed Step: Clean Minimal Golden Ring
           return (
-            <g key={p.key}>
-              <circle cx={p.x} cy={p.y} r={4.0} fill="#050505" fillOpacity={0.92} stroke="var(--strand-gold)" strokeWidth={1.4} />
-              <circle cx={p.x} cy={p.y} r={1.6} fill="var(--strand-gold)" />
-            </g>
+            <circle
+              key={p.key}
+              cx={p.x}
+              cy={p.y}
+              r={2.8}
+              fill="none"
+              stroke="var(--strand-gold)"
+              strokeWidth={1.5}
+            />
           );
         }
 
-        // Model Call: Enlarged Golden Concentric Dot (Same color as thread)
+        // Model Call: Simple Minimal Golden Circle
         return (
-          <g key={p.key}>
-            <circle cx={p.x} cy={p.y} r={4.2} fill="#050505" fillOpacity={0.92} stroke="rgba(254, 240, 138, 0.8)" strokeWidth={0.85} />
-            <circle cx={p.x} cy={p.y} r={2.6} fill="var(--strand-gold)" stroke="#ffffff" strokeWidth={0.65} />
-          </g>
+          <circle
+            key={p.key}
+            cx={p.x}
+            cy={p.y}
+            r={2.8}
+            fill="var(--strand-gold)"
+          />
         );
       })}
     </g>

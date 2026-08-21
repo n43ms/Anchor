@@ -64,8 +64,7 @@ export function RunDetail({
               {i > 0 && <HandoffDivider workerId={run.segments[i - 1]!.worker_id} />}
               <div className="flex items-start gap-3">
                 <span
-                  className="w-24 shrink-0 pt-0.5 font-mono text-xs font-bold"
-                  style={{ color: hueSlot === "muted" ? "var(--ink-muted)" : `var(--worker-${hueSlot})` }}
+                  className="w-24 shrink-0 pt-0.5 font-mono text-xs font-bold text-indigo-300 drop-shadow-[0_0_8px_rgba(99,102,241,0.5)]"
                 >
                   {segment.worker_id}
                 </span>

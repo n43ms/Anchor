@@ -1,23 +1,24 @@
 /**
- * anchor-spec.md §24.2 — the bar. Fill is the worker's identity hue; the
- * unfilled portion is a neutral surface step, never a lighter tint of the
- * same hue (that would read as a magnitude ramp and imply the empty portion
- * carried a value).
+ * anchor-spec.md §24.2 — Worker Segment Progress Bar.
+ * Styled with 75% opaque Deep Indigo & Glowing Blue Ambiance matching the timeline track.
  */
 import type { TimelineSegment } from "@/lib/types";
-import { hueSlotVar, type WorkerHueSlot } from "@/lib/hues";
 
-export function WorkerBar({ segment, hueSlot }: { segment: TimelineSegment; hueSlot: WorkerHueSlot }) {
+export function WorkerBar({
+  segment,
+}: {
+  segment: TimelineSegment;
+  hueSlot?: string;
+}) {
   const total = segment.steps.length || 1;
   const doneOrActive = segment.steps.filter((s) => s.status === "done" || s.status === "active").length;
   const fraction = Math.min(doneOrActive / total, 1);
-  const color = hueSlotVar(hueSlot);
 
   return (
-    <div className="relative h-3 w-full overflow-hidden rounded-full bg-surface-page">
+    <div className="relative h-2.5 w-full overflow-hidden rounded-full border border-indigo-500/25 bg-black/70 p-[1px] shadow-inner">
       <div
-        className="h-full rounded-full transition-[width] duration-base ease-out"
-        style={{ width: `${fraction * 100}%`, backgroundColor: color }}
+        className="h-full rounded-full bg-gradient-to-r from-indigo-600 via-indigo-500 to-blue-400 opacity-[0.75] transition-[width] duration-300 ease-out shadow-[0_0_12px_rgba(99,102,241,0.55)]"
+        style={{ width: `${Math.max(fraction * 100, 2)}%` }}
         role="progressbar"
         aria-valuenow={Math.round(fraction * 100)}
         aria-valuemin={0}
