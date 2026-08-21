@@ -1,10 +1,11 @@
 /**
- * Anchor Operator Console — Minimal HUD Thread Markers
- * Clean, minimal geometric shapes with ambient glow:
- * - Tool Calls: Minimal Warm Amber Square with ambient glow
- * - Model Calls: Minimal Deep Indigo Circle with ambient glow
- * - Handoff Beacons: Radiant Sun Gold Circle
- * - Reconciled: Emerald Mint Ring
+ * Anchor Operator Console — Minimal Numbered Legend HUD Thread Markers
+ * Clean, minimal geometric shapes with ambient glow and aesthetic floating numbers:
+ * - Floating numbers use the aesthetic UI font with subtle radial glow highlights
+ * - Tool Calls: Minimal Warm Amber Square with ambient glow & Clean Amber Number
+ * - Model Calls: Minimal Deep Indigo Circle with ambient glow & Clean Indigo Number
+ * - Handoff Beacons: Radiant Sun Gold Circle & Clean Gold "⇄" Icon
+ * - Reconciled: Emerald Mint Ring & Clean Mint Number
  */
 import type { MarkerKind, ThreadMarker } from "./types";
 
@@ -12,7 +13,7 @@ const VIEW_WIDTH = 620;
 const STRAND_Y = 44;
 
 /** Minimum horizontal gap (px, at VIEW_WIDTH scale) two adjacent labels need to both render. */
-const MIN_LABEL_GAP = 36;
+const MIN_LABEL_GAP = 18;
 
 function shouldDropLabel(markers: ThreadMarker[], index: number): boolean {
   if (markers[index].kind === "handoff") return false; // Handoff is critical, never dropped
@@ -33,8 +34,9 @@ export function ThreadMarkers({
 }) {
   return (
     <g className="strand-markers-layer">
-      {/* SVG Glow Filters for Ambient Lighting */}
+      {/* SVG Glow Filters & Radial Gradients for Subtle Radial Highlighting */}
       <defs>
+        {/* Ambient Drop Shadow Filters for Marker Shapes */}
         <filter id="glow-indigo" x="-50%" y="-50%" width="200%" height="200%">
           <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#6366f1" floodOpacity="0.9" />
         </filter>
@@ -44,6 +46,42 @@ export function ThreadMarkers({
         <filter id="glow-gold" x="-50%" y="-50%" width="200%" height="200%">
           <feDropShadow dx="0" dy="0" stdDeviation="3.5" floodColor="#fef08a" floodOpacity="0.95" />
         </filter>
+
+        {/* Very Slight Text Drop Glows for Aesthetic Numbers */}
+        <filter id="glow-num-indigo" x="-40%" y="-40%" width="180%" height="180%">
+          <feDropShadow dx="0" dy="0" stdDeviation="1.8" floodColor="#818cf8" floodOpacity="0.85" />
+        </filter>
+        <filter id="glow-num-amber" x="-40%" y="-40%" width="180%" height="180%">
+          <feDropShadow dx="0" dy="0" stdDeviation="1.8" floodColor="#fbbf24" floodOpacity="0.85" />
+        </filter>
+        <filter id="glow-num-gold" x="-40%" y="-40%" width="180%" height="180%">
+          <feDropShadow dx="0" dy="0" stdDeviation="2.0" floodColor="#fef08a" floodOpacity="0.9" />
+        </filter>
+        <filter id="glow-num-mint" x="-40%" y="-40%" width="180%" height="180%">
+          <feDropShadow dx="0" dy="0" stdDeviation="1.8" floodColor="#34d399" floodOpacity="0.85" />
+        </filter>
+
+        {/* Soft Micro Radial Glow Highlights behind floating numbers */}
+        <radialGradient id="radial-glow-indigo" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#6366f1" stopOpacity="0.32" />
+          <stop offset="60%" stopColor="#6366f1" stopOpacity="0.10" />
+          <stop offset="100%" stopColor="#6366f1" stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id="radial-glow-amber" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#d97706" stopOpacity="0.32" />
+          <stop offset="60%" stopColor="#d97706" stopOpacity="0.10" />
+          <stop offset="100%" stopColor="#d97706" stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id="radial-glow-gold" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#fef08a" stopOpacity="0.35" />
+          <stop offset="60%" stopColor="#fef08a" stopOpacity="0.12" />
+          <stop offset="100%" stopColor="#fef08a" stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id="radial-glow-mint" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="#34d399" stopOpacity="0.32" />
+          <stop offset="60%" stopColor="#34d399" stopOpacity="0.10" />
+          <stop offset="100%" stopColor="#34d399" stopOpacity="0" />
+        </radialGradient>
       </defs>
 
       {markers.map((marker, i) => {
@@ -54,10 +92,10 @@ export function ThreadMarkers({
         const isToolCall = marker.kind === "side_effect";
         const isReconciled = marker.kind === "reconciled";
         const size = isHandoff ? 5.5 : 4;
-        const labelText = marker.label;
-        const textWidth = Math.max(labelText.length * 6.4 + 10, 30);
+        const stepDisplay = marker.stepNumber !== undefined ? String(marker.stepNumber) : isHandoff ? "⇄" : String(i + 1);
 
-        // Glowy themed badge styling
+        const glowType = isHandoff ? "gold" : isToolCall ? "amber" : isReconciled ? "mint" : "indigo";
+
         const badgeBorder = isHandoff
           ? "rgba(254, 240, 138, 0.75)"
           : isToolCall
@@ -66,21 +104,13 @@ export function ThreadMarkers({
               ? "rgba(52, 211, 153, 0.65)"
               : "rgba(99, 102, 241, 0.75)";
 
-        const badgeFill = isHandoff
-          ? "#0a0802"
-          : isToolCall
-            ? "#0d0601"
-            : isReconciled
-              ? "#020a06"
-              : "#04050d";
-
         const textColor = isHandoff
           ? "#fef08a"
           : isToolCall
-            ? "#fed7aa"
+            ? "#fde047"
             : isReconciled
-              ? "#d1fae5"
-              : "#c7d2fe";
+              ? "#a7f3d0"
+              : "#e0e7ff";
 
         return (
           <g
@@ -89,44 +119,42 @@ export function ThreadMarkers({
             data-marker-label={marker.label}
             className="strand-marker-node"
           >
-            <title>{marker.label}</title>
+            <title>{marker.stepNumber !== undefined ? `Step ${marker.stepNumber}: ` : ""}{marker.label}</title>
 
-            {/* Minimal Ambient Marker Shape */}
+            {/* Minimal Ambient Marker Shape ON the Thread */}
             <MarkerShape kind={marker.kind} x={x} y={y} size={size} />
 
-            {/* Sleek HUD Text Badge with Leader Line */}
+            {/* Aesthetic Floating Number with Slight Radial Glow Highlight */}
             {!dropped && (
               <g className="strand-label-group">
-                {/* Hairline connector tick from node to badge */}
+                {/* Hairline connector tick */}
                 <line
                   x1={x}
                   y1={y - size - 1}
                   x2={x}
-                  y2={y - size - 5}
+                  y2={y - size - 4}
                   stroke={badgeBorder}
-                  strokeWidth={0.8}
-                  strokeOpacity={0.85}
+                  strokeWidth={0.75}
+                  strokeOpacity={0.65}
                 />
-                {/* Frosted Dark Badge */}
-                <rect
-                  x={x - textWidth / 2}
-                  y={y - size - 18}
-                  width={textWidth}
-                  height={13}
-                  rx={3}
-                  fill={badgeFill}
-                  fillOpacity={0.95}
-                  stroke={badgeBorder}
-                  strokeWidth={0.85}
+                {/* Soft Micro Radial Glow Halo */}
+                <circle
+                  cx={x}
+                  cy={y - size - 9}
+                  r={8.5}
+                  fill={`url(#radial-glow-${glowType})`}
+                  pointerEvents="none"
                 />
+                {/* Clean Number in Aesthetic UI Font with Soft Glow */}
                 <text
                   x={x}
-                  y={y - size - 8.5}
+                  y={y - size - 5.5}
                   textAnchor="middle"
-                  className="strand-label-text select-none font-mono text-[8.5px] font-semibold tracking-wider"
+                  className="strand-number-text select-none text-[10px] font-extrabold"
                   fill={textColor}
+                  filter={`url(#glow-num-${glowType})`}
                 >
-                  {labelText}
+                  {stepDisplay}
                 </text>
               </g>
             )}

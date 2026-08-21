@@ -241,12 +241,12 @@ export function RunThread({
                 d={mainPath}
                 fill="none"
                 stroke="var(--strand-gold)"
-                strokeWidth={3.0}
-                strokeOpacity={0.35}
+                strokeWidth={2.8}
+                strokeOpacity={0.22}
                 strokeLinecap="round"
               />
 
-              {/* Primary Main Light Golden Execution Spine */}
+              {/* Primary Main Light Golden Execution Spine (78% translucent) */}
               <path
                 className="strand-path"
                 data-flowing={flowing ? "true" : "false"}
@@ -254,14 +254,16 @@ export function RunThread({
                 fill="none"
                 stroke="var(--strand-gold)"
                 strokeWidth={1.35}
+                strokeOpacity={0.78}
                 strokeLinecap="round"
               />
-              {/* Incandescent Pale Sun Gold Core Highlight */}
+              {/* Incandescent Pale Sun Gold Core Highlight (78% translucent) */}
               <path
                 d={mainPath}
                 fill="none"
                 stroke="rgb(254, 240, 138)"
                 strokeWidth={0.75}
+                strokeOpacity={0.78}
                 strokeLinecap="round"
               />
             </g>
@@ -374,11 +376,11 @@ function CompactRunShape({
       <line x1={8} y1={midY} x2={W - 8} y2={midY} stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
 
       {/* Trajectory Underglow Bloom */}
-      <path d={pathD} fill="none" stroke="var(--strand-gold)" strokeWidth={2.8} strokeOpacity={0.35} strokeLinecap="round" />
+      <path d={pathD} fill="none" stroke="var(--strand-gold)" strokeWidth={2.8} strokeOpacity={0.25} strokeLinecap="round" />
 
-      {/* Trajectory Golden Strand */}
-      <path d={pathD} fill="none" stroke="var(--strand-gold)" strokeWidth={1.35} strokeLinecap="round" />
-      <path d={pathD} fill="none" stroke="rgb(254, 240, 138)" strokeWidth={0.7} strokeLinecap="round" />
+      {/* Trajectory Golden Strand (78% translucent) */}
+      <path d={pathD} fill="none" stroke="var(--strand-gold)" strokeWidth={1.35} strokeOpacity={0.78} strokeLinecap="round" />
+      <path d={pathD} fill="none" stroke="rgb(254, 240, 138)" strokeWidth={0.7} strokeOpacity={0.78} strokeLinecap="round" />
 
       {/* Minimal Step Markers Matching the Golden Thread Color */}
       {pts.map((p) => {

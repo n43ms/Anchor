@@ -117,20 +117,21 @@ export function RunDetail({
 
 function StepLabels({ steps }: { steps: RunTimeline["segments"][number]["steps"] }) {
   return (
-    <div className="mt-2 flex flex-wrap gap-x-2.5 gap-y-1 text-xs">
+    <div className="mt-2.5 flex flex-wrap gap-x-2 gap-y-1.5 text-xs">
       {steps.map((step) => {
         const isModel = step.action_kind === "model";
         const isTool = step.action_kind === "tool";
         const isReplay = step.status === "skipped_on_replay";
+        const stepNum = step.step_index + 1;
 
         return (
           <span
             key={step.step_index}
-            className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 font-mono text-[10px] transition-colors ${
+            className={`inline-flex items-center gap-1.5 rounded-lg px-2 py-0.5 font-mono text-[10px] transition-colors ${
               step.status === "active"
                 ? isTool
-                  ? "border border-amber-500/50 bg-amber-500/20 text-amber-300 font-bold"
-                  : "border border-indigo-500/50 bg-indigo-500/20 text-indigo-300 font-bold"
+                  ? "border border-amber-500/50 bg-amber-500/20 text-amber-200 font-bold shadow-sm"
+                  : "border border-indigo-500/50 bg-indigo-500/20 text-indigo-200 font-bold shadow-sm"
                 : isTool
                   ? "border border-amber-500/30 bg-amber-500/10 text-amber-300/90"
                   : isReplay
@@ -139,12 +140,19 @@ function StepLabels({ steps }: { steps: RunTimeline["segments"][number]["steps"]
             }`}
             data-step-status={step.status}
           >
+            {/* Numbered Legend Key Index linking directly to thread marker */}
             <span
-              className={`h-1.5 w-1.5 rounded-full ${
-                isTool ? "bg-amber-400" : isReplay ? "bg-emerald-400" : "bg-indigo-400"
+              className={`flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold ${
+                isTool
+                  ? "bg-amber-500/25 text-amber-200 border border-amber-500/40"
+                  : isReplay
+                    ? "bg-emerald-500/25 text-emerald-200 border border-emerald-500/40"
+                    : "bg-indigo-500/25 text-indigo-200 border border-indigo-500/40"
               }`}
-            />
-            <span>{step.name}</span>
+            >
+              {stepNum}
+            </span>
+            <span className="font-medium">{step.name}</span>
             {step.status === "active" ? "…" : ""}
           </span>
         );

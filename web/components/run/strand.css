@@ -34,8 +34,17 @@
   pointer-events: auto;
 }
 
+/* Monospace label text for code / badges */
 .strand-label-text {
-  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-family: var(--font-data, ui-monospace, SFMono-Regular, Menlo, monospace);
   letter-spacing: 0.05em;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.8);
+}
+
+/* Modern Aesthetic UI font for floating thread numbers */
+.strand-number-text {
+  font-family: var(--font-ui, "Geist", -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", system-ui, sans-serif);
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
 }
