@@ -9,12 +9,23 @@
   color-scheme: dark;
 }
 
+html {
+  font-size: 85%;
+  height: 100%;
+  width: 100%;
+}
+
 html,
-body {
+body,
+#root {
   background: var(--surface-page);
   color: var(--ink-primary);
   font-family: var(--font-ui, system-ui, -apple-system, sans-serif);
-  min-height: 100vh;
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
 }
 
 * {
@@ -55,6 +66,40 @@ body {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--gridline);
+}
+
+.operator-glass {
+  background: color-mix(in srgb, var(--surface-panel) 40%, transparent);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid color-mix(in srgb, var(--gridline) 80%, transparent);
+}
+
+.operator-glass-dark {
+  background: color-mix(in srgb, var(--surface-page) 65%, transparent);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid color-mix(in srgb, var(--gridline) 80%, transparent);
+}
+
+.shadow-glow-emerald {
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.6);
+}
+
+.shadow-glow-amber {
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.6);
+}
+
+.shadow-glow-cyan {
+  box-shadow: 0 0 10px rgba(34, 211, 238, 0.6);
+}
+
+.shadow-glow-rose {
+  box-shadow: 0 0 10px rgba(244, 63, 94, 0.6);
+}
+
+.shadow-glow-gold {
+  box-shadow: 0 0 12px rgba(246, 196, 83, 0.5);
 }
 
 .glass-panel-elevated {

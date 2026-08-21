@@ -16,6 +16,7 @@ import { StatusPill } from "@/components/primitives/StatusPill";
 import { RunThread } from "@/components/run/RunThread";
 import { api, ApiRequestError } from "@/lib/api";
 import type { RunStatus } from "@/lib/types";
+import { Zap, Play, Plus, RotateCcw, Server, Activity, ArrowUpRight } from "lucide-react";
 
 export default function DashboardPage() {
   const { data: health, stale: healthStale, error: healthError } = useHealth();
@@ -28,20 +29,20 @@ export default function DashboardPage() {
 
   if (healthError && !health) {
     return (
-      <div className="hud-corner rounded-lg border border-status-critical/40 bg-status-critical/10 p-6 text-sm text-status-critical" data-testid="dashboard-error">
+      <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-6 text-sm text-rose-400 backdrop-blur-xl" data-testid="dashboard-error">
         <div className="flex items-center gap-2 font-bold font-ui text-base mb-1">
-          <span className="h-2.5 w-2.5 rounded-full bg-status-critical animate-ping" />
+          <span className="h-2.5 w-2.5 rounded-full bg-rose-400 animate-ping shadow-glow-rose" />
           <span>RUNTIME DISCONNECTED</span>
         </div>
-        <p className="text-xs text-ink-secondary">could not reach the backend api — check if docker containers and api service are running</p>
+        <p className="text-xs text-zinc-400">could not reach the backend api — check if docker containers and api service are running</p>
       </div>
     );
   }
   if (!health) {
     return (
-      <div className="space-y-4 p-8 text-center" data-testid="dashboard-loading">
+      <div className="space-y-4 p-12 text-center" data-testid="dashboard-loading">
         <div className="inline-block h-8 w-8 animate-spin rounded-full border-2 border-strand-gold border-t-transparent mb-3" />
-        <p className="text-xs font-data text-ink-muted uppercase tracking-widest">initializing telemetry stream…</p>
+        <p className="text-xs font-mono text-zinc-500 uppercase tracking-widest">initializing telemetry stream…</p>
       </div>
     );
   }
@@ -99,29 +100,29 @@ export default function DashboardPage() {
   return (
     <div data-testid="dashboard" className="space-y-6 pb-12">
       {/* Top Command Center Telemetry Header */}
-      <div className="hud-corner glass-panel rounded-xl p-5 glow-card">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-1">
+      <div className="rounded-2xl border border-white/[0.08] bg-black/40 p-5 backdrop-blur-2xl transition-all">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1.5">
             <div className="flex items-center gap-2.5">
-              <span className="relative flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-status-good opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-status-good"></span>
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400 shadow-glow-emerald"></span>
               </span>
-              <h1 className="font-ui text-lg font-bold tracking-tight text-ink-primary uppercase">
-                Operator Telemetry Command
+              <h1 className="font-ui text-base font-bold tracking-tight text-white uppercase">
+                Operator Telemetry Cockpit
               </h1>
-              <span className="rounded-full bg-strand-gold/15 px-2.5 py-0.5 text-[10px] font-semibold text-strand-gold border border-strand-gold/30 font-data">
+              <span className="rounded-full bg-strand-gold/10 px-2.5 py-0.5 text-[10px] font-semibold text-strand-gold border border-strand-gold/30 font-mono">
                 DURABLE RUNTIME
               </span>
             </div>
-            <p className="text-xs text-ink-secondary flex flex-wrap items-center gap-x-3 gap-y-1 font-data">
+            <p className="text-xs text-zinc-400 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono">
               <span>PROFILE: <strong className="text-strand-gold font-bold">{metrics?.active_profile ?? health.active_profile ?? "DEMO"}</strong></span>
-              <span>·</span>
-              <span>LEASE DURATION: <strong className="text-ink-primary">{metrics?.lease_duration_ms ?? 4000}ms</strong></span>
-              <span>·</span>
-              <span>CONCURRENCY CAP: <strong className="text-ink-primary">{health.global_concurrency_cap ?? 50}</strong></span>
-              <span>·</span>
-              <span>SCHEMA: <strong className="text-ink-muted">{health.schema_revision}</strong></span>
+              <span className="text-zinc-600">·</span>
+              <span>LEASE DURATION: <strong className="text-zinc-200">{metrics?.lease_duration_ms ?? 4000}ms</strong></span>
+              <span className="text-zinc-600">·</span>
+              <span>CONCURRENCY CAP: <strong className="text-zinc-200">{health.global_concurrency_cap ?? 50}</strong></span>
+              <span className="text-zinc-600">·</span>
+              <span>SCHEMA: <strong className="text-zinc-500">{health.schema_revision}</strong></span>
             </p>
           </div>
 
@@ -131,44 +132,46 @@ export default function DashboardPage() {
               type="button"
               disabled={quickLaunchLoading}
               onClick={() => handleQuickLaunch("demo_short")}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-strand-gold/50 bg-strand-gold/15 px-3.5 py-1.5 text-xs font-semibold text-strand-gold hover:bg-strand-gold/25 hover:border-strand-gold transition-all duration-base shadow-sm disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-strand-gold/50 bg-strand-gold/15 px-3.5 py-2 text-xs font-semibold text-strand-gold hover:bg-strand-gold/25 hover:border-strand-gold transition-all duration-base shadow-sm disabled:opacity-50"
             >
-              <span>⚡</span>
+              <Zap className="h-3.5 w-3.5" />
               <span>{quickLaunchLoading ? "Dispatching…" : "1-Click Demo (9-step)"}</span>
             </button>
             <button
               type="button"
               disabled={quickLaunchLoading}
               onClick={() => handleQuickLaunch("demo_long")}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-gridline bg-surface-elevated px-3 py-1.5 text-xs font-medium text-ink-primary hover:border-strand-gold/40 hover:text-strand-gold transition-all disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3.5 py-2 text-xs font-medium text-zinc-200 hover:border-white/[0.2] hover:text-white transition-all disabled:opacity-50"
             >
+              <Play className="h-3.5 w-3.5 text-zinc-400" />
               <span>40-Step Run</span>
             </button>
             <Link
               to="/tools/test-run"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-gridline bg-surface-elevated px-3 py-1.5 text-xs font-medium text-ink-primary hover:border-baseline hover:text-strand-gold transition-all"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.03] px-3.5 py-2 text-xs font-medium text-zinc-200 hover:border-strand-gold/40 hover:text-strand-gold transition-all"
             >
-              <span>+ Custom Test</span>
+              <Plus className="h-3.5 w-3.5" />
+              <span>Custom Test</span>
             </Link>
             <button
               type="button"
               onClick={handleResetDemoRuns}
-              className="rounded-lg border border-gridline bg-surface-panel px-2.5 py-1.5 text-xs text-ink-muted hover:text-ink-primary hover:border-gridline transition-colors"
+              className="rounded-xl border border-white/[0.08] bg-white/[0.02] p-2 text-xs text-zinc-400 hover:text-white hover:border-white/[0.2] transition-colors"
               title="Reset all demo runs"
             >
-              ↺ Reset
+              <RotateCcw className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
 
         {feedbackMessage && (
           <div
-            className={`mt-4 rounded-lg p-3 text-xs flex items-center justify-between transition-all ${
+            className={`mt-4 rounded-xl p-3 text-xs flex items-center justify-between transition-all backdrop-blur-xl ${
               feedbackMessage.type === "good"
-                ? "bg-status-good/15 text-status-good border border-status-good/30"
+                ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
                 : feedbackMessage.type === "warning"
-                ? "bg-status-warning/15 text-status-warning border border-status-warning/30"
-                : "bg-status-critical/15 text-status-critical border border-status-critical/30"
+                ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                : "bg-rose-500/15 text-rose-400 border border-rose-500/30"
             }`}
           >
             <span>{feedbackMessage.text}</span>
@@ -180,9 +183,9 @@ export default function DashboardPage() {
       </div>
 
       {(healthStale || metricsStale) && (
-        <div className="rounded-lg border border-status-warning/40 bg-status-warning/10 px-4 py-2.5 text-xs text-status-warning flex items-center justify-between" data-testid="dashboard-stale">
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-400 flex items-center justify-between backdrop-blur-xl" data-testid="dashboard-stale">
           <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-status-warning animate-ping" />
+            <span className="h-2 w-2 rounded-full bg-amber-400 animate-ping shadow-glow-amber" />
             <span>Telemetry stream interrupted — background refresh retrying…</span>
           </div>
         </div>
@@ -218,18 +221,18 @@ export default function DashboardPage() {
       </div>
 
       {/* Execution Cockpit & Live Golden Threads Stream */}
-      <div className="hud-corner glass-panel rounded-xl p-5 space-y-4 glow-card">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gridline/60 pb-3">
+      <div className="rounded-2xl border border-white/[0.08] bg-black/40 p-5 space-y-4 backdrop-blur-2xl">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/[0.06] pb-3">
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="font-ui text-sm font-bold uppercase tracking-wider text-ink-primary">
+              <h2 className="font-ui text-sm font-bold uppercase tracking-wider text-white">
                 Execution Stream Cockpit
               </h2>
-              <span className="rounded bg-surface-elevated px-2 py-0.5 text-[10px] font-data text-ink-muted">
+              <span className="rounded bg-white/[0.05] px-2 py-0.5 text-[10px] font-mono text-zinc-400">
                 {allRuns.length} TOTAL
               </span>
             </div>
-            <p className="text-xs text-ink-secondary">Live durable agent workflows and golden ownership threads</p>
+            <p className="text-xs text-zinc-400">Live durable agent workflows and golden ownership threads</p>
           </div>
 
           <div className="flex items-center gap-1.5">
@@ -238,10 +241,10 @@ export default function DashboardPage() {
                 key={st}
                 type="button"
                 onClick={() => setFilterStatus(st)}
-                className={`rounded px-2.5 py-1 text-xs font-medium transition-all ${
+                className={`rounded-lg px-2.5 py-1 text-xs font-medium font-mono transition-all ${
                   filterStatus === st
                     ? "bg-strand-gold/20 text-strand-gold border border-strand-gold/40 shadow-sm"
-                    : "text-ink-muted hover:text-ink-primary hover:bg-surface-elevated"
+                    : "text-zinc-400 hover:text-white hover:bg-white/[0.04]"
                 }`}
               >
                 {st.replace("_", " ")}
@@ -251,21 +254,21 @@ export default function DashboardPage() {
         </div>
 
         {filteredRuns.length === 0 ? (
-          <div className="rounded-lg border border-gridline bg-surface-page/50 p-10 text-center space-y-3">
-            <p className="text-xs text-ink-muted font-data uppercase tracking-wider">No runs match the active filter</p>
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.01] p-10 text-center space-y-3">
+            <p className="text-xs text-zinc-500 font-mono uppercase tracking-wider">No runs match the active filter</p>
             <button
               type="button"
               onClick={() => handleQuickLaunch("refund-agent")}
-              className="inline-flex items-center gap-1.5 rounded border border-strand-gold/40 bg-strand-gold/10 px-3 py-1.5 text-xs text-strand-gold hover:bg-strand-gold/20"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-strand-gold/40 bg-strand-gold/10 px-3 py-1.5 text-xs text-strand-gold hover:bg-strand-gold/20"
             >
               + Launch Demo Run
             </button>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-lg border border-gridline bg-surface-page/50">
+          <div className="overflow-hidden rounded-xl border border-white/[0.08] bg-white/[0.02]">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-gridline bg-surface-elevated/70 text-ink-muted font-data text-[11px] uppercase tracking-wider">
+                <tr className="border-b border-white/[0.06] bg-white/[0.03] text-zinc-400 font-mono text-[11px] uppercase tracking-wider">
                   <th className="py-2.5 pl-4 pr-3 font-medium">Run ID</th>
                   <th className="py-2.5 pr-3 font-medium">Agent</th>
                   <th className="py-2.5 pr-3 font-medium">State</th>
@@ -274,32 +277,32 @@ export default function DashboardPage() {
                   <th className="py-2.5 pr-4 font-medium w-48">Golden Strand</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gridline">
+              <tbody className="divide-y divide-white/[0.04]">
                 {filteredRuns.slice(0, 8).map((run) => (
-                  <tr key={run.id} className="hover:bg-surface-elevated/50 transition-colors group">
-                    <td className="py-3 pl-4 pr-3 font-data font-bold">
+                  <tr key={run.id} className="hover:bg-white/[0.04] transition-colors group">
+                    <td className="py-3 pl-4 pr-3 font-mono font-bold">
                       <Link
                         to={`/runs/${run.id}`}
-                        className="text-ink-primary group-hover:text-strand-gold transition-colors inline-flex items-center gap-1"
+                        className="text-white group-hover:text-strand-gold transition-colors inline-flex items-center gap-1"
                       >
                         <span>{run.display_id ?? `run_${run.id}`}</span>
-                        <span className="text-[10px] text-ink-muted opacity-0 group-hover:opacity-100 transition-opacity">↗</span>
+                        <ArrowUpRight className="h-3 w-3 text-zinc-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </Link>
                     </td>
-                    <td className="py-3 pr-3 text-ink-secondary font-medium">{run.agent_type}</td>
+                    <td className="py-3 pr-3 text-zinc-300 font-medium">{run.agent_type}</td>
                     <td className="py-3 pr-3">
                       <StatusPill status={run.status} />
                     </td>
-                    <td className="py-3 pr-3 font-data text-ink-secondary">
+                    <td className="py-3 pr-3 font-mono text-zinc-300">
                       {run.owner_worker_id ? (
-                        <span className="rounded bg-surface-elevated px-2 py-0.5 text-[11px] text-ink-primary border border-gridline">
+                        <span className="rounded bg-white/[0.04] px-2 py-0.5 text-[11px] text-zinc-200 border border-white/[0.08]">
                           {run.owner_worker_id}
                         </span>
                       ) : (
-                        <span className="text-ink-muted">—</span>
+                        <span className="text-zinc-500">—</span>
                       )}
                     </td>
-                    <td className="figures-tabular py-3 pr-3 font-data text-ink-muted">
+                    <td className="figures-tabular py-3 pr-3 font-mono text-zinc-400">
                       {Math.round(run.elapsed_ms / 1000)}s
                     </td>
                     <td className="py-3 pr-4 w-48">
@@ -314,26 +317,26 @@ export default function DashboardPage() {
       </div>
 
       {/* Fleet Node Cluster Status */}
-      <div className="hud-corner glass-panel rounded-xl p-5 space-y-4 glow-card">
-        <div className="flex items-center justify-between border-b border-gridline/60 pb-3">
+      <div className="rounded-2xl border border-white/[0.08] bg-black/40 p-5 space-y-4 backdrop-blur-2xl">
+        <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="font-ui text-sm font-bold uppercase tracking-wider text-ink-primary">
+              <h2 className="font-ui text-sm font-bold uppercase tracking-wider text-white">
                 Worker Fleet Grid
               </h2>
-              <span className="rounded bg-status-good/15 px-2 py-0.5 text-[10px] font-data text-status-good border border-status-good/30">
+              <span className="rounded bg-emerald-500/10 px-2 py-0.5 text-[10px] font-mono text-emerald-400 border border-emerald-500/30">
                 {workers.length} NODES
               </span>
             </div>
-            <p className="text-xs text-ink-secondary">Autonomous execution nodes with heartbeat lease renewers</p>
+            <p className="text-xs text-zinc-400">Autonomous execution nodes with heartbeat lease renewers</p>
           </div>
-          <Link to="/workers" className="text-xs text-strand-gold hover:underline font-medium">
+          <Link to="/workers" className="text-xs text-strand-gold hover:underline font-mono font-medium">
             Manage Fleet →
           </Link>
         </div>
 
         {workers.length === 0 ? (
-          <div className="rounded-lg border border-gridline bg-surface-page/50 p-6 text-center text-xs text-ink-muted">
+          <div className="rounded-xl border border-white/[0.06] bg-white/[0.01] p-6 text-center text-xs text-zinc-500 font-mono">
             Connecting to worker fleet…
           </div>
         ) : (
@@ -343,31 +346,31 @@ export default function DashboardPage() {
               return (
                 <div
                   key={w.id}
-                  className={`rounded-lg border border-gridline bg-surface-elevated/60 p-4 space-y-2.5 border-l-4 ${hueClass} hover:border-strand-gold/40 transition-all`}
+                  className={`rounded-xl border border-white/[0.08] bg-white/[0.02] p-4 space-y-2.5 border-l-4 ${hueClass} hover:border-white/[0.2] transition-all backdrop-blur-xl`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-data text-xs font-bold text-ink-primary">{w.id}</span>
+                    <span className="font-mono text-xs font-bold text-white">{w.id}</span>
                     <span
-                      className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                      className={`inline-flex items-center gap-1 text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full ${
                         w.stale
-                          ? "bg-status-warning/15 text-status-warning border border-status-warning/30"
-                          : "bg-status-good/15 text-status-good border border-status-good/30"
+                          ? "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                          : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
                       }`}
                     >
-                      <span className={`h-1.5 w-1.5 rounded-full ${w.stale ? "bg-status-warning" : "bg-status-good animate-pulse"}`} />
+                      <span className={`h-1.5 w-1.5 rounded-full ${w.stale ? "bg-amber-400 shadow-glow-amber" : "bg-emerald-400 animate-pulse shadow-glow-emerald"}`} />
                       {w.stale ? "STALE" : "HEALTHY"}
                     </span>
                   </div>
 
-                  <div className="space-y-1 text-xs">
-                    <div className="flex justify-between text-ink-secondary text-[11px]">
+                  <div className="space-y-1 text-xs font-mono">
+                    <div className="flex justify-between text-zinc-400 text-[11px]">
                       <span>Workload:</span>
-                      <span className="font-data text-ink-primary font-bold">
+                      <span className="text-white font-bold tabular-nums">
                         {w.current_run_count} / {w.capacity} runs
                       </span>
                     </div>
                     {/* Capacity Progress Bar */}
-                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-page">
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/[0.05]">
                       <div
                         className="h-full rounded-full transition-all duration-base"
                         style={{
@@ -378,7 +381,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  <div className="flex justify-between items-center text-[10px] font-data text-ink-muted pt-1 border-t border-gridline/50">
+                  <div className="flex justify-between items-center text-[10px] font-mono text-zinc-500 pt-1 border-t border-white/[0.04]">
                     <span>BUILD: {w.code_version}</span>
                     <span>UP: {w.uptime_ms !== undefined ? `${Math.round(w.uptime_ms / 1000)}s` : "—"}</span>
                   </div>

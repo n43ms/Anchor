@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useMetrics } from "@/hooks/useMetrics";
 import { Chart } from "@/components/primitives/Chart";
 import { StatTile } from "@/components/primitives/StatTile";
+import { BarChart3 } from "lucide-react";
 
 const WINDOWS = ["1h", "24h", "7d", "30d"] as const;
 
@@ -9,32 +10,37 @@ export default function MetricsPage() {
   const [window, setWindow] = useState<"1h" | "24h" | "7d" | "30d">("24h");
   const { data, error } = useMetrics(window);
 
-  if (error && !data) return <p className="text-sm text-status-critical">could not load metrics</p>;
-  if (!data) return <p className="text-sm text-ink-muted">loading…</p>;
+  if (error && !data) return <p className="text-sm font-mono text-rose-400">could not load metrics</p>;
+  if (!data) return <p className="text-sm font-mono text-zinc-500">loading telemetry metrics…</p>;
 
   const stateSeries = data.run_state_distribution.map((b) => ({ x: b.bucket, y: Object.values(b.counts).reduce((a, c) => a + c, 0) }));
   const fencingSeries = (data.fencing_events_series ?? []).map((f) => ({ x: f.bucket, y: f.count }));
   const throughputSeries = (data.throughput_by_worker_count ?? []).map((t) => ({ x: t.worker_count, y: t.steps_per_second }));
 
   return (
-    <div data-testid="metrics-page" className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div data-testid="metrics-page" className="space-y-6 pb-12">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-white/[0.08] bg-black/40 p-5 backdrop-blur-2xl">
         <div>
-          <h1 className="font-ui text-base font-bold text-ink-primary">metrics</h1>
-          <p className="text-xs text-ink-secondary">
-            aggregated execution telemetry · window: <strong className="text-strand-gold font-data">{window}</strong>
+          <div className="flex items-center gap-2">
+            <h1 className="font-ui text-base font-bold uppercase tracking-wider text-white">Aggregated Telemetry Metrics</h1>
+            <span className="rounded-full bg-strand-gold/10 px-2.5 py-0.5 font-mono text-[10px] text-strand-gold border border-strand-gold/30">
+              WINDOW: {window}
+            </span>
+          </div>
+          <p className="text-xs text-zinc-400 font-mono">
+            Cluster step rate, run state distribution, and fencing telemetry
           </p>
         </div>
-        <div className="flex items-center gap-1.5 rounded-lg border border-gridline bg-surface-panel p-1">
+        <div className="flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.02] p-1 backdrop-blur-xl">
           {WINDOWS.map((w) => (
             <button
               key={w}
               type="button"
               onClick={() => setWindow(w)}
-              className={`rounded px-2.5 py-1 text-xs font-medium font-data transition-all ${
+              className={`rounded-lg px-3 py-1 text-xs font-mono font-medium transition-all ${
                 window === w
-                  ? "bg-strand-gold/15 text-strand-gold border border-strand-gold/40 shadow-sm"
-                  : "text-ink-muted hover:text-ink-primary"
+                  ? "bg-strand-gold/20 text-strand-gold border border-strand-gold/40 shadow-sm"
+                  : "text-zinc-400 hover:text-white hover:bg-white/[0.04]"
               }`}
             >
               {w}
@@ -57,24 +63,26 @@ export default function MetricsPage() {
       </div>
 
       {data.dead_letter_reasons && data.dead_letter_reasons.length > 0 && (
-        <div className="mt-4">
-          <h2 className="mb-2 text-sm text-ink-secondary">dead-letter reasons</h2>
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="text-xs text-ink-muted">
-                <th className="pb-2 pr-3">error type</th>
-                <th className="pb-2">count</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.dead_letter_reasons.map((r) => (
-                <tr key={r.error_type} className="border-t border-gridline">
-                  <td className="py-1.5 pr-3 text-ink-primary">{r.error_type}</td>
-                  <td className="figures-tabular py-1.5 text-ink-secondary">{r.count}</td>
+        <div className="rounded-2xl border border-white/[0.08] bg-black/40 p-5 backdrop-blur-2xl space-y-3">
+          <h2 className="font-ui text-xs font-bold uppercase tracking-wider text-white">Dead-Letter Error Reasons</h2>
+          <div className="overflow-hidden rounded-xl border border-white/[0.06] bg-white/[0.02]">
+            <table className="w-full text-left text-xs font-mono">
+              <thead>
+                <tr className="border-b border-white/[0.06] bg-white/[0.03] text-zinc-400 uppercase tracking-wider">
+                  <th className="py-2.5 pl-4 pr-3 font-medium">Error Type</th>
+                  <th className="py-2.5 pr-4 font-medium text-right">Count</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-white/[0.04]">
+                {data.dead_letter_reasons.map((r) => (
+                  <tr key={r.error_type} className="hover:bg-white/[0.02] transition-colors">
+                    <td className="py-2.5 pl-4 pr-3 text-white">{r.error_type}</td>
+                    <td className="figures-tabular py-2.5 pr-4 text-right text-zinc-300 font-bold">{r.count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

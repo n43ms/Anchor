@@ -4,6 +4,8 @@
  * column stays because the compact strand cannot identify which workers
  * touched a run (§24.8).
  */
+"use client";
+
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useRunsList } from "@/hooks/useRunsList";
@@ -11,6 +13,7 @@ import { StatusPill } from "@/components/primitives/StatusPill";
 import { RunThread } from "@/components/run/RunThread";
 import { api, ApiRequestError } from "@/lib/api";
 import type { RunStatus } from "@/lib/types";
+import { RotateCcw, Search, ArrowUpRight } from "lucide-react";
 
 const FILTERS: RunStatus[] = ["pending", "running", "completed", "failed", "needs_review"];
 
@@ -43,32 +46,40 @@ export default function AllRunsPage() {
   });
 
   return (
-    <div data-testid="all-runs-page" className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div data-testid="all-runs-page" className="space-y-5 pb-12">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-white/[0.08] bg-black/40 p-5 backdrop-blur-2xl">
         <div>
-          <h1 className="font-ui text-base font-bold text-ink-primary">all runs</h1>
-          <p className="text-xs text-ink-secondary">durable execution histories across workers</p>
+          <div className="flex items-center gap-2">
+            <h1 className="font-ui text-base font-bold uppercase tracking-wider text-white">All Runs</h1>
+            <span className="rounded-full bg-strand-gold/10 px-2 py-0.5 font-mono text-[10px] text-strand-gold border border-strand-gold/30">
+              {filteredItems.length} WORKFLOWS
+            </span>
+          </div>
+          <p className="text-xs text-zinc-400 font-mono">Durable execution histories and golden strands across workers</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={handleResetDemo}
-            className="rounded border border-gridline bg-surface-panel px-3 py-1 text-xs text-ink-secondary hover:text-ink-primary hover:border-strand-gold/40 transition-colors shadow-sm"
+            className="flex items-center gap-1.5 rounded-xl border border-white/[0.08] bg-white/[0.02] px-3.5 py-2 text-xs font-mono text-zinc-300 hover:text-white hover:border-white/[0.2] transition-all shadow-sm"
           >
-            reset demo runs
+            <RotateCcw className="h-3.5 w-3.5" />
+            <span>Reset Demo Runs</span>
           </button>
         </div>
       </div>
 
       {actionMessage && (
-        <div className="rounded-md border border-status-warning/40 bg-status-warning/10 px-3.5 py-2 text-xs text-status-warning">
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-xs text-amber-400 font-mono backdrop-blur-xl">
           {actionMessage}
         </div>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs text-ink-muted">filter:</span>
+      {/* Filter & Search Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/[0.08] bg-black/40 p-3.5 backdrop-blur-2xl">
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-xs font-mono text-zinc-500 mr-1">FILTER:</span>
           {FILTERS.map((status) => {
             const isOn = active.includes(status);
             return (
@@ -76,10 +87,10 @@ export default function AllRunsPage() {
                 key={status}
                 type="button"
                 onClick={() => setActive((prev) => (isOn ? prev.filter((s) => s !== status) : [...prev, status]))}
-                className={`rounded border px-2.5 py-1 text-xs font-medium transition-all duration-fast ${
+                className={`rounded-lg border px-2.5 py-1 text-xs font-mono transition-all duration-fast ${
                   isOn
-                    ? "border-strand-gold bg-strand-gold/15 text-strand-gold shadow-sm"
-                    : "border-gridline bg-surface-panel text-ink-secondary hover:text-ink-primary hover:border-baseline"
+                    ? "border-strand-gold/50 bg-strand-gold/20 text-strand-gold shadow-sm font-semibold"
+                    : "border-white/[0.06] bg-white/[0.02] text-zinc-400 hover:text-white hover:bg-white/[0.04]"
                 }`}
                 aria-pressed={isOn}
               >
@@ -91,60 +102,72 @@ export default function AllRunsPage() {
             <button
               type="button"
               onClick={() => setActive([])}
-              className="text-xs text-ink-muted hover:text-ink-primary underline ml-1"
+              className="text-xs font-mono text-zinc-500 hover:text-white underline ml-1.5"
             >
               clear
             </button>
           )}
         </div>
 
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="search runs or agents…"
-          className="rounded border border-gridline bg-surface-panel px-3 py-1 text-xs font-data text-ink-primary placeholder:text-ink-muted focus:border-strand-gold focus:outline-none w-56 transition-colors"
-        />
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="search runs or agents…"
+            className="rounded-xl border border-white/[0.08] bg-white/[0.02] pl-8 pr-3 py-1.5 text-xs font-mono text-white placeholder:text-zinc-500 focus:border-strand-gold focus:outline-none w-64 transition-all"
+          />
+        </div>
       </div>
 
-      {error && !data && <p className="text-sm text-status-critical">could not load runs</p>}
-      {!error && !data && <p className="text-sm text-ink-muted">loading…</p>}
+      {error && !data && <p className="text-sm text-rose-400 font-mono">could not load runs</p>}
+      {!error && !data && <p className="text-sm text-zinc-500 font-mono">loading runs stream…</p>}
       {data && filteredItems.length === 0 && (
-        <div className="rounded-lg border border-gridline bg-surface-panel p-8 text-center text-sm text-ink-muted">
+        <div className="rounded-2xl border border-white/[0.08] bg-black/40 p-12 text-center text-sm font-mono text-zinc-500 backdrop-blur-2xl">
           no runs match the current filter
         </div>
       )}
 
       {data && filteredItems.length > 0 && (
-        <div className="overflow-hidden rounded-lg border border-gridline bg-surface-panel">
+        <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-black/40 backdrop-blur-2xl">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-gridline bg-surface-page/60 text-xs text-ink-muted">
-                <th className="py-2.5 pl-4 pr-3 font-medium">run</th>
-                <th className="py-2.5 pr-3 font-medium">agent</th>
-                <th className="py-2.5 pr-3 font-medium">status</th>
-                <th className="py-2.5 pr-3 font-medium">owner</th>
-                <th className="py-2.5 pr-3 font-medium">elapsed</th>
-                <th className="py-2.5 pr-4 font-medium">thread summary</th>
+              <tr className="border-b border-white/[0.06] bg-white/[0.02] text-xs font-mono text-zinc-400 uppercase tracking-wider">
+                <th className="py-3 pl-4 pr-3 font-medium">Run ID</th>
+                <th className="py-3 pr-3 font-medium">Agent</th>
+                <th className="py-3 pr-3 font-medium">Status</th>
+                <th className="py-3 pr-3 font-medium">Owner</th>
+                <th className="py-3 pr-3 font-medium">Elapsed</th>
+                <th className="py-3 pr-4 font-medium w-48">Thread Summary</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gridline">
+            <tbody className="divide-y divide-white/[0.04]">
               {filteredItems.map((run) => (
-                <tr key={run.id} className="transition-colors hover:bg-surface-page/40">
-                  <td className="py-3 pl-4 pr-3 font-data text-xs">
-                    <Link to={`/runs/${run.id}`} className="font-bold text-ink-primary hover:text-strand-gold transition-colors">
-                      {run.display_id ?? `run_${run.id}`}
+                <tr key={run.id} className="transition-colors hover:bg-white/[0.03] group">
+                  <td className="py-3 pl-4 pr-3 font-mono text-xs font-bold">
+                    <Link to={`/runs/${run.id}`} className="text-white group-hover:text-strand-gold transition-colors inline-flex items-center gap-1">
+                      <span>{run.display_id ?? `run_${run.id}`}</span>
+                      <ArrowUpRight className="h-3 w-3 text-zinc-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </Link>
                   </td>
-                  <td className="py-3 pr-3 text-xs text-ink-secondary">{run.agent_type}</td>
+                  <td className="py-3 pr-3 text-xs text-zinc-300 font-medium">{run.agent_type}</td>
                   <td className="py-3 pr-3">
                     <StatusPill status={run.status} />
                   </td>
-                  <td className="py-3 pr-3 font-data text-xs text-ink-secondary">{run.owner_worker_id ?? "—"}</td>
-                  <td className="figures-tabular py-3 pr-3 font-data text-xs text-ink-secondary">
+                  <td className="py-3 pr-3 font-mono text-xs text-zinc-400">
+                    {run.owner_worker_id ? (
+                      <span className="rounded bg-white/[0.04] px-2 py-0.5 text-zinc-200 border border-white/[0.06]">
+                        {run.owner_worker_id}
+                      </span>
+                    ) : (
+                      <span className="text-zinc-600">—</span>
+                    )}
+                  </td>
+                  <td className="figures-tabular py-3 pr-3 font-mono text-xs text-zinc-400">
                     {Math.round(run.elapsed_ms / 1000)}s
                   </td>
-                  <td className="py-3 pr-4 w-44">
+                  <td className="py-3 pr-4 w-48">
                     <RunThread segments={run.segments} compact animate={run.status === "running"} />
                   </td>
                 </tr>

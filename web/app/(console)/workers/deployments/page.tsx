@@ -7,6 +7,7 @@
 "use client";
 
 import { useWorkers } from "@/hooks/useWorkers";
+import { GitBranch, AlertTriangle } from "lucide-react";
 
 export default function DeploymentsPage() {
   const { workers, stale } = useWorkers();
@@ -17,39 +18,46 @@ export default function DeploymentsPage() {
   }
 
   return (
-    <div data-testid="deployments-page" className="space-y-6">
-      <div>
-        <h1 className="font-ui text-base font-bold text-ink-primary">deployments</h1>
-        <p className="text-xs text-ink-secondary">
-          active code versions and builds running across the distributed worker fleet
-        </p>
+    <div data-testid="deployments-page" className="space-y-6 pb-12">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-white/[0.08] bg-black/40 p-5 backdrop-blur-2xl">
+        <div>
+          <div className="flex items-center gap-2">
+            <h1 className="font-ui text-base font-bold uppercase tracking-wider text-white">Fleet Code Deployments</h1>
+            <span className="rounded-full bg-strand-gold/10 px-2.5 py-0.5 font-mono text-[10px] text-strand-gold border border-strand-gold/30">
+              {byVersion.size} BUILDS
+            </span>
+          </div>
+          <p className="text-xs text-zinc-400 font-mono">
+            Active code versions and builds running across the distributed worker fleet
+          </p>
+        </div>
       </div>
 
       {stale && (
-        <div className="rounded-lg border border-status-warning/40 bg-status-warning/10 px-4 py-2 text-xs text-status-warning flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-status-warning animate-ping" />
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-xs font-mono text-amber-400 flex items-center gap-2 backdrop-blur-xl">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
           <span>stale — showing last known fleet state from store</span>
         </div>
       )}
 
       {workers.length === 0 && (
-        <div className="rounded-lg border border-gridline bg-surface-panel p-8 text-center text-sm text-ink-muted">
+        <div className="rounded-2xl border border-white/[0.08] bg-black/40 p-12 text-center text-sm font-mono text-zinc-500 backdrop-blur-2xl">
           no workers registered in the fleet
         </div>
       )}
 
       <div className="space-y-4">
         {Array.from(byVersion.entries()).map(([version, group]) => (
-          <div key={version} className="hud-corner glass-panel rounded-xl p-5 glow-card space-y-3">
-            <div className="flex items-center justify-between border-b border-gridline/60 pb-3">
+          <div key={version} className="rounded-2xl border border-white/[0.08] bg-black/40 p-5 space-y-3 backdrop-blur-2xl">
+            <div className="flex items-center justify-between border-b border-white/[0.06] pb-3">
               <div className="flex items-center gap-3">
-                <span className="h-2.5 w-2.5 rounded-full bg-status-good animate-pulse" />
-                <span className="font-data text-sm font-bold text-ink-primary">BUILD: {version}</span>
-                <span className="rounded bg-strand-gold/15 px-2 py-0.5 text-[10px] font-semibold text-strand-gold border border-strand-gold/30 font-data">
+                <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse shadow-glow-emerald" />
+                <span className="font-mono text-sm font-bold text-white">BUILD: {version}</span>
+                <span className="rounded-full bg-strand-gold/15 px-2.5 py-0.5 text-[10px] font-semibold text-strand-gold border border-strand-gold/30 font-mono">
                   ACTIVE
                 </span>
               </div>
-              <span className="text-xs font-data text-ink-secondary">
+              <span className="text-xs font-mono text-zinc-400">
                 {group.length} worker{group.length === 1 ? "" : "s"} assigned
               </span>
             </div>
@@ -58,10 +66,10 @@ export default function DeploymentsPage() {
               {group.map((w) => (
                 <div
                   key={w.id}
-                  className="inline-flex items-center gap-2 rounded-lg border border-gridline bg-surface-elevated px-3 py-1.5 text-xs"
+                  className="inline-flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.02] px-3.5 py-2 text-xs font-mono"
                 >
-                  <span className="font-data font-bold text-ink-primary">{w.id}</span>
-                  <span className="text-[10px] text-ink-muted font-data">
+                  <span className="font-bold text-white">{w.id}</span>
+                  <span className="text-[10px] text-zinc-500">
                     ({w.current_run_count}/{w.capacity} runs)
                   </span>
                 </div>

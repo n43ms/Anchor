@@ -35,24 +35,24 @@ export function StatTile({
 
   return (
     <div
-      className={`group relative overflow-hidden rounded-lg border border-gridline bg-surface-panel p-4 transition-all duration-base hover:border-strand-gold/40 hover:shadow-lg ${
-        emphasize ? "ring-1 ring-strand-gold/20" : ""
+      className={`group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-black/40 p-5 backdrop-blur-2xl transition-all duration-base hover:border-white/[0.2] hover:bg-white/[0.02] shadow-sm ${
+        emphasize ? "ring-1 ring-strand-gold/40 border-strand-gold/30" : ""
       }`}
     >
       <div className="flex items-center justify-between">
-        <div className="text-xs font-medium text-ink-muted uppercase tracking-wider">{label}</div>
+        <div className="text-xs font-mono font-medium text-zinc-400 uppercase tracking-wider">{label}</div>
         {badge && (
-          <span className="rounded-full bg-status-good/15 px-2 py-0.5 text-[10px] font-semibold text-status-good border border-status-good/30">
+          <span className="rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-[10px] font-mono font-semibold text-emerald-400 border border-emerald-500/30">
             {badge}
           </span>
         )}
       </div>
 
-      <div className="mt-2 flex items-baseline justify-between">
+      <div className="mt-3 flex items-baseline justify-between">
         <div
-          className={`figures-proportional font-ui font-bold transition-all duration-base ${
-            emphasize ? "text-4xl text-strand-gold" : "text-2xl text-ink-primary"
-          } ${changed ? "scale-105 text-status-good" : ""}`}
+          className={`figures-proportional font-ui font-extrabold transition-all duration-base ${
+            emphasize ? "text-4xl text-strand-gold" : "text-3xl text-white"
+          } ${changed ? "scale-105 text-emerald-400" : ""}`}
         >
           {value}
         </div>

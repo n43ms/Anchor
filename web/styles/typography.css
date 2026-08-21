@@ -3,8 +3,8 @@
  * figure and stat values; monospace only where alignment carries meaning.
  */
 :root {
-  --font-ui: system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-data: ui-monospace, "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+  --font-ui: "Geist", -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, "Segoe UI", sans-serif;
+  --font-data: "Geist Mono", "JetBrains Mono", "SF Mono", "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 }
 
 body {

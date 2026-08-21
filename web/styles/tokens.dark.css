@@ -6,10 +6,10 @@
 :root,
 [data-theme="dark"] {
   /* surfaces + ink */
-  --surface-page: #08090d;
-  --surface-panel: #11141d;
-  --surface-elevated: #181d2a;
-  --surface-highlight: #202738;
+  --surface-page: #050505;
+  --surface-panel: #0d0e12;
+  --surface-elevated: #141722;
+  --surface-highlight: #1b2030;
   --ink-primary: #ffffff;
   --ink-secondary: #c3c2b7;
   --ink-muted: #898781;
