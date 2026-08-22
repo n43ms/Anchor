@@ -17,7 +17,7 @@ from datetime import datetime
 from typing import Annotated, Any
 
 import asyncpg
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
 
 from anchor.api.errors import ApiError
 from anchor.api.serializers.rollup import HISTOGRAM_EDGES_MS
@@ -257,13 +257,13 @@ def _decode_events_cursor(cursor: str) -> tuple[datetime, int, int]:
 @router.get("/api/events")
 async def get_events(
     pool: Annotated[asyncpg.Pool, Depends(get_pool)],
-    type: list[str] | None = None,
-    worker_id: str | None = None,
-    epoch: int | None = None,
-    since: datetime | None = None,
-    until: datetime | None = None,
-    limit: int = 100,
-    cursor: str | None = None,
+    type: Annotated[list[str] | None, Query()] = None,
+    worker_id: Annotated[str | None, Query()] = None,
+    epoch: Annotated[int | None, Query()] = None,
+    since: Annotated[datetime | None, Query()] = None,
+    until: Annotated[datetime | None, Query()] = None,
+    limit: Annotated[int, Query()] = 100,
+    cursor: Annotated[str | None, Query()] = None,
 ) -> dict[str, Any]:
     """Global search over `run_events` (FR-026), across every run —
     distinct from `GET /api/runs/{id}/events`, which is scoped to one.
@@ -280,10 +280,15 @@ async def get_events(
         clauses = []
         params: list[Any] = []
         if type:
-            params.append(type)
-            clauses.append(f"type = ANY(${len(params)})")
+            type_list = [type] if isinstance(type, str) else list(type)
+            type_list = [t for t in type_list if t]
+            if type_list:
+                params.append(type_list)
+                clauses.append(f"type = ANY(${len(params)})")
+            else:
+                clauses.append("type != 'LEASE_RENEWED'")
         else:
-            clauses.append("type <> 'LEASE_RENEWED'")
+            clauses.append("type != 'LEASE_RENEWED'")
         if worker_id:
             params.append(worker_id)
             clauses.append(f"worker_id = ${len(params)}")

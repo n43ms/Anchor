@@ -28,17 +28,17 @@ All telemetry channels have strict semantic assignments and glowing ambient ligh
 ┌─────────────────┬──────────────────────┬────────────────────────────────────────────────────────┐
 │ Channel         │ Hex / RGB            │ Semantic Assignment & Ambient Lighting                 │
 ├─────────────────┼──────────────────────┼────────────────────────────────────────────────────────┤
-│ Sun Gold        │ #f6c453 / #fef08a    │ Primary Golden Ribbon, Execution Thread, Handoffs      │
+│ Sun Gold        │ #f6c453 / #fef08a    │ Primary Golden Ribbon, Live Execution Spine            │
 │                 │                      │ Glow: feDropShadow stdDev=3.5 floodColor=#fef08a       │
 ├─────────────────┼──────────────────────┼────────────────────────────────────────────────────────┤
 │ Deep Indigo     │ #6366f1 / #818cf8    │ Model Calls, Timeline Tracks, Worker Progress Fill     │
 │                 │                      │ Glow: feDropShadow stdDev=3.0 floodColor=#6366f1       │
 ├─────────────────┼──────────────────────┼────────────────────────────────────────────────────────┤
-│ Warm Amber      │ #d97706 / #f59e0b    │ External Tool Calls, Handoff Nodes, Stale Alerts       │
+│ Warm Amber      │ #d97706 / #f59e0b    │ External Tool Calls, Stale Alerts                      │
 │                 │                      │ Glow: feDropShadow stdDev=3.0 floodColor=#d97706       │
 ├─────────────────┼──────────────────────┼────────────────────────────────────────────────────────┤
-│ Mint Emerald    │ #34d399 / #10b981    │ Replayed / Reconciled Steps, Live Cluster Uptime       │
-│                 │                      │ Glow: feDropShadow stdDev=2.0 floodColor=#34d399       │
+│ Mint Emerald    │ #34d399 / #059669    │ Worker Handoffs, Reconciled Steps, Live Cluster Uptime │
+│                 │                      │ Glow: feDropShadow stdDev=2.0 floodColor=#059669       │
 ├─────────────────┼──────────────────────┼────────────────────────────────────────────────────────┤
 │ Rose Crimson    │ #f43f5e / #e11d48    │ Worker Kill Triggers, Fencing Collision Alerts         │
 ├─────────────────┼──────────────────────┼────────────────────────────────────────────────────────┤

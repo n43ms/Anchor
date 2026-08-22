@@ -23,8 +23,8 @@ export function FencingMarker({ event, xPercent }: { event: FencingEvent; xPerce
         <span className="text-zinc-400">e{event.stale_epoch}→{event.current_epoch}</span>
       </div>
 
-      {/* Understated Hairline Tick */}
-      <div className="h-1.5 w-px bg-rose-400/30" />
+      {/* Matching 2px Connector Tick */}
+      <div className="h-1.5 w-[2px] bg-rose-500/75 rounded-full" />
     </div>
   );
 }

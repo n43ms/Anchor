@@ -2,7 +2,8 @@
  * Anchor Operator Console — Minimal Numbered Legend HUD Thread Markers
  * Clean, minimal geometric shapes with ambient glow and aesthetic floating numbers:
  * - Floating numbers use the aesthetic UI font with subtle radial glow highlights
- * - Tool Calls & Handoffs: Deep Warm Amber Square / Beacon & Rich Saturated Amber Number
+ * - Worker Handoff: Dark reassuring emerald green Circle Beacon & glowing green swap icon (⇄)
+ * - Tool Calls: Deep Warm Amber Square & Rich Saturated Amber Number
  * - Model Calls: Minimal Deep Indigo Circle with ambient glow & Clean Indigo Number
  * - Reconciled: Emerald Mint Ring & Clean Mint Number
  */
@@ -42,8 +43,8 @@ export function ThreadMarkers({
         <filter id="glow-amber" x="-50%" y="-50%" width="200%" height="200%">
           <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#d97706" floodOpacity="0.9" />
         </filter>
-        <filter id="glow-gold" x="-50%" y="-50%" width="200%" height="200%">
-          <feDropShadow dx="0" dy="0" stdDeviation="3.5" floodColor="#d97706" floodOpacity="0.9" />
+        <filter id="glow-emerald" x="-50%" y="-50%" width="200%" height="200%">
+          <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#059669" floodOpacity="0.85" />
         </filter>
 
         {/* Very Subtle Minimal Text Drop Glows */}
@@ -54,7 +55,7 @@ export function ThreadMarkers({
           <feDropShadow dx="0" dy="0" stdDeviation="0.8" floodColor="#f59e0b" floodOpacity="0.45" />
         </filter>
         <filter id="glow-num-mint" x="-40%" y="-40%" width="180%" height="180%">
-          <feDropShadow dx="0" dy="0" stdDeviation="0.8" floodColor="#34d399" floodOpacity="0.40" />
+          <feDropShadow dx="0" dy="0" stdDeviation="0.8" floodColor="#10b981" floodOpacity="0.45" />
         </filter>
 
         {/* Soft Micro Radial Glow Highlights behind floating numbers (very subtle) */}
@@ -69,9 +70,9 @@ export function ThreadMarkers({
           <stop offset="100%" stopColor="#d97706" stopOpacity="0" />
         </radialGradient>
         <radialGradient id="radial-glow-mint" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#34d399" stopOpacity="0.14" />
-          <stop offset="60%" stopColor="#34d399" stopOpacity="0.03" />
-          <stop offset="100%" stopColor="#34d399" stopOpacity="0" />
+          <stop offset="0%" stopColor="#059669" stopOpacity="0.16" />
+          <stop offset="60%" stopColor="#059669" stopOpacity="0.04" />
+          <stop offset="100%" stopColor="#059669" stopOpacity="0" />
         </radialGradient>
       </defs>
 
@@ -85,20 +86,24 @@ export function ThreadMarkers({
         const size = isHandoff ? 5.5 : 4;
         const stepDisplay = marker.stepNumber !== undefined ? String(marker.stepNumber) : isHandoff ? "⇄" : String(i + 1);
 
-        const glowType = (isHandoff || isToolCall) ? "amber" : isReconciled ? "mint" : "indigo";
+        const glowType = (isHandoff || isReconciled) ? "mint" : isToolCall ? "amber" : "indigo";
 
-        const badgeBorder = (isHandoff || isToolCall)
-          ? "rgba(217, 119, 6, 0.85)"
-          : isReconciled
-            ? "rgba(52, 211, 153, 0.65)"
-            : "rgba(99, 102, 241, 0.75)";
+        const badgeBorder = isHandoff
+          ? "rgba(16, 185, 129, 0.85)"
+          : isToolCall
+            ? "rgba(217, 119, 6, 0.85)"
+            : isReconciled
+              ? "rgba(52, 211, 153, 0.65)"
+              : "rgba(99, 102, 241, 0.75)";
 
-        // Rich saturated warm amber for toolcalls and handoffs
-        const textColor = (isHandoff || isToolCall)
-          ? "#f59e0b"
-          : isReconciled
-            ? "#a7f3d0"
-            : "#e0e7ff";
+        // Reassuring dark green for handoffs, warm amber for toolcalls, indigo for model
+        const textColor = isHandoff
+          ? "#34d399"
+          : isToolCall
+            ? "#f59e0b"
+            : isReconciled
+              ? "#a7f3d0"
+              : "#e0e7ff";
 
         return (
           <g
@@ -112,7 +117,7 @@ export function ThreadMarkers({
             {/* Minimal Ambient Marker Shape ON the Thread */}
             <MarkerShape kind={marker.kind} x={x} y={y} size={size} />
 
-            {/* Aesthetic Floating Number with Crisp Subtle Micro Glow */}
+            {/* Aesthetic Floating Number / Icon with Crisp Subtle Micro Glow */}
             {!dropped && (
               <g className="strand-label-group">
                 {/* Hairline connector tick */}
@@ -133,7 +138,7 @@ export function ThreadMarkers({
                   fill={`url(#radial-glow-${glowType})`}
                   pointerEvents="none"
                 />
-                {/* Clean Number in Aesthetic UI Font */}
+                {/* Clean Number / Icon in Aesthetic UI Font */}
                 <text
                   x={x}
                   y={y - size - 5.5}
@@ -196,14 +201,14 @@ function MarkerShape({
   }
 
   if (kind === "handoff") {
-    // Minimal Warm Amber Handoff Circle Beacon with ambient glow
+    // Dark reassuring green circle beacon with slight ambient glow
     return (
       <circle
         cx={x}
         cy={y}
         r={size}
-        fill="#d97706"
-        filter="url(#glow-amber)"
+        fill="#059669"
+        filter="url(#glow-emerald)"
         data-shape="circle"
         data-handoff="true"
       />

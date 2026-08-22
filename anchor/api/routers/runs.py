@@ -8,7 +8,7 @@ from datetime import UTC, datetime
 from typing import Annotated, Any, Literal
 
 import asyncpg
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
 from pydantic import BaseModel, Field
 
 from anchor.api.errors import ApiError
@@ -168,12 +168,12 @@ async def submit_run(
 @router.get("/api/runs")
 async def list_runs(
     pool: Annotated[asyncpg.Pool, Depends(get_pool)],
-    status: list[str] | None = None,
-    agent_type: str | None = None,
-    is_demo: bool | None = None,
-    limit: int = 50,
-    cursor: str | None = None,
-    include_archived: bool = False,
+    status: Annotated[list[str] | None, Query()] = None,
+    agent_type: Annotated[str | None, Query()] = None,
+    is_demo: Annotated[bool | None, Query()] = None,
+    limit: Annotated[int, Query()] = 50,
+    cursor: Annotated[str | None, Query()] = None,
+    include_archived: Annotated[bool, Query()] = False,
 ) -> dict[str, Any]:
     """Newest first, keyset-paginated on `(created_at, id)` — never
     offset-based, so a page boundary stays correct while runs are being
@@ -202,8 +202,11 @@ async def list_runs(
         if not include_archived:
             clauses.append("archived_at IS NULL")
         if status:
-            params.append(status)
-            clauses.append(f"status = ANY(${len(params)})")
+            status_list = [status] if isinstance(status, str) else list(status)
+            status_list = [s for s in status_list if s]
+            if status_list:
+                params.append(status_list)
+                clauses.append(f"status = ANY(${len(params)})")
         if agent_type:
             params.append(agent_type)
             clauses.append(f"agent_type = ${len(params)}")

@@ -99,8 +99,9 @@ async def kill_worker(
 
     async with pool.acquire() as conn:
         exists = await conn.fetchval("SELECT EXISTS (SELECT 1 FROM workers WHERE id = $1)", worker_id)
-    if not exists:
-        raise ApiError(status_code=404, error="worker_not_found", message="worker not found")
+        if not exists:
+            raise ApiError(status_code=404, error="worker_not_found", message="worker not found")
+        await conn.execute("UPDATE workers SET stopped_at = now() WHERE id = $1", worker_id)
 
     redis_client = getattr(request.app.state, "redis_client", None)
     if redis_client is None:

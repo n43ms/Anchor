@@ -10,6 +10,7 @@ import { AlertTriangle, ArrowUpRight } from "lucide-react";
 
 export default function NeedsReviewPage() {
   const { data, error } = useNeedsReview();
+  const reviewRuns = (data?.items ?? []).filter((run) => run.status === "needs_review");
 
   return (
     <div data-testid="needs-review-page" className="space-y-6 pb-12">
@@ -18,7 +19,7 @@ export default function NeedsReviewPage() {
           <div className="flex items-center gap-2">
             <h1 className="font-ui text-base font-bold uppercase tracking-wider text-white">Needs Review Queue</h1>
             <span className="ml-3.5 rounded-full bg-amber-500/10 px-2.5 py-0.5 font-mono text-[10px] text-amber-400 border border-amber-500/30 font-semibold">
-              {data?.items.length ?? 0} PENDING
+              {reviewRuns.length} PENDING
             </span>
           </div>
           <p className="text-xs text-zinc-400 font-mono">
@@ -29,15 +30,15 @@ export default function NeedsReviewPage() {
 
       {error && !data && <p className="text-sm font-mono text-rose-400">could not load review queue</p>}
       {!error && !data && <p className="text-sm font-mono text-zinc-500">loading review queue…</p>}
-      {data && data.items.length === 0 && (
+      {data && reviewRuns.length === 0 && (
         <div className="rounded-2xl border border-white/[0.08] bg-black/40 p-12 text-center text-sm font-mono text-zinc-500 backdrop-blur-2xl">
           no runs currently require operator review
         </div>
       )}
 
-      {data && data.items.length > 0 && (
+      {reviewRuns.length > 0 && (
         <div className="space-y-3">
-          {data.items.map((run) => (
+          {reviewRuns.map((run) => (
             <Link
               key={run.id}
               to={`/needs-review/${run.id}`}

@@ -43,14 +43,14 @@ export function TimelineTrack({
         className="relative flex h-10 w-full overflow-hidden rounded-xl border border-indigo-500/20 bg-black/70 p-1 backdrop-blur-xl shadow-inner"
         data-testid="timeline-track"
       >
-        {/* Subtle Dashed Dividers for Fencing Collisions */}
+        {/* Crisp Dividers for Fencing Collisions */}
         {fencingEvents.map((event) => {
           const at = new Date(event.at).getTime();
           const xPercent = Math.min(100, Math.max(0, ((at - runStart) / runSpan) * 100));
           return (
             <div
               key={`laser-${event.fenced_worker_id}-${event.at}`}
-              className="absolute inset-y-1.5 w-px border-l border-dashed border-rose-400/40 z-10 pointer-events-none"
+              className="absolute inset-y-1 w-[2px] bg-rose-500/75 shadow-[0_0_6px_rgba(244,63,94,0.4)] z-10 pointer-events-none rounded-full"
               style={{ left: `${xPercent}%` }}
             />
           );
