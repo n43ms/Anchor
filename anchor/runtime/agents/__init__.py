@@ -1,4 +1,4 @@
-"""Demo agents: demo_minimal, demo_short, demo_long, demo_unsafe.
+"""Demo and Framework agents: demo_minimal, demo_short, demo_long, demo_unsafe, langchain_researcher.
 
 Every module in this package is walked by the AST determinism checker
 (anchor.core.determinism.ast_check) and MUST NOT reference `datetime`,
@@ -7,21 +7,18 @@ Every module in this package is walked by the AST determinism checker
 
 from __future__ import annotations
 
-from anchor.runtime.agents import demo_long, demo_minimal, demo_short, demo_unsafe
+from anchor.runtime.agents import (
+    demo_long,
+    demo_minimal,
+    demo_short,
+    demo_unsafe,
+    langchain_researcher,
+)
 from anchor.runtime.agents.registry import register
 
 
 def register_all() -> None:
-    """Register every demo agent. Idempotent — safe to call from both the
-    API process (submission validates `agent_type` against this registry)
-    and the worker process (which resolves it at claim time).
-
-    Contract metadata (P6.11, T370) is declared here rather than guessed at
-    `GET /api/agents` read time, for the same reason a tool's safety is
-    declared rather than inferred (contracts/tool-contract.md): the agent
-    module itself is the only thing that knows its own step count and tool
-    usage with certainty.
-    """
+    """Register every demo and built-in agent."""
     register(
         "demo_minimal",
         demo_minimal.decide_next_step,
@@ -56,5 +53,13 @@ def register_all() -> None:
         "than guesses.",
         expected_step_count=3,
         tools_used=("web_search", "send_email"),
+        stubbed_model=True,
+    )
+    register(
+        "langchain_researcher",
+        langchain_researcher.decide_next_step,
+        description="Autonomous 4-step research agent with durable crash recovery and web search.",
+        expected_step_count=4,
+        tools_used=("web_search",),
         stubbed_model=True,
     )

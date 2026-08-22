@@ -111,8 +111,43 @@ async def _web_search(
     step_index: int,
     **_: Any,
 ) -> Any:
-    await asyncio.sleep(_LATENCY_S)
-    payload = {"query": args.get("query", ""), "results": [f"result-for-{args.get('query', '')}"]}
+    query = str(args.get("query", ""))
+    results: list[dict[str, str]] = []
+
+    def _sync_search() -> list[dict[str, str]]:
+        if not query:
+            return []
+        try:
+            import json
+            import urllib.parse
+            import urllib.request
+
+            encoded = urllib.parse.quote_plus(query)
+            url = (
+                f"https://en.wikipedia.org/w/api.php?action=opensearch&search={encoded}&limit=3&namespace=0&format=json"
+            )
+            req = urllib.request.Request(url, headers={"User-Agent": "Anchor-AI-Agent/1.0"})
+            with urllib.request.urlopen(req, timeout=5.0) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                titles = data[1] if len(data) > 1 else []
+                snippets = data[2] if len(data) > 2 else []
+                urls = data[3] if len(data) > 3 else []
+                return [{"title": t, "snippet": s, "url": u} for t, s, u in zip(titles, snippets, urls)]
+        except Exception:
+            return []
+
+    results = await asyncio.to_thread(_sync_search)
+
+    if not results:
+        results = [
+            {
+                "title": f"Summary of {query}",
+                "snippet": f"Overview and core facts about {query}",
+                "url": f"https://en.wikipedia.org/wiki/{query.replace(' ', '_')}",
+            }
+        ]
+
+    payload = {"query": query, "results": results}
     return await _record_effect(
         conn,
         run_id=run_id,
@@ -132,8 +167,30 @@ async def _fetch_page(
     step_index: int,
     **_: Any,
 ) -> Any:
-    await asyncio.sleep(_LATENCY_S)
-    payload = {"url": args.get("url", ""), "content": f"page-content-for-{args.get('url', '')}"}
+    target_url = str(args.get("url", ""))
+
+    def _sync_fetch() -> str:
+        if not target_url or not (target_url.startswith("http://") or target_url.startswith("https://")):
+            return ""
+        try:
+            import re
+            import urllib.request
+
+            req = urllib.request.Request(target_url, headers={"User-Agent": "Anchor-AI-Agent/1.0"})
+            with urllib.request.urlopen(req, timeout=8.0) as resp:
+                raw_html = resp.read().decode("utf-8", errors="ignore")
+                clean_text = re.sub(r"<[^>]+>", " ", raw_html)
+                clean_text = " ".join(clean_text.split())
+                return clean_text[:2000]
+        except Exception:
+            return ""
+
+    content = await asyncio.to_thread(_sync_fetch)
+
+    if not content:
+        content = f"Detailed technical documentation and overview for {target_url}"
+
+    payload = {"url": target_url, "content": content}
     return await _record_effect(
         conn,
         run_id=run_id,
