@@ -259,7 +259,7 @@ class StepContext:
 
         try:
             async with asyncio.timeout(self.step_timeout_ms / 1000):
-                return await execute_tool_call(
+                result = await execute_tool_call(
                     self.conn,
                     run_id=self.run_id,
                     epoch=self.epoch,
@@ -270,6 +270,21 @@ class StepContext:
                     flush_pending_nondet=self.flush_pending_nondet,
                     max_payload_bytes=self.max_payload_bytes,
                 )
+                from anchor.core.journal.keys import derive_key
+                from anchor.core.replay.context import ToolCompletion
+
+                idempotency_key = derive_key(self.run_id, self.step_index, name, args)
+                completion = ToolCompletion(
+                    idempotency_key=idempotency_key,
+                    step_index=self.step_index,
+                    tool_name=name,
+                    args=args,
+                    result=result,
+                    epoch=self.epoch,
+                )
+                self.run_context.results_by_key[idempotency_key] = completion
+                self.run_context.results_by_tool.setdefault(name, []).append(completion)
+                return result
         except TimeoutError as exc:
             raise StepTimeoutError(
                 f"step {self.step_index}: tool {name!r} exceeded step_timeout_ms "
