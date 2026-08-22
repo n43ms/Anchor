@@ -18,22 +18,22 @@ makes `degraded` computed over that list latch true forever. This is a
 read-query fix aligned with the identity model already documented in
 `identity.py`, not a schema change.
 
-**The kill endpoint is intentionally partial.** `contracts/openapi.yaml`'s
-documented response for `POST /api/workers/{worker_id}/kill` carries a
-`chaos_event_id`, and `chaos_events` does not exist until phase 8's
-migration 005 (T491). Rather than invent that table early or leave the
-route unmounted (which surfaces to the operator as a bare 404 on a
-first-class, documented product feature — Principle VIII), this mounts a
-**hard-kill-only** version now: it drives the same Redis
-`publish_kill`/`subscribe_and_wait_for_kill` mechanism every worker already
-runs, and returns `{ok, worker_id, mode}` without `chaos_event_id`. A
-`graceful` kill is refused with `501`: no channel or worker-side handler
-for a *remotely requested* cooperative shutdown exists yet (the only
-graceful path today is the worker's own `SIGTERM` handler in
-`anchor/worker/__main__.py`, which nothing here can address into) — stating
-that plainly is preferable to silently downgrading `graceful` to a hard
-kill it did not ask for. Phase 8 adds `chaos_event_id` logging and rate
-limiting; both are additive to this contract, not breaking.
+**The kill endpoint was intentionally partial through phase 7.**
+`contracts/openapi.yaml`'s documented response for
+`POST /api/workers/{worker_id}/kill` carries a `chaos_event_id`, which
+needed `chaos_events` (migration `006_chaos.py`, phase 8, T491) to exist.
+Now that it does, every kill — the console's manual button and the chaos
+harness's kill injection (`anchor.chaos.injections.kill`) alike — is
+recorded as a `chaos_events` row here, server-side, in the same
+transaction as `stopped_at` (D-36: one implementation, not a console path
+and a harness path that could silently diverge). `chaos_run_id` is `NULL`
+for the console's manual kill and set for a harness-driven one
+(data-model.md §6). A `graceful` kill is still refused with `501`: no
+channel or worker-side handler for a *remotely requested* cooperative
+shutdown exists yet (the only graceful path today is the worker's own
+`SIGTERM` handler in `anchor/worker/__main__.py`, which nothing here can
+address into) — stating that plainly is preferable to silently downgrading
+`graceful` to a hard kill it did not ask for.
 """
 
 from __future__ import annotations
@@ -48,6 +48,22 @@ from anchor.api.errors import ApiError
 from anchor.api.serializers.workers import WORKER_COLUMNS, WorkerResponse, serialize_worker
 from anchor.worker.registry.kill import publish_kill
 
+# Deliberately not imported from `anchor.chaos.recorder`, even though that
+# module does the same insert for every other injection type: `anchor.api`
+# must not depend on `anchor.chaos` (the adversarial test rig sits beside
+# production code, never inside its import graph — the same boundary
+# `tests/boundary/test_stall_injection_not_reachable.py` enforces for
+# `anchor.chaos.injections.stall`). A kill is recorded here, server-side,
+# because both the console's manual kill button and the harness's kill
+# injection go through this one endpoint (D-36) and must be recorded
+# identically; every other injection type has no such shared endpoint and
+# is recorded by the harness itself via `anchor.chaos.recorder`.
+_RECORD_KILL_EVENT_SQL = """
+    INSERT INTO chaos_events (chaos_run_id, type, target_worker_id)
+    VALUES ($1, 'worker_kill', $2)
+    RETURNING id
+"""
+
 router = APIRouter()
 
 
@@ -57,12 +73,22 @@ class WorkersListResponse(BaseModel):
 
 class KillRequest(BaseModel):
     graceful: bool = False
+    chaos_run_id: int | None = None
+    """Set only by `anchor.chaos.injections.kill` (phase 8): associates the
+    `chaos_events` row this endpoint writes with the harness run that
+    requested it. Omitted (`None`) by every other caller — the console's
+    manual kill button included — which is exactly `NULL`,
+    "a kill issued manually from the console" (data-model.md §6). Additive
+    to the contract documented in `contracts/openapi.yaml`: existing
+    callers that never send this field are unaffected.
+    """
 
 
 class KillResponse(BaseModel):
     ok: bool
     worker_id: str
     mode: Literal["hard"]
+    chaos_event_id: int
 
 
 async def get_pool(request: Request) -> asyncpg.Pool:
@@ -101,7 +127,11 @@ async def kill_worker(
         exists = await conn.fetchval("SELECT EXISTS (SELECT 1 FROM workers WHERE id = $1)", worker_id)
         if not exists:
             raise ApiError(status_code=404, error="worker_not_found", message="worker not found")
-        await conn.execute("UPDATE workers SET stopped_at = now() WHERE id = $1", worker_id)
+        async with conn.transaction():
+            await conn.execute("UPDATE workers SET stopped_at = now() WHERE id = $1", worker_id)
+            chaos_event_id = await conn.fetchval(
+                _RECORD_KILL_EVENT_SQL, body.chaos_run_id, worker_id
+            )
 
     redis_client = getattr(request.app.state, "redis_client", None)
     if redis_client is None:
@@ -121,4 +151,4 @@ async def kill_worker(
             "because redis is non-authoritative",
         ) from exc
 
-    return KillResponse(ok=True, worker_id=worker_id, mode="hard")
+    return KillResponse(ok=True, worker_id=worker_id, mode="hard", chaos_event_id=chaos_event_id)

@@ -970,18 +970,18 @@ respawned.
 
 ### Tests for Phase 8 (MANDATORY) ⚠️
 
-- [ ] T474 [P] [US6] Write the invariant-1 test in `tests/unit/test_invariant_no_duplicate_effects.py` asserting the SQL assertion finds a deliberately planted duplicate result and reports zero on a clean corpus
-- [ ] T475 [P] [US6] Write the invariant-2 test in `tests/unit/test_invariant_log_monotonic.py` asserting the assertion detects a planted gap and a planted duplicate `seq`
-- [ ] T476 [P] [US6] Write the invariant-3 test in `tests/unit/test_invariant_single_writer_per_epoch.py` asserting the assertion detects a planted `(run_id, epoch)` carrying two worker ids
-- [ ] T477 [P] [US6] Write the invariant-4 test in `tests/unit/test_invariant_terminal_reachability.py` asserting the assertion detects a run left non-terminal past the bound
-- [ ] T478 [P] [US6] Write the invariant-5 test in `tests/unit/test_invariant_replay_determinism.py` asserting the assertion detects a log whose replayed final state differs from the recorded one
-- [ ] T479 [P] [US6] Write the report-immutability test in `tests/boundary/test_chaos_reports_immutable.py` asserting `UPDATE` and `DELETE` on `chaos_reports` and `chaos_events` raise `AN003` **in both deployment modes** (FR-083)
-- [ ] T480 [P] [US6] Write the recovery-measurement test in `tests/unit/test_recovery_measured_from_chaos_event.py` asserting recovery latency is measured from the `worker_kill` row's `created_at` to the reclaiming `RUN_CLAIMED.created_at`
-- [ ] T481 [P] [US6] Write the profile-reported test in `tests/contract/test_report_carries_profile_and_lease.py` asserting the config profile and lease duration are stored on the report and returned with every figure — **a recovery figure without them is not a measurement** (FR-061)
-- [ ] T482 [P] [US6] Write the violations-explicit test in `tests/unit/test_violations_empty_not_null.py` asserting `violations` is returned as `[]` rather than `null` when clean
-- [ ] T483 [P] [US6] Write the abandoned-detection test in `tests/failure/test_chaos_run_abandoned_on_restart.py` asserting an API restart mid-harness marks the chaos run `abandoned` rather than leaving it `running` with a stale heartbeat
-- [ ] T484 [P] [US6] Write the harness-through-public-API test in `tests/boundary/test_harness_uses_public_api.py` asserting the harness drives the system through HTTP, so the console button and the CI run share one implementation (D-36)
-- [ ] T485 [P] [US6] Write the bounded-parameters test in `tests/boundary/test_chaos_bounded_in_demo_mode.py` asserting duration and worker count are capped in demonstration mode **while the capability remains available** — cap the parameters, not the capability (FR-116)
+- [x] T474 [P] [US6] Write the invariant-1 test in `tests/unit/test_invariant_no_duplicate_effects.py` asserting the SQL assertion finds a deliberately planted duplicate result and reports zero on a clean corpus
+- [x] T475 [P] [US6] Write the invariant-2 test in `tests/unit/test_invariant_log_monotonic.py` asserting the assertion detects a planted gap and a planted duplicate `seq`
+- [x] T476 [P] [US6] Write the invariant-3 test in `tests/unit/test_invariant_single_writer_per_epoch.py` asserting the assertion detects a planted `(run_id, epoch)` carrying two worker ids
+- [x] T477 [P] [US6] Write the invariant-4 test in `tests/unit/test_invariant_terminal_reachability.py` asserting the assertion detects a run left non-terminal past the bound
+- [x] T478 [P] [US6] Write the invariant-5 test in `tests/unit/test_invariant_replay_determinism.py` asserting the assertion detects a log whose replayed final state differs from the recorded one
+- [x] T479 [P] [US6] Write the report-immutability test in `tests/boundary/test_chaos_reports_immutable.py` asserting `UPDATE` and `DELETE` on `chaos_reports` and `chaos_events` raise `AN003` **in both deployment modes** (FR-083)
+- [x] T480 [P] [US6] Write the recovery-measurement test in `tests/unit/test_recovery_measured_from_chaos_event.py` asserting recovery latency is measured from the `worker_kill` row's `created_at` to the reclaiming `RUN_CLAIMED.created_at`
+- [x] T481 [P] [US6] Write the profile-reported test in `tests/contract/test_report_carries_profile_and_lease.py` asserting the config profile and lease duration are stored on the report and returned with every figure — **a recovery figure without them is not a measurement** (FR-061)
+- [x] T482 [P] [US6] Write the violations-explicit test in `tests/unit/test_violations_empty_not_null.py` asserting `violations` is returned as `[]` rather than `null` when clean
+- [x] T483 [P] [US6] Write the abandoned-detection test in `tests/failure/test_chaos_run_abandoned_on_restart.py` asserting an API restart mid-harness marks the chaos run `abandoned` rather than leaving it `running` with a stale heartbeat
+- [x] T484 [P] [US6] Write the harness-through-public-API test in `tests/boundary/test_harness_uses_public_api.py` asserting the harness drives the system through HTTP, so the console button and the CI run share one implementation (D-36)
+- [x] T485 [P] [US6] Write the bounded-parameters test in `tests/boundary/test_chaos_bounded_in_demo_mode.py` asserting duration and worker count are capped in demonstration mode **while the capability remains available** — cap the parameters, not the capability (FR-116)
 - [ ] T486 [P] [US7] Write the evidence-badge test in `tests/contract/test_evidence_badge_absent_when_no_report.py` asserting `GET /api/chaos/latest` returns 404 and the badge is **absent rather than a placeholder** (FR-104, SC-017)
 - [ ] T487 [P] [US7] Write the no-hardcoded-figures test in `tests/boundary/test_no_hardcoded_figures.py` scanning `web/` for numeric literals in evidence positions and failing on any figure not read from an endpoint
 - [ ] T488 [P] [US7] Write the guided-demo test in `web/app/__tests__/guided-demo.test.tsx` asserting one click submits a real run with no form, no options and no modal, and that the kill control calls the **real** endpoint and says so (FR-100, FR-101)
@@ -992,51 +992,51 @@ respawned.
 
 #### P8.1 — Migration 005
 
-- [ ] T491 [US6] Write migration 005 in `ops/migrations/versions/005_chaos.py` creating `chaos_runs`, `chaos_reports` and `chaos_events` per data-model.md §6–§8, with every `CHECK` including `(recovery_ms_p50 IS NULL) = (kills_injected = 0)`. **Numbering note**: plan.md labels this "Migration 003"; sequential numbering makes it 005 (see T163)
-- [ ] T492 [US6] Write the `chaos_reports_immutable` and `chaos_events_immutable` triggers in `ops/migrations/versions/005_chaos.py` raising `AN003` on `UPDATE` and `DELETE`, **active in both deployment modes** — it is evidence, and immutability is a database property
-- [ ] T493 [US6] Create the chaos indexes in `ops/migrations/versions/005_chaos.py` — `(chaos_run_id, created_at)`, `(type, created_at DESC)`, `(started_at DESC)`, and `chaos_reports (created_at DESC)` for the landing badge and the README refresher
+- [x] T491 [US6] Write migration 005 in `ops/migrations/versions/005_chaos.py` creating `chaos_runs`, `chaos_reports` and `chaos_events` per data-model.md §6–§8, with every `CHECK` including `(recovery_ms_p50 IS NULL) = (kills_injected = 0)`. **Numbering note**: plan.md labels this "Migration 003"; sequential numbering makes it 005 (see T163)
+- [x] T492 [US6] Write the `chaos_reports_immutable` and `chaos_events_immutable` triggers in `ops/migrations/versions/005_chaos.py` raising `AN003` on `UPDATE` and `DELETE`, **active in both deployment modes** — it is evidence, and immutability is a database property
+- [x] T493 [US6] Create the chaos indexes in `ops/migrations/versions/005_chaos.py` — `(chaos_run_id, created_at)`, `(type, created_at DESC)`, `(started_at DESC)`, and `chaos_reports (created_at DESC)` for the landing badge and the README refresher
 
 #### P8.2 — Harness core
 
-- [ ] T494 [US6] Implement the harness orchestrator in `anchor/chaos/harness.py` launching N workers and submitting M runs, **driving everything through the public API** (D-36, FR-075)
-- [ ] T495 [US6] Implement the deliberate workload mix in `anchor/chaos/harness.py` — step counts, tool types spanning all three safety categories, and durations
-- [ ] T496 [US6] Implement sustained operation in `anchor/chaos/harness.py` running continuously for a configured duration rather than a single pass, with heartbeat writes to `chaos_runs.heartbeat_at` (FR-080)
-- [ ] T497 [US6] Implement `abandoned` detection in `anchor/chaos/harness.py` marking a `running` chaos row with a stale heartbeat as `abandoned` at API startup, and displaying it as such
-- [ ] T498 [US6] Document in `anchor/chaos/harness.py` that **the harness is deliberately not durable**: making it durable would mean running it on Anchor, which is circular and compromises the independence of the proof. The harness is the rig, not the system under test
+- [x] T494 [US6] Implement the harness orchestrator in `anchor/chaos/harness.py` launching N workers and submitting M runs, **driving everything through the public API** (D-36, FR-075)
+- [x] T495 [US6] Implement the deliberate workload mix in `anchor/chaos/harness.py` — step counts, tool types spanning all three safety categories, and durations
+- [x] T496 [US6] Implement sustained operation in `anchor/chaos/harness.py` running continuously for a configured duration rather than a single pass, with heartbeat writes to `chaos_runs.heartbeat_at` (FR-080)
+- [x] T497 [US6] Implement `abandoned` detection in `anchor/chaos/harness.py` marking a `running` chaos row with a stale heartbeat as `abandoned` at API startup, and displaying it as such
+- [x] T498 [US6] Document in `anchor/chaos/harness.py` that **the harness is deliberately not durable**: making it durable would mean running it on Anchor, which is circular and compromises the independence of the proof. The harness is the rig, not the system under test
 
 #### P8.3 — Injections
 
-- [ ] T499 [US6] Implement random worker kills in `anchor/chaos/injections/kill.py` at a configurable rate, at random points in a run (FR-076)
-- [ ] T500 [US6] Implement latency injection in `anchor/chaos/injections/latency.py` (FR-077)
-- [ ] T501 [US6] Implement stall injection in `anchor/chaos/injections/stall.py` aimed specifically at the fencing path, reusing P4.4's mechanism (FR-077)
-- [ ] T502 [US6] Implement tool-failure injection in `anchor/chaos/injections/tool_failure.py` at a configurable rate, exercising retry and dead-lettering (FR-078)
-- [ ] T503 [US6] Implement uncertainty-window crash injection in `anchor/chaos/injections/uncertainty.py` **exercising every declared policy**, so all three resolution paths are measured rather than assumed (FR-079)
-- [ ] T504 [US6] Record every injection as a `chaos_events` row in `anchor/chaos/injections/recorder.py` with type, target worker, timestamp and affected run ids — **this table is one of the two inputs to the published recovery number**, not documentation of the experiment (FR-081)
+- [x] T499 [US6] Implement random worker kills in `anchor/chaos/injections/kill.py` at a configurable rate, at random points in a run (FR-076)
+- [x] T500 [US6] Implement latency injection in `anchor/chaos/injections/latency.py` (FR-077)
+- [x] T501 [US6] Implement stall injection in `anchor/chaos/injections/stall.py` aimed specifically at the fencing path, reusing P4.4's mechanism (FR-077)
+- [x] T502 [US6] Implement tool-failure injection in `anchor/chaos/injections/tool_failure.py` at a configurable rate, exercising retry and dead-lettering (FR-078)
+- [x] T503 [US6] Implement uncertainty-window crash injection in `anchor/chaos/injections/uncertainty.py` **exercising every declared policy**, so all three resolution paths are measured rather than assumed (FR-079)
+- [x] T504 [US6] Record every injection as a `chaos_events` row in `anchor/chaos/injections/recorder.py` with type, target worker, timestamp and affected run ids — **this table is one of the two inputs to the published recovery number**, not documentation of the experiment (FR-081)
 
 #### P8.4 — The five invariants
 
-- [ ] T505 [US6] Implement invariant 1 in `anchor/chaos/invariants.py` as a SQL-backed assertion: **at most one recorded result per idempotency key**
-- [ ] T506 [US6] Implement invariant 2 in `anchor/chaos/invariants.py`: `seq` strictly increasing within every run, with no duplicates and no gaps
-- [ ] T507 [US6] Implement invariant 3 in `anchor/chaos/invariants.py`: no `(run_id, epoch)` carries events from two worker ids
-- [ ] T508 [US6] Implement invariant 4 in `anchor/chaos/invariants.py`: every submitted run reaches a terminal state within the bound — nothing stranded
-- [ ] T509 [US6] Implement invariant 5 in `anchor/chaos/invariants.py`: every completed log replays to an identical final state, compared by canonical hash
-- [ ] T510 [US6] Implement continuous assertion in `anchor/chaos/invariants.py` running the five during the harness run rather than only at the end, so a violation is caught near the injection that caused it (FR-082)
-- [ ] T511 [US6] Record each violation in `anchor/chaos/invariants.py` with the run, key, epoch or `seq` that failed, so a failure is actionable rather than merely reported
+- [x] T505 [US6] Implement invariant 1 in `anchor/chaos/invariants.py` as a SQL-backed assertion: **at most one recorded result per idempotency key**
+- [x] T506 [US6] Implement invariant 2 in `anchor/chaos/invariants.py`: `seq` strictly increasing within every run, with no duplicates and no gaps
+- [x] T507 [US6] Implement invariant 3 in `anchor/chaos/invariants.py`: no `(run_id, epoch)` carries events from two worker ids
+- [x] T508 [US6] Implement invariant 4 in `anchor/chaos/invariants.py`: every submitted run reaches a terminal state within the bound — nothing stranded
+- [x] T509 [US6] Implement invariant 5 in `anchor/chaos/invariants.py`: every completed log replays to an identical final state, compared by canonical hash
+- [x] T510 [US6] Implement continuous assertion in `anchor/chaos/invariants.py` running the five during the harness run rather than only at the end, so a violation is caught near the injection that caused it (FR-082)
+- [x] T511 [US6] Record each violation in `anchor/chaos/invariants.py` with the run, key, epoch or `seq` that failed, so a failure is actionable rather than merely reported
 
 #### P8.5 — Report computation
 
-- [ ] T512 [US6] Implement report computation in `anchor/chaos/report.py` producing duplicate and stranded counts **computed live from `tool_journal` and `run_events`**, never from the rollup
-- [ ] T513 [US6] Compute recovery percentiles in `anchor/chaos/report.py` — p50, p95, p99, max — from each kill's `chaos_events.created_at` to the reclaiming `RUN_CLAIMED`
-- [ ] T514 [US6] Compute replay overhead in `anchor/chaos/report.py` as mean steps replayed per resumption and mean replay latency
-- [ ] T515 [US6] Compute throughput, fencing events, uncertainty entries by policy, and dead-letter volume in `anchor/chaos/report.py`
-- [ ] T516 [US6] Write the report with the **profile and lease in force** in `anchor/chaos/report.py`, captured at launch (FR-082)
+- [x] T512 [US6] Implement report computation in `anchor/chaos/report.py` producing duplicate and stranded counts **computed live from `tool_journal` and `run_events`**, never from the rollup
+- [x] T513 [US6] Compute recovery percentiles in `anchor/chaos/report.py` — p50, p95, p99, max — from each kill's `chaos_events.created_at` to the reclaiming `RUN_CLAIMED`
+- [x] T514 [US6] Compute replay overhead in `anchor/chaos/report.py` as mean steps replayed per resumption and mean replay latency
+- [x] T515 [US6] Compute throughput, fencing events, uncertainty entries by policy, and dead-letter volume in `anchor/chaos/report.py`
+- [x] T516 [US6] Write the report with the **profile and lease in force** in `anchor/chaos/report.py`, captured at launch (FR-082)
 
 #### P8.6 — Chaos API
 
-- [ ] T517 [US6] Implement `POST /api/chaos/start` in `anchor/api/routers/chaos.py`, **bounded per deployment mode** (FR-116)
-- [ ] T518 [US6] Implement `GET /api/chaos` in `anchor/api/routers/chaos.py` listing every past run, newest first
-- [ ] T519 [US6] Implement `GET /api/chaos/latest` in `anchor/api/routers/chaos.py` returning 404 when no report exists, so the badge can be absent rather than stale
-- [ ] T520 [US6] Implement `GET /api/chaos/{id}/report` in `anchor/api/routers/chaos.py` returning `violations` as `[]` explicitly, never `null`
+- [x] T517 [US6] Implement `POST /api/chaos/start` in `anchor/api/routers/chaos.py`, **bounded per deployment mode** (FR-116)
+- [x] T518 [US6] Implement `GET /api/chaos` in `anchor/api/routers/chaos.py` listing every past run, newest first
+- [x] T519 [US6] Implement `GET /api/chaos/latest` in `anchor/api/routers/chaos.py` returning 404 when no report exists, so the badge can be absent rather than stale
+- [x] T520 [US6] Implement `GET /api/chaos/{id}/report` in `anchor/api/routers/chaos.py` returning `violations` as `[]` explicitly, never `null`
 
 #### P8.7 — Chaos console and history
 

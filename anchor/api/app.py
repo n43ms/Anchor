@@ -84,6 +84,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.ws_hub = Hub()
 
     background_tasks: list[asyncio.Task[None]] = []
+    app.state.chaos_tasks = set()
 
     try:
         async with pool.acquire(timeout=5.0) as conn:
@@ -107,6 +108,19 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     from anchor.api.serializers.rollup import run_rollup_once
     from anchor.api.ws.orphan_watcher import watch_for_orphans
     from anchor.api.ws.subscriber import run_subscriber
+    from anchor.chaos.harness import mark_abandoned_chaos_runs
+
+    try:
+        async with pool.acquire(timeout=5.0) as conn:
+            abandoned = await mark_abandoned_chaos_runs(conn)
+        if abandoned:
+            logger.warning("marked stale chaos runs abandoned at startup", extra={"count": abandoned})
+    except (asyncpg.PostgresError, TimeoutError, OSError) as exc:
+        # Same posture as the schema check above: the database being
+        # unreachable at boot is not this check's problem to solve, and
+        # the API still starts (I7) — a chaos run left `running` with a
+        # stale heartbeat is reconciled the next time this succeeds.
+        logger.warning("could not check for abandoned chaos runs at startup: %s", exc)
 
     async def _rollup_forever() -> None:
         # Periodic, never a trigger on the append path (D-49) — see
@@ -144,9 +158,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     try:
         yield
     finally:
-        for task in background_tasks:
+        chaos_tasks: set[asyncio.Task[None]] = app.state.chaos_tasks
+        for task in (*background_tasks, *chaos_tasks):
             task.cancel()
-        for task in background_tasks:
+        for task in (*background_tasks, *chaos_tasks):
             with contextlib.suppress(asyncio.CancelledError):
                 await task
         await redis_client.aclose()
@@ -157,7 +172,7 @@ def create_app() -> FastAPI:
     app = FastAPI(title="Anchor", lifespan=lifespan)
 
     from anchor.api.middleware import log_requests, rate_limit_requests
-    from anchor.api.routers import config, health, observability, registry, runs, workers
+    from anchor.api.routers import chaos, config, health, observability, registry, runs, workers
     from anchor.api.ws import fleet as fleet_ws
     from anchor.api.ws import runs as runs_ws
     from anchor.runtime.agents import register_all
@@ -181,6 +196,7 @@ def create_app() -> FastAPI:
     app.include_router(health.router)
     app.include_router(runs.router)
     app.include_router(workers.router)
+    app.include_router(chaos.router)
     app.include_router(registry.router)
     app.include_router(observability.router)
     app.include_router(config.router)

@@ -1,4 +1,5 @@
-"""Demo agents: demo_minimal, demo_short, demo_long, demo_unsafe.
+"""Demo agents: demo_minimal, demo_short, demo_long, demo_unsafe,
+demo_chaos_flaky.
 
 Every module in this package is walked by the AST determinism checker
 (anchor.core.determinism.ast_check) and MUST NOT reference `datetime`,
@@ -7,7 +8,14 @@ Every module in this package is walked by the AST determinism checker
 
 from __future__ import annotations
 
-from anchor.runtime.agents import demo_long, demo_minimal, demo_short, demo_unsafe
+from anchor.runtime.agents import (
+    demo_chaos_flaky,
+    demo_chaos_latency,
+    demo_long,
+    demo_minimal,
+    demo_short,
+    demo_unsafe,
+)
 from anchor.runtime.agents.registry import register
 
 
@@ -57,4 +65,23 @@ def register_all() -> None:
         expected_step_count=3,
         tools_used=("web_search", "send_email"),
         stubbed_model=True,
+    )
+    register(
+        "demo_chaos_flaky",
+        demo_chaos_flaky.decide_next_step,
+        description="The chaos harness's tool-failure workload: one journaled coin flip "
+        "(I6-legal) decides whether its one tool call fails, exercising retry and "
+        "dead-lettering (FR-078).",
+        expected_step_count=2,
+        tools_used=("flaky_call",),
+        stubbed_model=False,
+    )
+    register(
+        "demo_chaos_latency",
+        demo_chaos_latency.decide_next_step,
+        description="The chaos harness's latency-injection workload: one tool call that "
+        "sleeps for a configured duration (FR-077).",
+        expected_step_count=2,
+        tools_used=("slow_call",),
+        stubbed_model=False,
     )

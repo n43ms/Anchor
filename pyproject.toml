@@ -13,6 +13,15 @@ dependencies = [
     "alembic>=1.14",
     "sqlalchemy>=2.0",
     "psycopg[binary]>=3.2",
+    # anchor/chaos/harness.py (phase 8, D-36) drives the system exclusively
+    # through the public HTTP API, both for the CI bounded-smoke run and
+    # for the scheduled sustained run against the deployed instance — the
+    # latter is a real network call, so this must be a runtime dependency,
+    # not only the test-time one fastapi.testclient.TestClient already
+    # required. Promoted from [dependency-groups].dev rather than added
+    # fresh: no new package enters the lockfile's dependency graph, only
+    # which install profile includes it.
+    "httpx>=0.27",
 ]
 
 [dependency-groups]
@@ -22,7 +31,6 @@ dev = [
     "hypothesis>=6.115",
     "ruff>=0.7",
     "mypy>=1.13",
-    "httpx>=0.27",  # required by fastapi.testclient.TestClient
 ]
 
 # No dependency outside this set without maintainer approval (research.md D-04).

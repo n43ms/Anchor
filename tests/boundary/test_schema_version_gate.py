@@ -26,7 +26,7 @@ from anchor.core.db.schema_gate import (
 def test_built_against_revision_needs_no_database() -> None:
     """Pure: reads ops/migrations/versions/ directly."""
     head = built_against_revision()
-    assert head == "005_runs_archived_at"
+    assert head == "006_chaos"
 
 
 @pytest.mark.asyncio

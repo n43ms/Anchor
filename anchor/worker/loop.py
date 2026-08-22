@@ -84,7 +84,7 @@ from anchor.core.replay.load import load_run_events
 from anchor.core.replay.reconstruct import reconstruct
 from anchor.runtime.agents.registry import resolve
 from anchor.runtime.tools.demo import DEMO_TOOLS
-from anchor.runtime.tools.model import StubAdapter, get_model_adapter
+from anchor.runtime.tools.model import get_model_adapter
 from anchor.worker.admission.limiter import has_capacity
 from anchor.worker.renewer import final_renewal, renew_forever
 from anchor.worker.retry.policy import DeadLettered, record_step_failure

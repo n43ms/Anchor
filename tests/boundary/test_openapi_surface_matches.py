@@ -1,18 +1,17 @@
 """T378 — the backend surface matches `contracts/openapi.yaml` exactly.
 
-The contract declares 23 paths and 25 operations. Eight of those
-operations are deliberately not yet mounted, each for a reason already
-decided and documented elsewhere in this codebase, not a phase-6 gap:
+The contract declares 23 paths and 25 operations. Three of those operations
+are deliberately not yet mounted — phase 9's stretch authoring surface:
 
-- `POST /api/workers/{worker_id}/kill` — deferred to phase 8: its response
-  requires `chaos_event_id`, and `chaos_events` does not exist until phase
-  8's migration (`anchor/api/routers/workers.py`'s own module docstring).
-- `POST /api/chaos/start`, `GET /api/chaos`, `GET /api/chaos/latest`,
-  `GET /api/chaos/{chaos_run_id}/report` — phase 8, the chaos harness.
 - `POST /api/authoring/validate`, `POST /api/authoring/generate`,
   `POST /api/authoring/register` — phase 9, stretch.
 
-Every one of the remaining 17 operations must be mounted after phase 6.
+`POST /api/workers/{worker_id}/kill` and the four `/api/chaos/...`
+operations were the phase-8 additions this deferral list used to name
+(`chaos_events` did not exist before migration `006_chaos.py`); phase 8 is
+complete, so they are required like every other mounted operation now.
+
+Every one of the remaining 22 operations must be mounted after phase 8.
 Pure: constructs the app (no lifespan, no database connection) and reads
 its route table.
 """
@@ -25,11 +24,6 @@ from anchor.api.app import create_app
 
 _DEFERRED_OPERATIONS = frozenset(
     {
-        ("POST", "/api/workers/{worker_id}/kill"),
-        ("POST", "/api/chaos/start"),
-        ("GET", "/api/chaos"),
-        ("GET", "/api/chaos/latest"),
-        ("GET", "/api/chaos/{chaos_run_id}/report"),
         ("POST", "/api/authoring/validate"),
         ("POST", "/api/authoring/generate"),
         ("POST", "/api/authoring/register"),

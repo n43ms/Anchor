@@ -18,6 +18,11 @@ the instant a second API instance existed, without moving to a shared
 store (Redis, most naturally). That assumption is stated here so a future
 change to the deployment topology finds it rather than silently breaking
 the limiter (data-model.md's own convention for undocumented assumptions).
+
+**The chaos harness bypasses every bucket here** (plan.md P8.2, phase 8):
+see `CHAOS_HARNESS_HEADER`'s comment below for why an exemption via a
+fixed, non-secret header is consistent with this system having no
+authentication anywhere.
 """
 
 from __future__ import annotations
@@ -75,6 +80,20 @@ _demo_cap_bucket = _TokenBucket(limit=DEMO_HOURLY_CAP, window_s=_DEMO_CAP_WINDOW
 
 _KILL_PATH = re.compile(r"^/api/workers/[^/]+/kill$")
 
+# The chaos harness (plan.md P8.2) submits and kills at a volume these
+# buckets exist to cap for an anonymous visitor, not for the harness that
+# generates the very evidence the product publishes (constitution
+# Principle V). `X-Anchor-Chaos-Harness` is a fixed, publicly-known token,
+# not a credential: this system has no authentication anywhere (Principle
+# IX), and this header does not become one — it only exempts its bearer
+# from a readability-motivated rate limit that the module docstring above
+# already states is "not for safety". Anyone who sends it gets the same
+# exemption the harness does, which is an acceptable trade for the same
+# reason the kill endpoint itself is public: the capability it unlocks
+# (submitting/killing faster) is either harmless or is the demonstration.
+CHAOS_HARNESS_HEADER = "x-anchor-chaos-harness"
+_CHAOS_HARNESS_TOKEN = "internal"
+
 
 def _client_key(request: Request) -> str:
     client = request.client
@@ -95,6 +114,9 @@ async def rate_limit_requests(
     here would reach only the outer `ServerErrorMiddleware` and surface as
     a bare 500, not the 429 a rate-limited caller should see.
     """
+    if request.headers.get(CHAOS_HARNESS_HEADER) == _CHAOS_HARNESS_TOKEN:
+        return await call_next(request)
+
     key = _client_key(request)
 
     # contracts/openapi.yaml names "rate_limited" as one of its two

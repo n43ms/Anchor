@@ -148,7 +148,8 @@ export const api = {
   startChaos: (params: ChaosParams) =>
     request<ChaosRun>("/api/chaos/start", { method: "POST", body: JSON.stringify(params) }),
 
-  listChaosRuns: () => request<{ items: ChaosRun[] }>("/api/chaos"),
+  listChaosRuns: () =>
+    request<{ items: Array<ChaosRun & { report: ChaosReport | null }> }>("/api/chaos"),
 
   getLatestChaosReport: () => request<ChaosReport>("/api/chaos/latest"),
 

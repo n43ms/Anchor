@@ -32,6 +32,7 @@ from typing import Any
 import asyncpg
 
 from anchor.core.journal.reconcile import NotExecuted, ReconcileResult
+from anchor.runtime.tools.chaos import CHAOS_TOOLS
 from anchor.runtime.tools.registry import ToolDeclaration
 
 _LATENCY_S = 3.0
@@ -291,7 +292,7 @@ DEMO_EFFECT_TOOLS: dict[str, ToolDeclaration] = {
 # Kept under the historical name so `anchor.worker.loop`'s existing import
 # (`from anchor.runtime.tools.demo import DEMO_TOOLS`) continues to resolve
 # every tool any registered agent — phase 1's or phase 5's — might call.
-DEMO_TOOLS: dict[str, ToolDeclaration] = {**PHASE1_TOOLS, **DEMO_EFFECT_TOOLS}
+DEMO_TOOLS: dict[str, ToolDeclaration] = {**PHASE1_TOOLS, **DEMO_EFFECT_TOOLS, **CHAOS_TOOLS}
 
 
 async def register_demo_tools(conn: asyncpg.Connection[Any], *, code_version: str) -> None:
