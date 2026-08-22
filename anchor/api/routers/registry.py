@@ -27,6 +27,9 @@ async def get_pool(request: Request) -> asyncpg.Pool:
 
 @router.get("/api/agents")
 async def get_agents() -> dict[str, Any]:
+    from anchor.runtime.agents import register_all
+
+    register_all()
     items = [
         {
             "agent_type": a.agent_type,

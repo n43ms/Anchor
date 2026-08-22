@@ -80,4 +80,8 @@ def list_agents() -> list[AgentDescriptor]:
     """`GET /api/agents` (T370). Sorted by name so the response is stable
     across calls regardless of registration order.
     """
+    if not _DESCRIPTORS:
+        from anchor.runtime.agents import register_all
+
+        register_all()
     return [_DESCRIPTORS[name] for name in sorted(_DESCRIPTORS)]

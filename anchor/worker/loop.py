@@ -84,7 +84,7 @@ from anchor.core.replay.load import load_run_events
 from anchor.core.replay.reconstruct import reconstruct
 from anchor.runtime.agents.registry import resolve
 from anchor.runtime.tools.demo import DEMO_TOOLS
-from anchor.runtime.tools.model import StubAdapter
+from anchor.runtime.tools.model import StubAdapter, get_model_adapter
 from anchor.worker.admission.limiter import has_capacity
 from anchor.worker.renewer import final_renewal, renew_forever
 from anchor.worker.retry.policy import DeadLettered, record_step_failure
@@ -234,7 +234,7 @@ async def execute_run(
         max_payload_bytes=settings.max_event_payload_bytes,
     )
 
-    model_adapter = StubAdapter()
+    model_adapter = get_model_adapter()
     messages: list[dict[str, Any]] = list(run_context.messages)
     # Resume strictly after the highest completed step — never re-present
     # an already-completed step to decide_next_step (P2.5, T110/T133).
@@ -477,17 +477,11 @@ async def _run_steps(
             # same-process bookkeeping within one execute_run call).
             run_context.attempts_by_step[step_index] = attempt
             assert outcome.backoff_ms is not None
-            logger.warning(
-                "step failed; retrying after backoff",
-                extra={
-                    "run_id": run_id,
-                    "epoch": epoch,
-                    "worker_id": worker_id,
-                    "step_index": step_index,
-                    "attempt": attempt,
-                    "error_type": type(exc).__name__,
-                    "backoff_ms": outcome.backoff_ms,
-                },
+            logger.exception(
+                "step %d failed on attempt %d: %s",
+                step_index,
+                attempt,
+                exc,
             )
             await asyncio.sleep(outcome.backoff_ms / 1000)
             continue

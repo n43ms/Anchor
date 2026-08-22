@@ -11,6 +11,8 @@ x-python-env: &python-env
   ANCHOR_AUTHORING_EXECUTE: "true"
   ANCHOR_WORKER_LABEL_POOL: worker-a,worker-b,worker-c
   ANCHOR_CODE_VERSION: ${ANCHOR_CODE_VERSION:-dev}
+  GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
 
 services:
   postgres:
@@ -59,8 +61,12 @@ services:
       dockerfile: ops/compose/Dockerfile.python
       args:
         CODE_VERSION: ${ANCHOR_CODE_VERSION:-dev}
+    env_file:
+      - ../../.env
     environment:
       <<: *python-env
+    volumes:
+      - ../../anchor:/app/anchor
     command: ["uvicorn", "anchor.api.app:app", "--host", "0.0.0.0", "--port", "8000"]
     ports:
       - "8000:8000"
@@ -81,8 +87,12 @@ services:
       dockerfile: ops/compose/Dockerfile.python
       args:
         CODE_VERSION: ${ANCHOR_CODE_VERSION:-dev}
+    env_file:
+      - ../../.env
     environment:
       <<: *python-env
+    volumes:
+      - ../../anchor:/app/anchor
     command: ["python", "-m", "anchor.worker"]
     depends_on:
       migrate:
