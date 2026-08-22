@@ -42,17 +42,29 @@ function wsUrl(runId: number | string): string {
 }
 
 function applyEvent(timeline: RunTimeline, event: RunEvent): RunTimeline {
-  // Structural events (STEP_SKIPPED_ON_REPLAY, WORKER_FENCED, RUN_CLAIMED) are re-fetched
-  // from the timeline endpoint by the caller when they arrive, since they change segment
-  // structure rather than only step content — see the effect below.
   if (event.type === "RUN_COMPLETED" || event.type === "RUN_FAILED" || event.type === "RUN_CANCELLED") {
-    const status = event.type === "RUN_COMPLETED" ? "completed" : event.type === "RUN_FAILED" ? "failed" : "cancelled";
+    const status =
+      event.type === "RUN_COMPLETED"
+        ? "completed"
+        : event.type === "RUN_FAILED"
+        ? "failed"
+        : "cancelled";
     return { ...timeline, status };
   }
   return timeline;
 }
 
-const STRUCTURAL_EVENTS = new Set(["STEP_SKIPPED_ON_REPLAY", "WORKER_FENCED", "RUN_CLAIMED", "STEP_COMPLETED", "STEP_STARTED"]);
+const STRUCTURAL_EVENTS = new Set([
+  "STEP_SKIPPED_ON_REPLAY",
+  "WORKER_FENCED",
+  "RUN_CLAIMED",
+  "STEP_COMPLETED",
+  "STEP_STARTED",
+  "RUN_COMPLETED",
+  "RUN_FAILED",
+  "RUN_CANCELLED",
+  "RUN_NEEDS_REVIEW",
+]);
 
 export function useRunStream(runId: number | string | null): RunStreamState {
   const [timeline, setTimeline] = useState<RunTimeline | null>(null);
@@ -82,6 +94,9 @@ export function useRunStream(runId: number | string | null): RunStreamState {
     };
     refreshRef.current = refreshTimeline;
 
+    // Immediately fetch the timeline upon mount so initial load is instant
+    refreshTimeline();
+
     const connect = () => {
       let socket: WebSocket;
       try {
@@ -95,6 +110,7 @@ export function useRunStream(runId: number | string | null): RunStreamState {
       socket.onopen = () => {
         setConnected(true);
         retryRef.current = 0;
+        refreshTimeline();
       };
 
       socket.onmessage = (raw) => {
@@ -110,15 +126,12 @@ export function useRunStream(runId: number | string | null): RunStreamState {
         if (frame.kind === "hello") {
           const hello = frame.data as { last_seq: number };
           lastSeqRef.current = hello.last_seq;
+          refreshTimeline();
           return;
         }
 
         if (frame.kind === "snapshot") {
           const snap = frame.data as RunTimeline & { last_seq?: number };
-          // Obligation 2: a reconnect race can deliver snapshot after events already
-          // applied. Only accept it if it does not roll seq backward silently — the
-          // caller's event application already guards against replaying old events,
-          // so applying the snapshot itself is always safe as the new baseline.
           setTimeline(snap);
           return;
         }
@@ -136,9 +149,15 @@ export function useRunStream(runId: number | string | null): RunStreamState {
         }
 
         if (frame.kind === "lag") {
-          const lag = frame.data as { orphaned?: boolean; lease_expired_at?: string; last_sent_seq?: number };
+          const lag = frame.data as {
+            orphaned?: boolean;
+            lease_expired_at?: string;
+            last_sent_seq?: number;
+          };
           if (lag.orphaned) {
-            setOrphaned({ leaseExpiredAt: lag.lease_expired_at ?? new Date().toISOString() });
+            setOrphaned({
+              leaseExpiredAt: lag.lease_expired_at ?? new Date().toISOString(),
+            });
           }
           return;
         }
@@ -171,12 +190,24 @@ export function useRunStream(runId: number | string | null): RunStreamState {
     };
 
     const scheduleReconnect = () => {
-      const delay = Math.min(BACKOFF_MAX_MS, BACKOFF_BASE_MS * 2 ** retryRef.current) * (0.75 + Math.random() * 0.5);
+      const delay =
+        Math.min(BACKOFF_MAX_MS, BACKOFF_BASE_MS * 2 ** retryRef.current) *
+        (0.75 + Math.random() * 0.5);
       retryRef.current += 1;
       window.setTimeout(connect, delay);
     };
 
     connect();
+
+    // Stale timer & background sync for active runs
+    const pollInterval = window.setInterval(() => {
+      setTimeline((currentTimeline) => {
+        if (!currentTimeline || currentTimeline.status === "running") {
+          refreshTimeline();
+        }
+        return currentTimeline;
+      });
+    }, 2_500);
 
     const staleTimer = window.setInterval(() => {
       setLastEventAt((prev) => {
@@ -189,6 +220,7 @@ export function useRunStream(runId: number | string | null): RunStreamState {
       closedByUsRef.current = true;
       socketRef.current?.close();
       window.clearInterval(staleTimer);
+      window.clearInterval(pollInterval);
       refreshRef.current = () => undefined;
     };
   }, [runId]);

@@ -265,13 +265,26 @@ async def build_run_timeline(conn: asyncpg.Connection[Any], run_id: int) -> RunT
             total_recovery_s += max(0.0, gap)
         recovery_seconds = total_recovery_s
 
+    terminal_event = next(
+        (e for e in reversed(events) if e["type"] in ("RUN_COMPLETED", "RUN_FAILED", "RUN_CANCELLED")),
+        None,
+    )
+    derived_status = run_row["status"]
+    if terminal_event:
+        if terminal_event["type"] == "RUN_COMPLETED":
+            derived_status = "completed"
+        elif terminal_event["type"] == "RUN_FAILED":
+            derived_status = "failed"
+        elif terminal_event["type"] == "RUN_CANCELLED":
+            derived_status = "cancelled"
+
     step_count = len({e["step_index"] for e in events if e["step_index"] is not None})
 
     return RunTimeline(
         id=run_row["id"],
         display_id=f"r{run_row['id']}",
         agent_type=run_row["agent_type"],
-        status=run_row["status"],
+        status=derived_status,
         started_at=run_row["created_at"].isoformat(),
         step_count=step_count,
         orphaned=run_row["orphaned"],

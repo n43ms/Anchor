@@ -173,7 +173,15 @@ export default function RunDetailPage() {
       });
   };
 
-  if (!timeline) {
+  const effectiveTimeline = useMemo(() => {
+    if (!timeline) return null;
+    if (completedEvent && timeline.status === "running") {
+      return { ...timeline, status: "completed" as const };
+    }
+    return timeline;
+  }, [timeline, completedEvent]);
+
+  if (!effectiveTimeline) {
     return (
       <div className="space-y-4 p-8 text-center" data-testid="run-detail-page">
         <p
@@ -186,8 +194,8 @@ export default function RunDetailPage() {
     );
   }
 
-  const isTerminal = ["completed", "failed", "cancelled"].includes(timeline.status);
-  const isNeedsReview = timeline.status === "needs_review";
+  const isTerminal = ["completed", "failed", "cancelled"].includes(effectiveTimeline.status);
+  const isNeedsReview = effectiveTimeline.status === "needs_review";
 
   return (
     <div data-testid="run-detail-page" className="space-y-6 pb-12">
@@ -203,7 +211,7 @@ export default function RunDetailPage() {
           </Link>
           <span className="text-zinc-600">/</span>
           <span className="font-mono text-white font-bold">
-            {timeline.display_id ?? `run_${timeline.id}`}
+            {effectiveTimeline.display_id ?? `run_${effectiveTimeline.id}`}
           </span>
           <span
             className={`ml-2 inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-mono font-medium ${
@@ -256,7 +264,7 @@ export default function RunDetailPage() {
         </div>
       )}
 
-      {isNeedsReview && timeline.needs_review && (
+      {isNeedsReview && effectiveTimeline.needs_review && (
         <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-5 backdrop-blur-2xl space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
             <div>
@@ -267,16 +275,16 @@ export default function RunDetailPage() {
               <p className="mt-1 text-xs text-zinc-300 font-mono">
                 Worker crashed during uncertain tool call{" "}
                 <span className="font-bold text-strand-gold">
-                  {timeline.needs_review.tool_name}
+                  {effectiveTimeline.needs_review.tool_name}
                 </span>{" "}
-                at step {timeline.needs_review.step_index}.
+                at step {effectiveTimeline.needs_review.step_index}.
               </p>
               <p className="mt-1 font-mono text-xs text-zinc-500">
-                idempotency key: {timeline.needs_review.idempotency_key}
+                idempotency key: {effectiveTimeline.needs_review.idempotency_key}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              {timeline.needs_review.available_resolutions.map((res) => (
+              {effectiveTimeline.needs_review.available_resolutions.map((res) => (
                 <button
                   key={res}
                   type="button"
@@ -292,7 +300,7 @@ export default function RunDetailPage() {
       )}
 
       {/* Main Run Detail Card */}
-      <RunDetail run={timeline} onKill={handleKill} />
+      <RunDetail run={effectiveTimeline} onKill={handleKill} />
 
       {/* DEDICATED AGENT OUTPUT & RESULTS CARD */}
       {runOutput && (
@@ -536,8 +544,8 @@ export default function RunDetailPage() {
           Execution Timeline Track & Fencing Tokens
         </h2>
         <TimelineTrack
-          segments={timeline.segments}
-          fencingEvents={timeline.fencing_events}
+          segments={effectiveTimeline.segments}
+          fencingEvents={effectiveTimeline.fencing_events}
         />
       </div>
 

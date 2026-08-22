@@ -314,7 +314,7 @@ async def _run_steps(
     messages: list[dict[str, Any]],
     step_index: int,
     run_context: Any,
-    model_adapter: StubAdapter,
+    model_adapter: Any,
     live: LiveSettings,
 ) -> tuple[Done, int]:
     """The step loop, factored out of `execute_run` so the
