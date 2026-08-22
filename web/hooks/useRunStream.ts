@@ -24,6 +24,14 @@ export interface RunStreamState {
   stale: boolean;
   orphaned: { leaseExpiredAt: string } | null;
   lastEventAt: number | null;
+  /** Re-fetch the timeline directly, for callers that just made a write
+   * (resolve, cancel) whose confirming event is not in STRUCTURAL_EVENTS —
+   * e.g. `resolve`'s TOOL_RESULT does not itself trigger a refetch, so the
+   * needs_review banner would otherwise stay stale until the next
+   * structural event arrives (contracts/websocket.md obligation 1: a frame
+   * is a notice, not confirmation — the caller still owns re-syncing after
+   * its own confirmed write). */
+  refresh: () => void;
 }
 
 function wsUrl(runId: number | string): string {
@@ -57,6 +65,7 @@ export function useRunStream(runId: number | string | null): RunStreamState {
   const socketRef = useRef<WebSocket | null>(null);
   const retryRef = useRef(0);
   const closedByUsRef = useRef(false);
+  const refreshRef = useRef<() => void>(() => undefined);
 
   useEffect(() => {
     if (runId === null) return;
@@ -71,6 +80,7 @@ export function useRunStream(runId: number | string | null): RunStreamState {
           // will surface it if frames also stop arriving.
         });
     };
+    refreshRef.current = refreshTimeline;
 
     const connect = () => {
       let socket: WebSocket;
@@ -179,8 +189,11 @@ export function useRunStream(runId: number | string | null): RunStreamState {
       closedByUsRef.current = true;
       socketRef.current?.close();
       window.clearInterval(staleTimer);
+      refreshRef.current = () => undefined;
     };
   }, [runId]);
 
-  return { timeline, connected, stale, orphaned, lastEventAt };
+  const refresh = () => refreshRef.current();
+
+  return { timeline, connected, stale, orphaned, lastEventAt, refresh };
 }

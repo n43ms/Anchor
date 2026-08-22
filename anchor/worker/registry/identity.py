@@ -43,7 +43,7 @@ async def claim_identity(conn: asyncpg.Connection[Any], label_pool: list[str]) -
                 SELECT 1 FROM workers
                 WHERE label = $1
                   AND stopped_at IS NULL
-                  AND last_seen_at > now() - interval '30 seconds'
+                  AND last_seen_at > now() - interval '10 seconds'
             )
             """,
             label,

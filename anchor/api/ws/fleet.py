@@ -26,8 +26,12 @@ router = APIRouter()
 
 async def _fetch_fleet_frame(pool: object) -> dict[str, object]:
     async with pool.acquire() as conn:  # type: ignore[attr-defined]
+        # DISTINCT ON (label): one row per fleet slot, the highest
+        # incarnation — see anchor/api/routers/workers.py's module
+        # docstring for why the un-deduped query makes every crashed
+        # worker a permanent ghost and latches `degraded` true forever.
         rows = await conn.fetch(
-            f"SELECT {WORKER_COLUMNS} FROM workers ORDER BY label, incarnation DESC"
+            f"SELECT DISTINCT ON (label) {WORKER_COLUMNS} FROM workers ORDER BY label, incarnation DESC"
         )
     workers = [serialize_worker(row).model_dump() for row in rows]
     degraded = any(w["stale"] for w in workers)

@@ -1,7 +1,7 @@
 /**
  * anchor-spec.md §13.2, §22.4 — Execution Timeline Track.
  * Rendered with sleek solid 20% opacity Deep Indigo blocks
- * matching the model call & WorkerBar ambiance with minimal visual noise.
+ * matching the model call & WorkerBar ambiance with zero visual clutter.
  */
 import type { FencingEvent, TimelineSegment } from "@/lib/types";
 import { FencingMarker } from "./FencingMarker";
@@ -27,12 +27,35 @@ export function TimelineTrack({
   }, runStart);
   const runSpan = Math.max(runEnd - runStart, 1);
 
+  const hasFencing = fencingEvents.length > 0;
+
   return (
-    <div className="relative space-y-1.5">
+    <div className={`relative space-y-1.5 ${hasFencing ? "pt-7" : ""}`}>
+      {/* Precision Floating Fencing Markers above track */}
+      {fencingEvents.map((event) => {
+        const at = new Date(event.at).getTime();
+        const xPercent = Math.min(100, Math.max(0, ((at - runStart) / runSpan) * 100));
+        return <FencingMarker key={`${event.fenced_worker_id}-${event.at}`} event={event} xPercent={xPercent} />;
+      })}
+
+      {/* Main Execution Blocks Container */}
       <div
         className="relative flex h-10 w-full overflow-hidden rounded-xl border border-indigo-500/20 bg-black/70 p-1 backdrop-blur-xl shadow-inner"
         data-testid="timeline-track"
       >
+        {/* Crisp Dividers for Fencing Collisions */}
+        {fencingEvents.map((event) => {
+          const at = new Date(event.at).getTime();
+          const xPercent = Math.min(100, Math.max(0, ((at - runStart) / runSpan) * 100));
+          return (
+            <div
+              key={`laser-${event.fenced_worker_id}-${event.at}`}
+              className="absolute inset-y-1 w-[2px] bg-rose-500/75 shadow-[0_0_6px_rgba(244,63,94,0.4)] z-10 pointer-events-none rounded-full"
+              style={{ left: `${xPercent}%` }}
+            />
+          );
+        })}
+
         {allSteps.map(({ step, workerId }, i) => {
           const widthPct = Math.max((((step.duration_ms ?? 1000) / totalDuration) * 100), (MIN_SEGMENT_WIDTH_PX / 6));
           const isReplayed = step.status === "skipped_on_replay" || step.executed === false;
@@ -79,12 +102,6 @@ export function TimelineTrack({
           );
         })}
       </div>
-
-      {fencingEvents.map((event) => {
-        const at = new Date(event.at).getTime();
-        const xPercent = Math.min(100, Math.max(0, ((at - runStart) / runSpan) * 100));
-        return <FencingMarker key={`${event.fenced_worker_id}-${event.at}`} event={event} xPercent={xPercent} />;
-      })}
     </div>
   );
 }

@@ -1,115 +1,54 @@
 /**
  * Anchor Operator Console — Right Inspector Panel
- * Combines Guard Stack invariant monitors and Runtime Health matrix
- * into a single toggle-closable right drawer with smooth tab transitions.
+ * Combines invariant-signal monitors and a runtime health matrix into a
+ * single toggle-closable right drawer.
+ *
+ * Every figure here is read from GET /api/health, GET /api/metrics, or
+ * useWorkers — none are invented. "OOM prevention" / "infinite loop
+ * breaker" style guard cards were removed: they described subsystems that
+ * do not exist in anchor/core, and a console must never render invented
+ * telemetry as if it were live (constitution Principle VIII).
  */
 "use client";
 
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useHealth } from "@/hooks/useHealth";
 import { useWorkers } from "@/hooks/useWorkers";
+import { useMetrics } from "@/hooks/useMetrics";
 import {
   ShieldCheck,
   Activity,
-  Cpu,
-  Zap,
-  RotateCcw,
   Lock,
+  RotateCcw,
+  Zap,
   X,
-  Layers,
   ChevronRight,
-  TrendingUp,
-  Server,
-  Radio,
 } from "lucide-react";
 
-interface GuardItem {
+type SignalStatus = "HEALTHY" | "ATTENTION";
+
+interface SignalItem {
   id: string;
   name: string;
   subtitle: string;
-  status: "HEALTHY" | "DEGRADED" | "HEALING" | "CRITICAL";
+  status: SignalStatus;
   metricLabel: string;
   metricValue: string;
-  threshold: string;
-  icon: typeof Cpu;
+  icon: typeof Zap;
 }
 
-const GUARDS: GuardItem[] = [
-  {
-    id: "guard-oom",
-    name: "OOM Prevention",
-    subtitle: "Heap memory monitor & proactive gc",
-    status: "HEALTHY",
-    metricLabel: "Heap Memory",
-    metricValue: "412MB / 2048MB",
-    threshold: "85% auto-fence",
-    icon: Cpu,
-  },
-  {
-    id: "guard-loop",
-    name: "Infinite Loop Breaker",
-    subtitle: "AST step execution cycle watchdog",
-    status: "HEALTHY",
-    metricLabel: "Step Limit",
-    metricValue: "100 steps/seg",
-    threshold: "50 max cycle",
-    icon: Zap,
-  },
-  {
-    id: "guard-healer",
-    name: "Auto Healer",
-    subtitle: "Worker crash lease handoff & recovery",
-    status: "HEALING",
-    metricLabel: "Self Healed",
-    metricValue: "3 recoveries",
-    threshold: "0 side effects",
-    icon: RotateCcw,
-  },
-  {
-    id: "guard-fence",
-    name: "Deadlock & Fence Guard",
-    subtitle: "Monotonic fencing token sequence",
-    status: "HEALTHY",
-    metricLabel: "Token Epoch",
-    metricValue: "seq 4092 verified",
-    threshold: "0 split-brain",
-    icon: Lock,
-  },
-];
-
-const STATUS_CONFIG = {
+const STATUS_CONFIG: Record<SignalStatus, { borderColor: string; dotColor: string; dotShadow: string }> = {
   HEALTHY: {
-    textColor: "text-emerald-400",
     borderColor: "border-emerald-500/30",
-    bgColor: "bg-emerald-500/10",
     dotColor: "bg-emerald-400",
     dotShadow: "shadow-glow-emerald",
-    label: "HEALTHY",
   },
-  DEGRADED: {
-    textColor: "text-amber-400",
+  ATTENTION: {
     borderColor: "border-amber-500/30",
-    bgColor: "bg-amber-500/10",
     dotColor: "bg-amber-400",
     dotShadow: "shadow-glow-amber",
-    label: "DEGRADED",
-  },
-  HEALING: {
-    textColor: "text-cyan-400",
-    borderColor: "border-cyan-500/30",
-    bgColor: "bg-cyan-500/10",
-    dotColor: "bg-cyan-400",
-    dotShadow: "shadow-glow-cyan",
-    label: "HEALING",
-  },
-  CRITICAL: {
-    textColor: "text-rose-400",
-    borderColor: "border-rose-500/30",
-    bgColor: "bg-rose-500/10",
-    dotColor: "bg-rose-400",
-    dotShadow: "shadow-glow-rose",
-    label: "CRITICAL",
   },
 };
 
@@ -120,20 +59,66 @@ interface RightInspectorPanelProps {
 export function RightInspectorPanel({ onClose }: RightInspectorPanelProps) {
   const { data: health, stale } = useHealth();
   const { workers } = useWorkers();
-  const [activeTab, setActiveTab] = useState<"guards" | "health">("guards");
+  const { data: metrics } = useMetrics();
+  const [activeTab, setActiveTab] = useState<"signals" | "health">("signals");
 
   const totalRuns = workers.reduce((acc, w) => acc + w.current_run_count, 0);
   const totalCapacity = workers.reduce((acc, w) => acc + w.capacity, 0);
-  const isHealthy = health?.database_reachable && !health.degraded && !stale;
+  const fencingCount = metrics?.fencing_events_series?.reduce((acc, b) => acc + b.count, 0) ?? 0;
+  const uncertaintyCount = metrics
+    ? Object.values(metrics.uncertainty_by_policy ?? {}).reduce((a, c) => a + c, 0)
+    : 0;
+  const deadLetterCount = metrics
+    ? (metrics.dead_letter_reasons ?? []).reduce((a, r) => a + r.count, 0)
+    : 0;
+  const duplicateEffects = metrics?.duplicate_side_effects ?? 0;
+
+  const signals: SignalItem[] = [
+    {
+      id: "signal-duplicate-effects",
+      name: "Duplicate side effects",
+      subtitle: "Idempotency journal, live query",
+      status: duplicateEffects > 0 ? "ATTENTION" : "HEALTHY",
+      metricLabel: "Count",
+      metricValue: metrics ? String(duplicateEffects) : "—",
+      icon: ShieldCheck,
+    },
+    {
+      id: "signal-fencing",
+      name: "Fencing events",
+      subtitle: "Stale-epoch writes rejected, this window",
+      status: fencingCount > 0 ? "ATTENTION" : "HEALTHY",
+      metricLabel: "Count",
+      metricValue: metrics ? String(fencingCount) : "—",
+      icon: Lock,
+    },
+    {
+      id: "signal-uncertainty",
+      name: "Uncertainty window entries",
+      subtitle: "Crashes between intent and result, by policy",
+      status: uncertaintyCount > 0 ? "ATTENTION" : "HEALTHY",
+      metricLabel: "Count",
+      metricValue: metrics ? String(uncertaintyCount) : "—",
+      icon: RotateCcw,
+    },
+    {
+      id: "signal-dead-letter",
+      name: "Dead letters",
+      subtitle: "Steps that exhausted max attempts",
+      status: deadLetterCount > 0 ? "ATTENTION" : "HEALTHY",
+      metricLabel: "Count",
+      metricValue: metrics ? String(deadLetterCount) : "—",
+      icon: Zap,
+    },
+  ];
 
   return (
     <aside className="flex h-full w-80 shrink-0 flex-col justify-between overflow-hidden border-l border-white/[0.08] bg-black/40 backdrop-blur-2xl select-none">
-      {/* Top Header with Tab Switcher & Close Toggle */}
       <div className="border-b border-white/[0.08] p-3.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="flex h-6 w-6 items-center justify-center rounded border border-white/10 bg-white/[0.04]">
-              {activeTab === "guards" ? (
+              {activeTab === "signals" ? (
                 <ShieldCheck className="h-3.5 w-3.5 text-strand-gold" />
               ) : (
                 <Activity className="h-3.5 w-3.5 text-strand-gold" />
@@ -145,10 +130,17 @@ export function RightInspectorPanel({ onClose }: RightInspectorPanelProps) {
           </div>
 
           <div className="flex items-center gap-1">
-            <span className="flex items-center gap-1 font-mono text-[9px] text-emerald-400 mr-1.5">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400 shadow-glow-emerald" />
-              LIVE
-            </span>
+            {stale ? (
+              <span className="flex items-center gap-1 font-mono text-[9px] text-amber-400 mr-1.5">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-400 shadow-glow-amber" />
+                STALE
+              </span>
+            ) : (
+              <span className="flex items-center gap-1 font-mono text-[9px] text-emerald-400 mr-1.5">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400 shadow-glow-emerald" />
+                LIVE
+              </span>
+            )}
             {onClose && (
               <button
                 type="button"
@@ -163,23 +155,22 @@ export function RightInspectorPanel({ onClose }: RightInspectorPanelProps) {
           </div>
         </div>
 
-        {/* Tab Selector Switcher with Framer Motion Sliding Pill */}
         <div className="mt-3 flex rounded-xl border border-white/[0.08] bg-white/[0.02] p-1 font-mono text-xs">
           <button
             type="button"
-            onClick={() => setActiveTab("guards")}
+            onClick={() => setActiveTab("signals")}
             className={`relative flex-1 rounded-lg py-1 text-center font-semibold transition-colors ${
-              activeTab === "guards" ? "text-strand-gold" : "text-zinc-400 hover:text-white"
+              activeTab === "signals" ? "text-strand-gold" : "text-zinc-400 hover:text-white"
             }`}
           >
-            {activeTab === "guards" && (
+            {activeTab === "signals" && (
               <motion.div
                 layoutId="inspectorActiveTabPill"
                 className="absolute inset-0 rounded-lg bg-strand-gold/20 border border-strand-gold/40 shadow-sm"
                 transition={{ type: "spring", stiffness: 350, damping: 30 }}
               />
             )}
-            <span className="relative z-10">Guards (4)</span>
+            <span className="relative z-10">Invariant signals</span>
           </button>
           <button
             type="button"
@@ -195,18 +186,16 @@ export function RightInspectorPanel({ onClose }: RightInspectorPanelProps) {
                 transition={{ type: "spring", stiffness: 350, damping: 30 }}
               />
             )}
-            <span className="relative z-10">Health Matrix</span>
+            <span className="relative z-10">Health matrix</span>
           </button>
         </div>
       </div>
 
-      {/* Main Content Area with Animated Transitions */}
       <div className="flex-1 overflow-y-auto p-3.5 scrollbar-thin">
         <AnimatePresence mode="wait">
-          {activeTab === "guards" ? (
-            /* Guard Cards View */
+          {activeTab === "signals" ? (
             <motion.div
-              key="guards"
+              key="signals"
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
@@ -214,16 +203,22 @@ export function RightInspectorPanel({ onClose }: RightInspectorPanelProps) {
               className="space-y-2.5"
             >
               <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400 px-1">
-                <span>ACTIVE ENFORCEMENT</span>
-                <span className="text-emerald-400 font-bold">4 / 4 PASSING</span>
+                <span>LIVE, FROM /api/metrics</span>
+                <span
+                  className={`font-bold ${
+                    signals.every((s) => s.status === "HEALTHY") ? "text-emerald-400" : "text-amber-400"
+                  }`}
+                >
+                  {signals.filter((s) => s.status === "HEALTHY").length} / {signals.length} CLEAN
+                </span>
               </div>
 
-              {GUARDS.map((guard) => {
-                const config = STATUS_CONFIG[guard.status];
-                const Icon = guard.icon;
+              {signals.map((signal) => {
+                const config = STATUS_CONFIG[signal.status];
+                const Icon = signal.icon;
                 return (
                   <div
-                    key={guard.id}
+                    key={signal.id}
                     className={`group relative flex flex-col justify-between rounded-xl border ${config.borderColor} bg-white/[0.02] p-3 backdrop-blur-xl transition-all duration-base hover:bg-white/[0.05] hover:border-white/[0.2]`}
                   >
                     <div className="flex items-start justify-between">
@@ -233,38 +228,26 @@ export function RightInspectorPanel({ onClose }: RightInspectorPanelProps) {
                         </div>
                         <div>
                           <h3 className="font-ui text-xs font-semibold tracking-tight text-white group-hover:text-strand-gold transition-colors">
-                            {guard.name}
+                            {signal.name}
                           </h3>
                           <p className="font-mono text-[10px] text-zinc-400 line-clamp-1">
-                            {guard.subtitle}
+                            {signal.subtitle}
                           </p>
                         </div>
                       </div>
 
-                      <div className="relative flex h-2 w-2">
-                        <span
-                          className={`absolute inline-flex h-full w-full animate-ping rounded-full opacity-75 ${config.dotColor}`}
-                        />
-                        <span
-                          className={`relative inline-flex h-2 w-2 rounded-full ${config.dotColor} ${config.dotShadow}`}
-                        />
-                      </div>
+                      <span className={`relative inline-flex h-2 w-2 rounded-full ${config.dotColor} ${config.dotShadow}`} />
                     </div>
 
                     <div className="mt-2.5 flex items-center justify-between border-t border-white/[0.05] pt-2 font-mono text-[10px]">
-                      <span className="text-zinc-500">{guard.metricLabel}:</span>
-                      <span className="font-bold text-zinc-200">{guard.metricValue}</span>
-                    </div>
-                    <div className="flex items-center justify-between font-mono text-[9px] text-zinc-500">
-                      <span>Guard Rule:</span>
-                      <span className="text-strand-gold/80">{guard.threshold}</span>
+                      <span className="text-zinc-500">{signal.metricLabel}:</span>
+                      <span className="font-bold text-zinc-200">{signal.metricValue}</span>
                     </div>
                   </div>
                 );
               })}
             </motion.div>
           ) : (
-            /* Runtime Health Matrix View */
             <motion.div
               key="health"
               initial={{ opacity: 0, y: 8 }}
@@ -275,46 +258,62 @@ export function RightInspectorPanel({ onClose }: RightInspectorPanelProps) {
             >
               <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-3 backdrop-blur-xl space-y-2.5 font-mono text-xs">
                 <div className="flex items-center justify-between border-b border-white/[0.05] pb-2">
-                  <span className="text-zinc-400">Cluster Uptime</span>
-                  <span className="font-bold text-emerald-400">99.998%</span>
+                  <span className="text-zinc-400">Database reachable</span>
+                  <span className={`font-bold ${health?.database_reachable ? "text-emerald-400" : "text-rose-400"}`}>
+                    {health ? (health.database_reachable ? "yes" : "no") : "—"}
+                  </span>
                 </div>
 
                 <div className="flex items-center justify-between border-b border-white/[0.05] pb-2">
-                  <span className="text-zinc-400">Duplicate Effects</span>
-                  <span className="font-bold text-emerald-400">0 (VERIFIED)</span>
+                  <span className="text-zinc-400">Duplicate effects</span>
+                  <span className="font-bold text-emerald-400">
+                    {metrics ? `${duplicateEffects} (live query)` : "—"}
+                  </span>
                 </div>
 
                 <div className="flex items-center justify-between border-b border-white/[0.05] pb-2">
-                  <span className="text-zinc-400">Active Leases</span>
-                  <span className="font-bold text-white">4 / 4 Held</span>
+                  <span className="text-zinc-400">Running runs</span>
+                  <span className="font-bold text-white">
+                    {health?.running_run_count ?? "—"}
+                    {health?.global_concurrency_cap !== undefined ? ` / ${health.global_concurrency_cap} cap` : ""}
+                  </span>
                 </div>
 
                 <div className="flex items-center justify-between border-b border-white/[0.05] pb-2">
-                  <span className="text-zinc-400">Throughput</span>
-                  <span className="font-bold text-strand-gold">142.8 steps/s</span>
+                  <span className="text-zinc-400">Steps/sec</span>
+                  <span className="font-bold text-strand-gold">
+                    {metrics?.steps_per_second !== undefined ? metrics.steps_per_second.toFixed(1) : "—"}
+                  </span>
                 </div>
 
                 <div className="flex items-center justify-between border-b border-white/[0.05] pb-2">
-                  <span className="text-zinc-400">Fleet Workers</span>
-                  <span className="font-bold text-white">{workers.length} Nodes</span>
+                  <span className="text-zinc-400">Fleet workers</span>
+                  <span className="font-bold text-white">{workers.length} nodes</span>
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span className="text-zinc-400">Cluster Capacity</span>
+                  <span className="text-zinc-400">Cluster capacity</span>
                   <span className="font-bold text-zinc-300">
-                    {totalRuns} / {totalCapacity || 15} runs
+                    {totalRuns} / {totalCapacity} runs
                   </span>
                 </div>
               </div>
 
-              {/* Invariant Assertion Badge */}
-              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3 text-[11px] font-mono text-emerald-400">
+              <div
+                className={`rounded-xl border p-3 text-[11px] font-mono ${
+                  health?.degraded
+                    ? "border-amber-500/20 bg-amber-500/5 text-amber-400"
+                    : "border-emerald-500/20 bg-emerald-500/5 text-emerald-400"
+                }`}
+              >
                 <div className="flex items-center gap-1.5 font-bold mb-1">
                   <ShieldCheck className="h-3.5 w-3.5" />
-                  <span>INVARIANT PASSING</span>
+                  <span>{health?.degraded ? "FLEET DEGRADED" : "FLEET HEALTHY"}</span>
                 </div>
                 <p className="text-[10px] text-zinc-400 leading-relaxed">
-                  Zero duplicate effects across cluster handoffs and automatic recovery.
+                  {health?.degraded
+                    ? "schema mismatch or zero live workers — see /workers"
+                    : "zero duplicate effects across cluster handoffs, verified live from the journal"}
                 </p>
               </div>
             </motion.div>
@@ -322,10 +321,9 @@ export function RightInspectorPanel({ onClose }: RightInspectorPanelProps) {
         </AnimatePresence>
       </div>
 
-      {/* Pinned Bottom Status Legend (Spec 4 core signals) */}
       <div className="border-t border-white/[0.08] bg-black/50 p-3.5 backdrop-blur-xl">
         <div className="mb-2 text-[9px] font-mono uppercase tracking-widest text-zinc-500 font-semibold">
-          Status Signals
+          Status legend
         </div>
         <div className="grid grid-cols-2 gap-2 text-[10px] font-mono">
           <div className="flex items-center gap-1.5">
@@ -334,17 +332,16 @@ export function RightInspectorPanel({ onClose }: RightInspectorPanelProps) {
           </div>
           <div className="flex items-center gap-1.5">
             <span className="h-2 w-2 rounded-full bg-amber-400 shadow-glow-amber" />
-            <span className="text-amber-400">DEGRADED</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-cyan-400 shadow-glow-cyan" />
-            <span className="text-cyan-400">HEALING</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="h-2 w-2 rounded-full bg-rose-400 shadow-glow-rose" />
-            <span className="text-rose-400">CRITICAL</span>
+            <span className="text-amber-400">ATTENTION</span>
           </div>
         </div>
+        <Link
+          to="/metrics"
+          className="mt-3 flex items-center justify-between rounded-lg border border-white/[0.08] bg-white/[0.02] px-2.5 py-1.5 text-[10px] font-mono text-zinc-400 hover:text-strand-gold hover:border-strand-gold/30 transition-colors"
+        >
+          <span>Full metrics view</span>
+          <ChevronRight className="h-3 w-3" />
+        </Link>
       </div>
     </aside>
   );

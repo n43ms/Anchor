@@ -5,7 +5,7 @@
  */
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { usePolling } from "@/hooks/usePolling";
 import { api } from "@/lib/api";
@@ -37,6 +37,16 @@ export default function LogsPage() {
   const [workerFilter, setWorkerFilter] = useState("");
   const [showRenewals, setShowRenewals] = useState(false);
   const [selectedType, setSelectedType] = useState<string>("");
+  const [olderItems, setOlderItems] = useState<RunEvent[]>([]);
+  const [olderCursor, setOlderCursor] = useState<string | null>(null);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+
+  // A new filter scopes a different cursor sequence entirely — discard the
+  // previously loaded older pages rather than mixing two filters' history.
+  useEffect(() => {
+    setOlderItems([]);
+    setOlderCursor(null);
+  }, [workerFilter, selectedType, runId]);
 
   const globalEvents = usePolling(
     () =>
@@ -55,7 +65,31 @@ export default function LogsPage() {
     Boolean(runId),
   );
 
-  const rawItems: RunEvent[] = runId ? (scopedEvents.data?.items ?? []) : (globalEvents.data?.items ?? []);
+  // Older pages are fetched once, on demand, via the cursor the last page
+  // reported — never re-polled, so "load older" results stay put under the
+  // live-refreshing head of the list rather than being clobbered by it.
+  const loadOlder = () => {
+    const cursor = olderItems.length > 0 ? olderCursor : (globalEvents.data?.next_cursor ?? null);
+    if (!cursor) return;
+    setLoadingOlder(true);
+    api
+      .listEvents({
+        worker_id: workerFilter || undefined,
+        type: selectedType ? [selectedType] : undefined,
+        limit: 100,
+        cursor,
+      })
+      .then((res) => {
+        setOlderItems((prev) => [...prev, ...res.items]);
+        setOlderCursor(res.next_cursor);
+      })
+      .finally(() => setLoadingOlder(false));
+  };
+
+  const rawItems: RunEvent[] = runId
+    ? (scopedEvents.data?.items ?? [])
+    : [...(globalEvents.data?.items ?? []), ...olderItems];
+  const hasMore = !runId && (olderItems.length > 0 ? olderCursor !== null : globalEvents.data?.next_cursor != null);
 
   const rows = rawItems.filter((e) => {
     if (!showRenewals && e.type === "LEASE_RENEWED") return false;
@@ -159,6 +193,19 @@ export default function LogsPage() {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {!runId && hasMore && (
+        <div className="flex justify-center">
+          <button
+            type="button"
+            onClick={loadOlder}
+            disabled={loadingOlder}
+            className="rounded-xl border border-white/[0.08] bg-white/[0.02] px-4 py-2 text-xs font-mono text-zinc-300 hover:text-strand-gold hover:border-strand-gold/30 transition-all disabled:opacity-50"
+          >
+            {loadingOlder ? "loading…" : "load older events"}
+          </button>
         </div>
       )}
     </div>

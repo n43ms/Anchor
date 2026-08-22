@@ -118,9 +118,9 @@ export default function DashboardPage() {
             <p className="text-xs text-zinc-400 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono">
               <span>PROFILE: <strong className="text-strand-gold font-bold">{metrics?.active_profile ?? health.active_profile ?? "DEMO"}</strong></span>
               <span className="text-zinc-600">·</span>
-              <span>LEASE DURATION: <strong className="text-zinc-200">{metrics?.lease_duration_ms ?? 4000}ms</strong></span>
+              <span>LEASE DURATION: <strong className="text-zinc-200">{metrics ? `${metrics.lease_duration_ms}ms` : "—"}</strong></span>
               <span className="text-zinc-600">·</span>
-              <span>CONCURRENCY CAP: <strong className="text-zinc-200">{health.global_concurrency_cap ?? 50}</strong></span>
+              <span>CONCURRENCY CAP: <strong className="text-zinc-200">{health.global_concurrency_cap ?? "—"}</strong></span>
               <span className="text-zinc-600">·</span>
               <span>SCHEMA: <strong className="text-zinc-500">{health.schema_revision}</strong></span>
             </p>
@@ -258,7 +258,7 @@ export default function DashboardPage() {
             <p className="text-xs text-zinc-500 font-mono uppercase tracking-wider">No runs match the active filter</p>
             <button
               type="button"
-              onClick={() => handleQuickLaunch("refund-agent")}
+              onClick={() => handleQuickLaunch("demo_short")}
               className="inline-flex items-center gap-1.5 rounded-lg border border-strand-gold/40 bg-strand-gold/10 px-3 py-1.5 text-xs text-strand-gold hover:bg-strand-gold/20"
             >
               + Launch Demo Run
@@ -374,7 +374,7 @@ export default function DashboardPage() {
                       <div
                         className="h-full rounded-full transition-all duration-base"
                         style={{
-                          width: `${Math.min(100, Math.max(10, (w.current_run_count / (w.capacity || 1)) * 100))}%`,
+                          width: `${Math.min(100, (w.current_run_count / (w.capacity || 1)) * 100)}%`,
                           backgroundColor: idx % 3 === 0 ? "var(--worker-1)" : idx % 3 === 1 ? "var(--worker-2)" : "var(--worker-3)",
                         }}
                       />

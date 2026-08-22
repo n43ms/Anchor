@@ -17,7 +17,7 @@ from datetime import datetime
 from typing import Annotated, Any
 
 import asyncpg
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Query, Request
 
 from anchor.api.errors import ApiError
 from anchor.api.serializers.rollup import HISTOGRAM_EDGES_MS
@@ -181,6 +181,26 @@ async def get_metrics(
                 edge_index = HISTOGRAM_EDGES_MS.index(int(edge_str))
                 target_bins[edge_index] += bin_count
 
+    # Live aggregation fallback for fresh local setups where rollup hasn't ticked yet
+    if not rollup_rows:
+        async with pool.acquire() as conn:
+            live_steps = await conn.fetchval(
+                "SELECT count(*) FROM run_events WHERE type = 'STEP_COMPLETED' AND created_at > now() - ($1 * interval '1 second')",
+                window_seconds,
+            )
+            steps_total = int(live_steps or 0)
+            status_rows = await conn.fetch("SELECT status, count(*) as count FROM runs GROUP BY status")
+            if status_rows:
+                run_state_by_bucket[datetime.utcnow().isoformat()] = {
+                    row["status"]: int(row["count"]) for row in status_rows
+                }
+            live_fencing = await conn.fetchval(
+                "SELECT count(*) FROM run_events WHERE type = 'WORKER_FENCED' AND created_at > now() - ($1 * interval '1 second')",
+                window_seconds,
+            )
+            if live_fencing:
+                fencing_events_series = [{"bucket": datetime.utcnow().isoformat(), "count": int(live_fencing)}]
+
     steps_per_second = steps_total / window_seconds if window_seconds else 0.0
     for worker_id in steps_per_second_by_worker:
         steps_per_second_by_worker[worker_id] = (
@@ -237,13 +257,13 @@ def _decode_events_cursor(cursor: str) -> tuple[datetime, int, int]:
 @router.get("/api/events")
 async def get_events(
     pool: Annotated[asyncpg.Pool, Depends(get_pool)],
-    type: list[str] | None = None,
-    worker_id: str | None = None,
-    epoch: int | None = None,
-    since: datetime | None = None,
-    until: datetime | None = None,
-    limit: int = 100,
-    cursor: str | None = None,
+    type: Annotated[list[str] | None, Query()] = None,
+    worker_id: Annotated[str | None, Query()] = None,
+    epoch: Annotated[int | None, Query()] = None,
+    since: Annotated[datetime | None, Query()] = None,
+    until: Annotated[datetime | None, Query()] = None,
+    limit: Annotated[int, Query()] = 100,
+    cursor: Annotated[str | None, Query()] = None,
 ) -> dict[str, Any]:
     """Global search over `run_events` (FR-026), across every run —
     distinct from `GET /api/runs/{id}/events`, which is scoped to one.
@@ -260,10 +280,15 @@ async def get_events(
         clauses = []
         params: list[Any] = []
         if type:
-            params.append(type)
-            clauses.append(f"type = ANY(${len(params)})")
+            type_list = [type] if isinstance(type, str) else list(type)
+            type_list = [t for t in type_list if t]
+            if type_list:
+                params.append(type_list)
+                clauses.append(f"type = ANY(${len(params)})")
+            else:
+                clauses.append("type != 'LEASE_RENEWED'")
         else:
-            clauses.append("type <> 'LEASE_RENEWED'")
+            clauses.append("type != 'LEASE_RENEWED'")
         if worker_id:
             params.append(worker_id)
             clauses.append(f"worker_id = ${len(params)}")
