@@ -139,16 +139,21 @@ export default function ChaosConsolePage() {
 
             <form onSubmit={handleStartChaos} className="space-y-4 font-mono text-xs">
               <div className="space-y-1.5">
-                <label className="text-zinc-400 text-[11px]">Worker Fleet Count</label>
+                <div className="flex items-center justify-between">
+                  <label className="text-zinc-400 text-[11px]">Number of Workers</label>
+
+                  <span className="text-[10px] font-mono text-zinc-500">Range: 1 – 26</span>
+                </div>
                 <input
                   type="number"
                   min="1"
-                  max="10"
+                  max="26"
                   value={params.worker_count}
-                  onChange={(e) => setParams({ ...params, worker_count: parseInt(e.target.value) || 1 })}
+                  onChange={(e) => setParams({ ...params, worker_count: Math.min(26, Math.max(1, parseInt(e.target.value) || 1)) })}
                   className="w-full rounded-xl border border-white/[0.1] bg-black/60 px-3.5 py-2 text-white focus:border-strand-gold focus:outline-none"
                 />
               </div>
+
 
               <div className="space-y-1.5">
                 <label className="text-zinc-400 text-[11px]">Target Agent Runs</label>

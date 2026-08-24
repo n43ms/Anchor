@@ -102,63 +102,7 @@ export function TopNavigation({ inspectorOpen = true, onToggleInspector }: TopNa
           </button>
         )}
 
-        {/* Minimalist Select Agent Group Dropdown */}
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setGroupDropdownOpen(!groupDropdownOpen)}
-            className="flex items-center gap-2 rounded-xl border border-white/[0.08] bg-white/[0.02] px-3 py-1.5 text-xs font-mono text-zinc-300 hover:border-white/[0.2] hover:text-white transition-all"
-          >
-            <Activity className="h-3.5 w-3.5 text-strand-gold" />
-            <span className="hidden sm:inline">{selectedGroup}</span>
-            <ChevronDown
-              className={`h-3 w-3 text-zinc-500 transition-transform ${
-                groupDropdownOpen ? "rotate-180" : ""
-              }`}
-            />
-          </button>
 
-          <AnimatePresence>
-            {groupDropdownOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: -8, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -8, scale: 0.95 }}
-                transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                className="absolute right-0 mt-1.5 w-60 rounded-2xl border border-white/[0.12] bg-zinc-950/95 p-1.5 shadow-2xl backdrop-blur-2xl z-50"
-              >
-                <div className="px-2.5 py-1 text-[10px] font-mono uppercase tracking-widest text-zinc-500">
-                  Switch Agent Cluster
-                </div>
-                {[
-                  "Cluster 04 (Production)",
-                  "Demo Worker Fleet",
-                  "Refund & Billing Agents",
-                  "Chaos Experiment Pool",
-                ].map((grp) => (
-                  <button
-                    key={grp}
-                    type="button"
-                    onClick={() => {
-                      setSelectedGroup(grp);
-                      setGroupDropdownOpen(false);
-                    }}
-                    className={`flex w-full items-center justify-between rounded-xl px-2.5 py-1.5 text-left text-xs font-mono transition-colors ${
-                      selectedGroup === grp
-                        ? "bg-white/[0.1] text-strand-gold font-semibold"
-                        : "text-zinc-400 hover:bg-white/[0.04] hover:text-white"
-                    }`}
-                  >
-                    <span>{grp}</span>
-                    {selectedGroup === grp && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-strand-gold" />
-                    )}
-                  </button>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
 
         {/* Documentation Link */}
         <a

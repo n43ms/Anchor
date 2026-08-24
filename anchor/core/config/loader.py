@@ -32,8 +32,14 @@ class BootstrapEnv(BaseSettings):
     redis_url: str
     config_profile: ConfigProfile = ConfigProfile.DEMO
     authoring_execute: bool = False
-    worker_label_pool: str = "worker-a,worker-b,worker-c"
+    worker_label_pool: str = (
+        "worker-a,worker-b,worker-c,worker-d,worker-e,worker-f,worker-g,worker-h,"
+        "worker-i,worker-j,worker-k,worker-l,worker-m,worker-n,worker-o,worker-p,"
+        "worker-q,worker-r,worker-s,worker-t,worker-u,worker-v,worker-w,worker-x,"
+        "worker-y,worker-z"
+    )
     code_version: str = "dev"
+
 
     @property
     def worker_labels(self) -> list[str]:
