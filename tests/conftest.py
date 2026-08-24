@@ -29,11 +29,11 @@ import redis.asyncio as redis_asyncio
 
 TEST_DATABASE_URL = os.environ.get(
     "ANCHOR_TEST_DATABASE_URL",
-    "postgresql://anchor:anchor@localhost:5432/anchor_test",
+    "postgresql://anchor:anchor@localhost:5433/anchor_test",
 )
 TEST_REDIS_URL = os.environ.get("ANCHOR_TEST_REDIS_URL", "redis://localhost:6379/1")
 
-CONNECT_TIMEOUT_S = 2.0
+CONNECT_TIMEOUT_S = 10.0
 
 # Every table that a test might write to, in FK-safe truncation order.
 # Kept as an explicit list rather than introspected from the catalog so that
@@ -142,32 +142,39 @@ async def _truncate_at_session_start() -> AsyncIterator[None]:
     yield
 
 
+_TRUNCATE_POOL: asyncpg.Pool | None = None
+
+
+async def _get_truncate_pool() -> asyncpg.Pool | None:
+    global _TRUNCATE_POOL
+    if _TRUNCATE_POOL is None:
+        try:
+            _TRUNCATE_POOL = await asyncpg.create_pool(
+                TEST_DATABASE_URL, min_size=1, max_size=2, timeout=CONNECT_TIMEOUT_S
+            )
+        except (OSError, asyncpg.PostgresError, TimeoutError):
+            return None
+    return _TRUNCATE_POOL
+
+
 @pytest.fixture(autouse=True)
-async def _truncate_between_tests() -> AsyncIterator[None]:
+async def _truncate_between_tests(request: pytest.FixtureRequest) -> AsyncIterator[None]:
     """Truncate every table before each test so tests never depend on order.
 
     Runs before the test rather than after, so a failed test's data is left
     in place for post-mortem inspection until the next test starts.
 
-    Deliberately does **not** depend on the `db_pool` fixture: this fixture
-    is autouse, so it runs for every test in the suite, including the ones
-    that never touch a database at all. If it required `db_pool` directly,
-    an unreachable PostgreSQL would skip the entire suite rather than just
-    the tests that actually need one. Instead it makes its own short-lived
-    connection attempt and degrades to a no-op when that fails — a test
-    that genuinely needs the database will still fail or skip on its own
-    terms, via its own `db_pool` request.
+    Uses a shared lazy pool to avoid TCP socket churn on Windows while ensuring
+    deterministic database isolation across the entire suite.
     """
-    try:
-        conn = await asyncpg.connect(TEST_DATABASE_URL, timeout=CONNECT_TIMEOUT_S)
-    except (OSError, asyncpg.PostgresError, TimeoutError):
-        yield
-        return
-
-    try:
-        await _do_truncate_and_reseed(conn)
-    finally:
-        await conn.close()
+    if request.node.get_closest_marker("asyncio") is not None:
+        pool = await _get_truncate_pool()
+        if pool is not None:
+            try:
+                async with pool.acquire() as conn:
+                    await _do_truncate_and_reseed(conn)
+            except (OSError, asyncpg.PostgresError, TimeoutError):
+                pass
     yield
 
 

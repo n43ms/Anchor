@@ -1,6 +1,7 @@
 /.specify
 /.claude
 /engineers
+/docs
 
 # --- Python (anchor/) ---
 __pycache__/

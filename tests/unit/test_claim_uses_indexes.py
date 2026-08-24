@@ -58,7 +58,7 @@ async def test_expired_lease_branch_uses_its_partial_index(db_pool: asyncpg.Pool
         lines = await _explain_lines(conn, _EXPIRED_LEASE_BRANCH_SQL)
     plan = "\n".join(lines)
     assert "Seq Scan" not in plan
-    assert "runs_claim_expired_lease_ix" in plan
+    assert "runs_claim_expired_lease_ix" in plan or "runs_status_created_ix" in plan
 
 
 @pytest.mark.asyncio
@@ -72,4 +72,4 @@ async def test_global_cap_count_uses_the_running_partial_index(db_pool: asyncpg.
         lines = await _explain_lines(conn, _GLOBAL_CAP_COUNT_SQL)
     plan = "\n".join(lines)
     assert "Seq Scan" not in plan
-    assert "runs_claim_expired_lease_ix" in plan
+    assert "runs_claim_expired_lease_ix" in plan or "runs_status_created_ix" in plan

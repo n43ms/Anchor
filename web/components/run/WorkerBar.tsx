@@ -18,7 +18,7 @@ export function WorkerBar({
   return (
     <div className="relative h-2.5 w-full overflow-hidden rounded-full border border-indigo-500/25 bg-black/70 p-[1px] shadow-inner">
       <div
-        className="h-full rounded-full bg-gradient-to-r from-indigo-600 via-indigo-500 to-blue-400 opacity-[0.75] transition-[width] duration-300 ease-out shadow-[0_0_12px_rgba(99,102,241,0.55)]"
+        className="h-full rounded-full bg-gradient-to-r from-indigo-600 via-indigo-500 to-blue-400 opacity-[0.75] transition-[width] duration-300 ease-out shadow-md"
         style={{ width: `${Math.max(fraction * 100, 2)}%` }}
         role="progressbar"
         aria-valuenow={Math.round(fraction * 100)}

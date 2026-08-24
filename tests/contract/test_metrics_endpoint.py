@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import asyncpg
 import pytest
-from starlette.testclient import TestClient
+from httpx import ASGITransport, AsyncClient
 
 from anchor.api.app import create_app
 
@@ -15,11 +15,10 @@ from anchor.api.app import create_app
 async def test_get_metrics_endpoint_all_windows(db_pool: asyncpg.Pool) -> None:
     app = create_app()
     app.state.db_pool = db_pool
-    client = TestClient(app)
-
-    for window in ("1h", "24h", "7d", "30d"):
-        response = client.get(f"/api/metrics?window={window}")
-        assert response.status_code == 200, f"Failed for window={window}: {response.text}"
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        for window in ("1h", "24h", "7d", "30d"):
+            response = await client.get(f"/api/metrics?window={window}")
+            assert response.status_code == 200, f"Failed for window={window}: {response.text}"
         data = response.json()
         assert data["window"] == window
         assert "duplicate_side_effects" in data

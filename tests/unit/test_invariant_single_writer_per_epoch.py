@@ -30,6 +30,7 @@ async def test_clean_log_passes(db_pool: asyncpg.Pool) -> None:
             "VALUES ($1, 1, 'RUN_SUBMITTED', 0, 'api')",
             run_id,
         )
+        await conn.execute("UPDATE runs SET epoch = 1 WHERE id = $1", run_id)
         await conn.execute(
             "INSERT INTO run_events (run_id, seq, type, epoch, worker_id) "
             "VALUES ($1, 2, 'RUN_CLAIMED', 1, 'worker-a#1')",
@@ -43,6 +44,7 @@ async def test_clean_log_passes(db_pool: asyncpg.Pool) -> None:
 async def test_planted_dual_writer_is_detected(db_pool: asyncpg.Pool) -> None:
     async with db_pool.acquire() as conn:
         run_id = await _insert_run(conn)
+        await conn.execute("UPDATE runs SET epoch = 1 WHERE id = $1", run_id)
         await conn.execute(
             "INSERT INTO run_events (run_id, seq, type, epoch, worker_id) "
             "VALUES ($1, 1, 'STEP_STARTED', 1, 'worker-a#1')",

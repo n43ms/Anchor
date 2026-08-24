@@ -211,6 +211,33 @@ async def execute_run(
 
     decide_next_step = resolve(agent_type)
     if decide_next_step is None:
+        async with conn.transaction():
+            await append(
+                conn,
+                run_id=run_id,
+                type=EventType.RUN_FAILED,
+                payload={
+                    "step_index": 0,
+                    "attempts": 1,
+                    "error_type": "UnregisteredAgentError",
+                    "error_message": f"unregistered agent_type: {agent_type}",
+                    "dead_lettered": False,
+                },
+                epoch=epoch,
+                worker_id=worker_id,
+                max_payload_bytes=settings.max_event_payload_bytes,
+            )
+            await conn.execute(
+                """
+                UPDATE runs
+                SET status = 'failed',
+                    owner_worker_id = NULL,
+                    lease_expires_at = NULL,
+                    finished_at = now()
+                WHERE id = $1
+                """,
+                run_id,
+            )
         raise ValueError(f"unregistered agent_type: {agent_type}")
 
     replay_start = time.monotonic()

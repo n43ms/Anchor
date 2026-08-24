@@ -134,9 +134,9 @@ export function RunThread({
   const totalSteps = segments.reduce((n, s) => n + s.steps.length, 0);
   const markers = useMemo(() => deriveMarkers(segments), [segments]);
 
-  // In compact mode: static rendering with 0 CPU/memory overhead
-  // In full detail view: animated wave
-  const flowing = !compact && animate !== false;
+  // In compact mode or when terminal: static rendering with 0 CPU/memory overhead
+  // In active full detail view: animated wave
+  const flowing = !compact && animate !== false && !terminal;
 
   const viewHeight = compact ? 26 : 88;
   const centerY = compact ? 13 : 44;
@@ -233,7 +233,7 @@ export function RunThread({
                   key={strand.id}
                   d={strand.d}
                   fill="none"
-                  stroke="rgb(205, 145, 35)"
+                  stroke="var(--strand-gold)"
                   strokeOpacity={strand.opacity}
                   strokeWidth={strand.strokeWidth}
                   className="strand-ribbon-path"
@@ -265,7 +265,7 @@ export function RunThread({
               <path
                 d={mainPath}
                 fill="none"
-                stroke="rgb(254, 240, 138)"
+                stroke="var(--strand-gold)"
                 strokeWidth={0.75}
                 strokeOpacity={0.78}
                 strokeLinecap="round"
@@ -332,8 +332,8 @@ function CompactRunShape({
   if (total === 0) {
     return (
       <g>
-        <line x1={8} y1={midY} x2={W - 8} y2={midY} stroke="rgba(255,255,255,0.15)" strokeWidth={1} strokeDasharray="3 3" />
-        <circle cx={16} cy={midY} r={3.5} fill="var(--strand-gold)" stroke="#ffffff" strokeWidth={0.8} />
+        <line x1={8} y1={midY} x2={W - 8} y2={midY} stroke="var(--hairline-ring)" strokeWidth={1} strokeDasharray="3 3" />
+        <circle cx={16} cy={midY} r={3.5} fill="var(--strand-gold)" stroke="var(--ink-primary)" strokeWidth={0.8} />
       </g>
     );
   }
@@ -377,14 +377,14 @@ function CompactRunShape({
   return (
     <g>
       {/* Background Guide Rail */}
-      <line x1={8} y1={midY} x2={W - 8} y2={midY} stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
+      <line x1={8} y1={midY} x2={W - 8} y2={midY} stroke="var(--hairline-ring)" strokeWidth={1} />
 
       {/* Trajectory Underglow Bloom */}
       <path d={pathD} fill="none" stroke="var(--strand-gold)" strokeWidth={2.8} strokeOpacity={0.25} strokeLinecap="round" />
 
       {/* Trajectory Golden Strand (78% translucent) */}
       <path d={pathD} fill="none" stroke="var(--strand-gold)" strokeWidth={1.35} strokeOpacity={0.78} strokeLinecap="round" />
-      <path d={pathD} fill="none" stroke="rgb(254, 240, 138)" strokeWidth={0.7} strokeOpacity={0.78} strokeLinecap="round" />
+      <path d={pathD} fill="none" stroke="var(--strand-gold)" strokeWidth={0.7} strokeOpacity={0.78} strokeLinecap="round" />
 
       {/* Minimal Step Markers Matching the Golden Thread Color */}
       {pts.map((p) => {
@@ -392,8 +392,8 @@ function CompactRunShape({
           // Handoff: Clean Golden Circle with White Core
           return (
             <g key={p.key}>
-              <circle cx={p.x} cy={p.y} r={3.6} fill="var(--strand-gold)" stroke="#ffffff" strokeWidth={0.8} />
-              <circle cx={p.x} cy={p.y} r={1.2} fill="#ffffff" />
+              <circle cx={p.x} cy={p.y} r={3.6} fill="var(--strand-gold)" stroke="var(--ink-primary)" strokeWidth={0.8} />
+              <circle cx={p.x} cy={p.y} r={1.2} fill="var(--ink-primary)" />
             </g>
           );
         }

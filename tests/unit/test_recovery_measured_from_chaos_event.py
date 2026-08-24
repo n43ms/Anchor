@@ -27,8 +27,8 @@ async def _insert_chaos_run(conn: asyncpg.Connection) -> int:
 
 async def _insert_run(conn: asyncpg.Connection, *, status: str = "completed") -> int:
     run_id: int = await conn.fetchval(
-        "INSERT INTO runs (agent_type, status, finished_at) "
-        "VALUES ('demo_minimal', $1, now()) RETURNING id",
+        "INSERT INTO runs (agent_type, status, epoch, finished_at) "
+        "VALUES ('demo_minimal', $1, 1, now()) RETURNING id",
         status,
     )
     return run_id
@@ -56,7 +56,7 @@ async def test_recovery_ms_measured_from_kill_to_reclaim(db_pool: asyncpg.Pool) 
         await conn.execute(
             "INSERT INTO run_events (run_id, seq, type, epoch, worker_id, payload, created_at) "
             "VALUES ($1, 1, 'RUN_CLAIMED', 1, 'worker-b#1', $2::jsonb, "
-            "$3 + interval '250 milliseconds')",
+            "$3::timestamptz + interval '250 milliseconds')",
             run_id,
             json.dumps({"reason": "reclaimed_after_lease_expiry"}),
             killed_at,

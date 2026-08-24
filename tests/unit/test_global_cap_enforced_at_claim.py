@@ -52,6 +52,7 @@ async def _insert_runs(conn: asyncpg.Connection, n: int) -> list[int]:
 @pytest.mark.asyncio
 async def test_running_count_stops_at_cap_remainder_stays_pending(db_pool: asyncpg.Pool) -> None:
     async with db_pool.acquire() as conn:
+        await conn.execute("TRUNCATE TABLE runs RESTART IDENTITY CASCADE")
         run_ids = await _insert_runs(conn, N_RUNS)
         assert len(run_ids) == N_RUNS, "every submission succeeded — the cap never rejects one"
 
@@ -100,6 +101,7 @@ async def test_a_reclaim_is_never_blocked_by_a_saturated_cap(db_pool: asyncpg.Po
     import asyncio
 
     async with db_pool.acquire() as conn:
+        await conn.execute("TRUNCATE TABLE runs RESTART IDENTITY CASCADE")
         (run_id,) = await _insert_runs(conn, 1)
         await conn.execute(
             "INSERT INTO workers (id, label, incarnation, hostname, pid, capacity, code_version) "

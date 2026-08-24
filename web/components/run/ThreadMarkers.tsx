@@ -2,7 +2,7 @@
  * Anchor Operator Console — Minimal Numbered Legend HUD Thread Markers
  * Clean, minimal geometric shapes with ambient glow and aesthetic floating numbers:
  * - Floating numbers use the aesthetic UI font with subtle radial glow highlights
- * - Worker Handoff: Dark reassuring emerald green Circle Beacon & glowing green swap icon (⇄)
+ * - Worker Handoff: Dark reassuring green Circle Beacon & glowing green swap icon (⇄)
  * - Tool Calls: Deep Warm Amber Square & Rich Saturated Amber Number
  * - Model Calls: Minimal Deep Indigo Circle with ambient glow & Clean Indigo Number
  * - Reconciled: Emerald Mint Ring & Clean Mint Number
@@ -38,41 +38,41 @@ export function ThreadMarkers({
       <defs>
         {/* Ambient Drop Shadow Filters for Marker Shapes */}
         <filter id="glow-indigo" x="-50%" y="-50%" width="200%" height="200%">
-          <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#6366f1" floodOpacity="0.9" />
+          <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="var(--status-executing)" floodOpacity="0.9" />
         </filter>
         <filter id="glow-amber" x="-50%" y="-50%" width="200%" height="200%">
-          <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#d97706" floodOpacity="0.9" />
+          <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="var(--status-warning)" floodOpacity="0.9" />
         </filter>
         <filter id="glow-emerald" x="-50%" y="-50%" width="200%" height="200%">
-          <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="#059669" floodOpacity="0.85" />
+          <feDropShadow dx="0" dy="0" stdDeviation="3" floodColor="var(--status-good)" floodOpacity="0.85" />
         </filter>
 
         {/* Very Subtle Minimal Text Drop Glows */}
         <filter id="glow-num-indigo" x="-40%" y="-40%" width="180%" height="180%">
-          <feDropShadow dx="0" dy="0" stdDeviation="0.8" floodColor="#818cf8" floodOpacity="0.40" />
+          <feDropShadow dx="0" dy="0" stdDeviation="0.8" floodColor="var(--status-executing)" floodOpacity="0.40" />
         </filter>
         <filter id="glow-num-amber" x="-40%" y="-40%" width="180%" height="180%">
-          <feDropShadow dx="0" dy="0" stdDeviation="0.8" floodColor="#f59e0b" floodOpacity="0.45" />
+          <feDropShadow dx="0" dy="0" stdDeviation="0.8" floodColor="var(--status-warning)" floodOpacity="0.45" />
         </filter>
         <filter id="glow-num-mint" x="-40%" y="-40%" width="180%" height="180%">
-          <feDropShadow dx="0" dy="0" stdDeviation="0.8" floodColor="#10b981" floodOpacity="0.45" />
+          <feDropShadow dx="0" dy="0" stdDeviation="0.8" floodColor="var(--status-good)" floodOpacity="0.45" />
         </filter>
 
         {/* Soft Micro Radial Glow Highlights behind floating numbers (very subtle) */}
         <radialGradient id="radial-glow-indigo" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#6366f1" stopOpacity="0.14" />
-          <stop offset="60%" stopColor="#6366f1" stopOpacity="0.03" />
-          <stop offset="100%" stopColor="#6366f1" stopOpacity="0" />
+          <stop offset="0%" stopColor="var(--status-executing)" stopOpacity="0.14" />
+          <stop offset="60%" stopColor="var(--status-executing)" stopOpacity="0.03" />
+          <stop offset="100%" stopColor="var(--status-executing)" stopOpacity="0" />
         </radialGradient>
         <radialGradient id="radial-glow-amber" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#d97706" stopOpacity="0.16" />
-          <stop offset="60%" stopColor="#d97706" stopOpacity="0.04" />
-          <stop offset="100%" stopColor="#d97706" stopOpacity="0" />
+          <stop offset="0%" stopColor="var(--status-warning)" stopOpacity="0.16" />
+          <stop offset="60%" stopColor="var(--status-warning)" stopOpacity="0.04" />
+          <stop offset="100%" stopColor="var(--status-warning)" stopOpacity="0" />
         </radialGradient>
         <radialGradient id="radial-glow-mint" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#059669" stopOpacity="0.16" />
-          <stop offset="60%" stopColor="#059669" stopOpacity="0.04" />
-          <stop offset="100%" stopColor="#059669" stopOpacity="0" />
+          <stop offset="0%" stopColor="var(--status-good)" stopOpacity="0.16" />
+          <stop offset="60%" stopColor="var(--status-good)" stopOpacity="0.04" />
+          <stop offset="100%" stopColor="var(--status-good)" stopOpacity="0" />
         </radialGradient>
       </defs>
 
@@ -89,21 +89,18 @@ export function ThreadMarkers({
         const glowType = (isHandoff || isReconciled) ? "mint" : isToolCall ? "amber" : "indigo";
 
         const badgeBorder = isHandoff
-          ? "rgba(16, 185, 129, 0.85)"
+          ? "var(--status-good)"
           : isToolCall
-            ? "rgba(217, 119, 6, 0.85)"
+            ? "var(--status-warning)"
             : isReconciled
-              ? "rgba(52, 211, 153, 0.65)"
-              : "rgba(99, 102, 241, 0.75)";
+              ? "var(--status-good)"
+              : "var(--status-executing)";
 
-        // Reassuring dark green for handoffs, warm amber for toolcalls, indigo for model
-        const textColor = isHandoff
-          ? "#34d399"
+        const textColor = (isHandoff || isReconciled)
+          ? "var(--status-good)"
           : isToolCall
-            ? "#f59e0b"
-            : isReconciled
-              ? "#a7f3d0"
-              : "#e0e7ff";
+            ? "var(--status-warning)"
+            : "var(--ink-primary)";
 
         return (
           <g
@@ -178,7 +175,7 @@ function MarkerShape({
         width={size * 2}
         height={size * 2}
         rx={1.5}
-        fill="#d97706"
+        fill="var(--status-warning)"
         filter="url(#glow-amber)"
         data-shape="square"
       />
@@ -193,7 +190,7 @@ function MarkerShape({
         cy={y}
         r={size}
         fill="none"
-        stroke="#34d399"
+        stroke="var(--status-good)"
         strokeWidth={1.8}
         data-shape="ring"
       />
@@ -207,7 +204,7 @@ function MarkerShape({
         cx={x}
         cy={y}
         r={size}
-        fill="#059669"
+        fill="var(--status-good)"
         filter="url(#glow-emerald)"
         data-shape="circle"
         data-handoff="true"
@@ -221,7 +218,7 @@ function MarkerShape({
       cx={x}
       cy={y}
       r={size}
-      fill="#6366f1"
+      fill="var(--status-executing)"
       filter="url(#glow-indigo)"
       data-shape="circle"
     />

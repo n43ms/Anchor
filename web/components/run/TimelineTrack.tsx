@@ -50,7 +50,7 @@ export function TimelineTrack({
           return (
             <div
               key={`laser-${event.fenced_worker_id}-${event.at}`}
-              className="absolute inset-y-1 w-[2px] bg-rose-500/75 shadow-[0_0_6px_rgba(244,63,94,0.4)] z-10 pointer-events-none rounded-full"
+              className="absolute inset-y-1 w-[2px] bg-rose-500/75 shadow-md z-10 pointer-events-none rounded-full"
               style={{ left: `${xPercent}%` }}
             />
           );
@@ -65,12 +65,12 @@ export function TimelineTrack({
           return (
             <div
               key={`${workerId}-${step.step_index}`}
-              className="relative flex h-full items-center justify-center rounded-md border border-indigo-400/25 bg-indigo-500/20 text-[10px] font-mono font-bold text-indigo-100 transition-all duration-200 shadow-[0_0_8px_rgba(99,102,241,0.15)]"
+              className="relative flex h-full items-center justify-center rounded-md border border-indigo-400/25 bg-indigo-500/20 text-[10px] font-mono font-bold text-indigo-100 transition-all duration-200 shadow-sm"
               style={{
                 width: `${widthPct}%`,
                 marginRight: i < allSteps.length - 1 ? GAP_PX : 0,
                 opacity: isReplayed ? 0.45 : 1,
-                borderLeft: isReplayed ? "1px dashed rgba(165, 180, 252, 0.5)" : undefined,
+                borderLeft: isReplayed ? "1px dashed var(--baseline)" : undefined,
                 clipPath: isTool ? "polygon(6px 0, 100% 0, 100% 100%, 0 100%, 0 6px)" : undefined,
               }}
               data-step-executed={!isReplayed}
@@ -78,7 +78,7 @@ export function TimelineTrack({
               title={`${workerId} · ${step.name} · ${step.action_kind}${step.idempotency_key_display ? ` · ${step.idempotency_key_display}` : ""}`}
             >
               {canFitLabel && (
-                <span className="truncate px-1.5 font-mono text-[10px] text-indigo-200 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+                <span className="truncate px-1.5 font-mono text-[10px] text-indigo-200 drop-shadow-sm">
                   {workerId}
                 </span>
               )}
@@ -94,7 +94,7 @@ export function TimelineTrack({
           return (
             <span
               key={segment.worker_id}
-              className="truncate font-bold tracking-wider text-indigo-300 drop-shadow-[0_0_8px_rgba(99,102,241,0.5)]"
+              className="truncate font-bold tracking-wider text-indigo-300 drop-shadow-md"
               style={{ width: `${stepShare}%` }}
             >
               {segment.worker_id}

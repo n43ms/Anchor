@@ -29,7 +29,13 @@ def _sync_url() -> str:
     """`ANCHOR_DATABASE_URL` is an asyncpg-style DSN for the application;
     Alembic's sync engine needs the `postgresql+psycopg://` scheme.
     """
-    url = os.environ["ANCHOR_DATABASE_URL"]
+    url = os.environ.get(
+        "ANCHOR_DATABASE_URL",
+        os.environ.get(
+            "ANCHOR_TEST_DATABASE_URL",
+            "postgresql://anchor:anchor@localhost:5433/anchor",
+        ),
+    )
     if url.startswith("postgresql://"):
         return "postgresql+psycopg://" + url[len("postgresql://") :]
     return url

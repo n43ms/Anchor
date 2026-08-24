@@ -34,7 +34,7 @@ def _event(seq: int, type_: EventType, payload: dict[str, object]) -> RunEvent:
 
 def test_identical_logs_match() -> None:
     events = [
-        _event(1, EventType.RUN_SUBMITTED, {"agent_type": "demo_minimal", "input": {}}),
+        _event(1, EventType.RUN_SUBMITTED, {"agent_type": "demo_minimal", "input": {}, "is_demo": True}),
         _event(2, EventType.STEP_STARTED, {"step_index": 0, "action_kind": "model"}),
     ]
     assert logs_reconstruct_identically(events, list(events))
@@ -42,7 +42,7 @@ def test_identical_logs_match() -> None:
 
 def test_mutated_log_is_detected() -> None:
     events_a = [
-        _event(1, EventType.RUN_SUBMITTED, {"agent_type": "demo_minimal", "input": {}}),
+        _event(1, EventType.RUN_SUBMITTED, {"agent_type": "demo_minimal", "input": {}, "is_demo": True}),
         _event(
             2,
             EventType.LLM_CALLED,
@@ -75,7 +75,7 @@ async def test_run_all_reconstructs_completed_runs_consistently(db_pool: asyncpg
             conn,
             run_id=run_id,
             type=EventType.RUN_SUBMITTED,
-            payload={"agent_type": "demo_minimal", "input": {}},
+            payload={"agent_type": "demo_minimal", "input": {}, "is_demo": True},
             epoch=0,
             worker_id="api",
             max_payload_bytes=1_000_000,

@@ -31,10 +31,13 @@ export const NAV_GROUPS: NavGroup[] = [
       { label: "Deployments", href: "/workers/deployments" },
     ],
   },
-  // Chaos (Console, History) is omitted here deliberately: tasks.md builds it in
-  // phase 8 (T521-T523), after this phase. Linking to it now would point the
-  // sidebar at routes that don't exist yet. Add it back in the same shape when
-  // phase 8 lands — do not build stub pages for it here.
+  {
+    label: "Chaos",
+    pages: [
+      { label: "Chaos console", href: "/chaos" },
+      { label: "Run history", href: "/chaos/history" },
+    ],
+  },
   {
     label: "Tools",
     pages: [

@@ -7,6 +7,8 @@ import NeedsReviewPage from "@/app/(console)/needs-review/page";
 import NeedsReviewDetailPage from "@/app/(console)/needs-review/[id]/page";
 import FleetPage from "@/app/(console)/workers/page";
 import DeploymentsPage from "@/app/(console)/workers/deployments/page";
+import ChaosConsolePage from "@/app/(console)/chaos/page";
+import ChaosHistoryPage from "@/app/(console)/chaos/history/page";
 import ToolRegistryPage from "@/app/(console)/tools/page";
 import TestRunPage from "@/app/(console)/tools/test-run/page";
 import MetricsPage from "@/app/(console)/metrics/page";
@@ -27,6 +29,8 @@ export function App() {
           <Route path="needs-review/:id" element={<NeedsReviewDetailPage />} />
           <Route path="workers" element={<FleetPage />} />
           <Route path="workers/deployments" element={<DeploymentsPage />} />
+          <Route path="chaos" element={<ChaosConsolePage />} />
+          <Route path="chaos/history" element={<ChaosHistoryPage />} />
           <Route path="tools" element={<ToolRegistryPage />} />
           <Route path="tools/test-run" element={<TestRunPage />} />
           <Route path="metrics" element={<MetricsPage />} />
