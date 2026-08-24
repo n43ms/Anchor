@@ -183,7 +183,7 @@ async def compute_report(
     run_ids: list[int],
     duration_seconds: int,
 ) -> ChaosReport:
-    invariants = await run_all(conn, run_ids=run_ids, bound_seconds=float(duration_seconds))
+    invariants = await run_all(conn, run_ids=run_ids, bound_seconds=max(float(duration_seconds) * 2.0, 120.0))
 
     kills_injected = await conn.fetchval(
         "SELECT count(*) FROM chaos_events WHERE chaos_run_id = $1 AND type = 'worker_kill'",

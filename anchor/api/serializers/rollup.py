@@ -96,7 +96,7 @@ _UPSERT_WITH_HISTOGRAM_SQL = """
 INSERT INTO metrics_rollup (bucket_start, bucket_seconds, metric, dimension, count, sum_value, histogram)
 VALUES (
     to_timestamp(floor(extract(epoch FROM $1::timestamptz) / $2) * $2),
-    $2, $3, $4, $5, $6, jsonb_build_object($7::text, $5)
+    $2, $3, $4, $5, $6, jsonb_build_object($7::text, $5::int)
 )
 ON CONFLICT (bucket_start, bucket_seconds, metric, dimension) DO UPDATE
 SET count = metrics_rollup.count + EXCLUDED.count,
@@ -104,7 +104,7 @@ SET count = metrics_rollup.count + EXCLUDED.count,
     histogram = jsonb_set(
         coalesce(metrics_rollup.histogram, '{}'::jsonb),
         ARRAY[$7::text],
-        to_jsonb(coalesce((metrics_rollup.histogram ->> $7::text)::int, 0) + $5)
+        to_jsonb(coalesce((metrics_rollup.histogram ->> $7::text)::int, 0) + $5::int)
     )
 """
 

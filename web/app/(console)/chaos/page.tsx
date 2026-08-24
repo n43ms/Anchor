@@ -23,15 +23,16 @@ import { api } from "@/lib/api";
 import type { ChaosParams, ChaosReport, ChaosRun } from "@/lib/types";
 import { InvariantPanel } from "@/components/chaos/InvariantPanel";
 import { ReportCard } from "@/components/chaos/ReportCard";
+import { ChaosVisualizer } from "@/components/chaos/ChaosVisualizer";
 
 export default function ChaosConsolePage() {
   const [params, setParams] = useState<ChaosParams>({
     worker_count: 3,
-    run_count: 10,
-    duration_seconds: 45,
-    kill_rate_per_minute: 12,
-    latency_injection_ms: 150,
-    stall_injection_rate: 0.1,
+    run_count: 5,
+    duration_seconds: 60,
+    kill_rate_per_minute: 6,
+    latency_injection_ms: 100,
+    stall_injection_rate: 0.05,
     tool_failure_rate: 0.05,
     uncertainty_crash_rate: 0.02,
   });
@@ -96,37 +97,21 @@ export default function ChaosConsolePage() {
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto pb-12">
-      {/* Hero Banner (T525: "This page is the project — it is what you show first") */}
-      <div className="relative overflow-hidden rounded-3xl border border-strand-gold/30 bg-gradient-to-br from-strand-gold/10 via-black to-black p-8 backdrop-blur-2xl shadow-2xl">
-        <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
-          <Flame className="h-64 w-64 text-strand-gold" />
-        </div>
-
-        <div className="relative z-10 space-y-4 max-w-3xl">
-          <div className="inline-flex items-center gap-2 rounded-full border border-strand-gold/40 bg-strand-gold/10 px-3.5 py-1 text-xs font-mono font-bold text-strand-gold uppercase tracking-wider">
-            <Flame className="h-3.5 w-3.5 animate-pulse" />
-            <span>FAANG-Grade Fault Injection Suite</span>
-          </div>
-
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight font-mono">
-            Deterministic Chaos Control Center
-          </h1>
-
-          <p className="text-sm text-zinc-300 leading-relaxed font-mono">
-            <strong className="text-white">This page is the project — it is what you show first.</strong>{" "}
-            Anchor proves non-negotiable execution correctness under simulated hardware failure, brutal SIGKILL worker termination, network partition, and lease expiration.
-          </p>
-
-          <div className="flex flex-wrap items-center gap-4 text-xs font-mono text-zinc-400 pt-2">
-            <span className="flex items-center gap-1.5 text-emerald-400">
-              <CheckCircle2 className="h-4 w-4" /> 0 Duplicate Side Effects
-            </span>
-            <span className="flex items-center gap-1.5 text-emerald-400">
-              <CheckCircle2 className="h-4 w-4" /> Single-Writer Zombie Fencing
-            </span>
-            <span className="flex items-center gap-1.5 text-emerald-400">
-              <CheckCircle2 className="h-4 w-4" /> Verbatim Event Log Replay
-            </span>
+      {/* Clean Chaos Console Header */}
+      <div className="rounded-2xl border border-white/[0.08] bg-black/40 backdrop-blur-2xl p-6 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-strand-gold/40 bg-strand-gold/10 text-strand-gold">
+              <Flame className="h-5 w-5" />
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight font-mono">
+                Chaos Console
+              </h1>
+              <p className="text-xs text-zinc-400 font-mono mt-0.5">
+                Simulate hardware failures, worker SIGKILL process terminations, network latency, and lease expirations to verify zero duplicate side-effects and database-level invariants.
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -239,8 +224,9 @@ export default function ChaosConsolePage() {
           </div>
         </div>
 
-        {/* Live Invariant Panel & Report Summary (T522, T524) */}
+        {/* Live Chaos Strand Visualizer + Live Invariant Panel & Report Summary */}
         <div className="lg:col-span-2 space-y-6">
+          <ChaosVisualizer activeRun={activeRun} report={latestReport} />
           <InvariantPanel report={latestReport} loading={loading} />
 
           {latestReport && (

@@ -14,9 +14,9 @@ export default function FleetPage() {
   const { workers, stale, degraded } = useWorkers();
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const kill = (id: string, graceful: boolean) => {
+  const kill = (id: string) => {
     setErrors((prev) => ({ ...prev, [id]: "" }));
-    api.killWorker(id, graceful).catch((err: unknown) => {
+    api.killWorker(id, false).catch((err: unknown) => {
       setErrors((prev) => ({ ...prev, [id]: err instanceof ApiRequestError ? err.message : "kill failed" }));
     });
   };
@@ -97,23 +97,15 @@ export default function FleetPage() {
                 </p>
               )}
 
-              <div className="flex gap-2 pt-2 border-t border-white/[0.04]">
+              <div className="pt-2 border-t border-white/[0.04]">
                 <button
                   type="button"
-                  onClick={() => kill(w.id, false)}
-                  className="flex items-center gap-1 rounded-xl bg-rose-500/15 border border-rose-500/30 px-3 py-1.5 text-xs font-mono text-rose-400 hover:bg-rose-500/25 transition-all shadow-sm"
+                  onClick={() => kill(w.id)}
+                  className="w-full flex items-center justify-center gap-1.5 rounded-xl bg-rose-500/15 border border-rose-500/30 px-3.5 py-2 text-xs font-mono font-bold text-rose-400 hover:bg-rose-500/25 transition-all shadow-sm uppercase tracking-wider"
+                  title="Sends SIGKILL process termination signal to worker node"
                 >
-                  <Skull className="h-3 w-3" />
-                  <span>kill</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => kill(w.id, true)}
-                  className="flex items-center gap-1 rounded-xl border border-white/[0.08] bg-white/[0.02] px-3 py-1.5 text-xs font-mono text-zinc-300 hover:text-white hover:border-white/[0.2] transition-all"
-                  title="releases the lease on the way out — a cooperative shutdown, distinct from the crash-modelling hard kill"
-                >
-                  <Shield className="h-3 w-3" />
-                  <span>graceful stop</span>
+                  <Skull className="h-3.5 w-3.5" />
+                  <span>Hard Kill (SIGKILL)</span>
                 </button>
               </div>
             </div>

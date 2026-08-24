@@ -22,9 +22,6 @@ export default function ChaosHistoryPage() {
       setError(null);
       const res = await api.listChaosRuns();
       setRuns(res.items);
-      if (res.items.length > 0 && res.items[0].report) {
-        setSelectedReport(res.items[0].report);
-      }
     } catch (err) {
       console.error("Failed to load chaos history", err);
       setError(err instanceof Error ? err.message : "Failed to load chaos history");
