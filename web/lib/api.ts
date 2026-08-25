@@ -17,6 +17,7 @@ import type {
   RunTimeline,
   RuntimeConfig,
   ToolDescriptor,
+  ValidationReport,
   Worker,
 } from "./types";
 
@@ -154,4 +155,22 @@ export const api = {
   getLatestChaosReport: () => request<ChaosReport>("/api/chaos/latest"),
 
   getChaosReport: (id: number | string) => request<ChaosReport>(`/api/chaos/${id}/report`),
+
+  validateDraft: (source: string) =>
+    request<ValidationReport>("/api/authoring/validate", {
+      method: "POST",
+      body: JSON.stringify({ source }),
+    }),
+
+  generateDraft: (description: string) =>
+    request<{ source: string; validation: ValidationReport }>("/api/authoring/generate", {
+      method: "POST",
+      body: JSON.stringify({ description }),
+    }),
+
+  registerDraft: (source: string, agentType: string) =>
+    request<AgentDescriptor>("/api/authoring/register", {
+      method: "POST",
+      body: JSON.stringify({ source, agent_type: agentType }),
+    }),
 };

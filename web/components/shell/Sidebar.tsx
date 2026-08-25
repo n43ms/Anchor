@@ -40,6 +40,7 @@ const PAGE_ICONS: Record<string, React.FC<{ className?: string }>> = {
   "/chaos/history": FileText,
   "/tools": Wrench,
   "/tools/test-run": Code2,
+  "/tools/authoring": FileText,
   "/metrics": BarChart2,
   "/logs": Terminal,
   "/settings/environment": Settings,

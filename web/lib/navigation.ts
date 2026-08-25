@@ -43,6 +43,7 @@ export const NAV_GROUPS: NavGroup[] = [
     pages: [
       { label: "Registry", href: "/tools" },
       { label: "Test run", href: "/tools/test-run" },
+      { label: "Authoring", href: "/tools/authoring" },
     ],
   },
   {

@@ -323,3 +323,31 @@ export interface WsFrame<T = unknown> {
   sent_at: string;
   data: T;
 }
+
+/** contracts/openapi.yaml `ValidationReport` — the authoring surface's
+ * static-check result (plan.md P9.1, Phase 9). `findings` is empty on a
+ * clean draft, but `unchecked` is never empty: it is the four
+ * pre-registration judgements no static check can make, carried on every
+ * report so a console never renders `valid: true` as "this agent is
+ * correct" (FR-134, D-59). */
+export type ValidationCheck =
+  | "determinism_imports"
+  | "return_shape"
+  | "module_level_mutable_state"
+  | "unregistered_tool"
+  | "missing_safety_declaration"
+  | "unbounded_self_recursion";
+
+export interface ValidationFinding {
+  check: ValidationCheck;
+  line: number;
+  column: number | null;
+  message: string;
+  severity?: "error" | "warning";
+}
+
+export interface ValidationReport {
+  valid: boolean;
+  findings: ValidationFinding[];
+  unchecked: string[];
+}

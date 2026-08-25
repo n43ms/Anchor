@@ -11,6 +11,7 @@ import ChaosConsolePage from "@/app/(console)/chaos/page";
 import ChaosHistoryPage from "@/app/(console)/chaos/history/page";
 import ToolRegistryPage from "@/app/(console)/tools/page";
 import TestRunPage from "@/app/(console)/tools/test-run/page";
+import AuthoringPage from "@/app/(console)/tools/authoring/page";
 import MetricsPage from "@/app/(console)/metrics/page";
 import LogsPage from "@/app/(console)/logs/page";
 import EnvironmentPage from "@/app/(console)/settings/environment/page";
@@ -33,6 +34,7 @@ export function App() {
           <Route path="chaos/history" element={<ChaosHistoryPage />} />
           <Route path="tools" element={<ToolRegistryPage />} />
           <Route path="tools/test-run" element={<TestRunPage />} />
+          <Route path="tools/authoring" element={<AuthoringPage />} />
           <Route path="metrics" element={<MetricsPage />} />
           <Route path="logs" element={<LogsPage />} />
           <Route path="settings/environment" element={<EnvironmentPage />} />

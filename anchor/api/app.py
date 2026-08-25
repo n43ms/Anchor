@@ -114,7 +114,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         async with pool.acquire(timeout=5.0) as conn:
             abandoned = await mark_abandoned_chaos_runs(conn)
         if abandoned:
-            logger.warning("marked stale chaos runs abandoned at startup", extra={"count": abandoned})
+            logger.warning(
+                "marked stale chaos runs abandoned at startup", extra={"count": abandoned}
+            )
     except (asyncpg.PostgresError, TimeoutError, OSError) as exc:
         # Same posture as the schema check above: the database being
         # unreachable at boot is not this check's problem to solve, and
@@ -172,7 +174,16 @@ def create_app() -> FastAPI:
     app = FastAPI(title="Anchor", lifespan=lifespan)
 
     from anchor.api.middleware import log_requests, rate_limit_requests
-    from anchor.api.routers import chaos, config, health, observability, registry, runs, workers
+    from anchor.api.routers import (
+        authoring,
+        chaos,
+        config,
+        health,
+        observability,
+        registry,
+        runs,
+        workers,
+    )
     from anchor.api.ws import fleet as fleet_ws
     from anchor.api.ws import runs as runs_ws
     from anchor.runtime.agents import register_all
@@ -200,6 +211,7 @@ def create_app() -> FastAPI:
     app.include_router(registry.router)
     app.include_router(observability.router)
     app.include_router(config.router)
+    app.include_router(authoring.router)
     app.include_router(runs_ws.router)
     app.include_router(fleet_ws.router)
 
@@ -221,6 +233,14 @@ def create_app() -> FastAPI:
         "on",
     ):
         app.include_router(config.admin_router)
+        # POST /api/authoring/register is the RCE boundary named in
+        # contracts/openapi.yaml and quickstart.md V11: unmounted in
+        # demonstration mode means a 404, not a permission check, and the
+        # handler module that imports registry-mutation code
+        # (anchor.api.authoring.register) is imported for the first time
+        # right here — see that module's docstring for why no import path
+        # from an unconditionally-mounted router reaches it.
+        app.include_router(authoring.admin_router)
 
     for error_type, (status_code, error_code) in _ERROR_STATUS_CODES.items():
 
