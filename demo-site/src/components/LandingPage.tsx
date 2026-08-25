@@ -383,7 +383,7 @@ export const LandingPage: React.FC = () => {
       <section id="why-anchor-matrix-container" className="py-16 px-6 border-t border-white/10 bg-black font-mono text-xs scroll-mt-14">
         <div className="mx-auto max-w-5xl space-y-8">
           <div className="text-center space-y-4 max-w-3xl mx-auto mb-6">
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-white pt-1">Why Engineers Choose Anchor</h2>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-white pt-1">Why Should I Choose Anchor?</h2>
 
             <p className="text-zinc-300 text-xs sm:text-sm font-sans pt-1 leading-relaxed text-left sm:text-center">
               Current AI agent frameworks (LangGraph, CrewAI) rely on <span className="text-zinc-200 font-medium">in-memory buffers or naive Redis checkpoints</span> - causing process crashes to re-execute non-idempotent tool calls, double-charge payment APIs, and corrupt database state. Meanwhile, legacy enterprise orchestrators (Temporal, Step Functions) require hosting <span className="text-zinc-200 font-medium">massive external clusters ($5,000+/mo cloud tax)</span> built for microservices, not non-deterministic Python LLM loops. Anchor fills this void as a lightweight, PostgreSQL-authoritative engine - embedding <span className="text-amber-300 font-semibold">atomic two-phase tool journaling</span> (<code className="text-amber-300">INTENT</code> / <code className="text-emerald-300">RESULT</code>) and <span className="text-amber-300 font-semibold">monotonic epoch fencing</span> to guarantee <span className="text-amber-300 font-semibold">zero duplicate side-effects</span> and <span className="text-amber-300 font-semibold">sub-second recovery</span> natively in SQL.

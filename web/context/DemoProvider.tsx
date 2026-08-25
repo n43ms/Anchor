@@ -48,16 +48,9 @@ export const DemoProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Derive dynamic state based on current stage
   const currentTimeline: RunTimeline = {
     ...DEMO_RUN_TIMELINE_CRASHED,
-    segments:
-      stage === "normal"
-        ? [DEMO_RUN_TIMELINE_CRASHED.segments[0]]
-        : DEMO_RUN_TIMELINE_CRASHED.segments,
-    fencing_events: stage === "normal" ? [] : DEMO_RUN_TIMELINE_CRASHED.fencing_events,
-    summary: {
-      ...DEMO_RUN_TIMELINE_CRASHED.summary,
-      handoff_count: stage === "normal" ? 0 : 1,
-      recovery_seconds: stage === "normal" ? null : 3.1,
-    },
+    segments: DEMO_RUN_TIMELINE_CRASHED.segments,
+    fencing_events: DEMO_RUN_TIMELINE_CRASHED.fencing_events,
+    summary: DEMO_RUN_TIMELINE_CRASHED.summary,
   };
 
   const killWorker = async (_workerId: string) => {

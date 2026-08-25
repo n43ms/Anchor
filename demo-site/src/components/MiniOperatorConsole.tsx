@@ -1,6 +1,7 @@
 import React from "react";
 import { useDemo, DemoProvider, DemoTab } from "../context/DemoProvider";
 import { RunThread } from "./RunThread";
+import { WorkerBar } from "./WorkerBar";
 import { ChaosVisualizer } from "./ChaosVisualizer";
 import { SystemInspector } from "./SystemInspector";
 import { TerminalConsole } from "./TerminalConsole";
@@ -443,7 +444,7 @@ export const MiniOperatorConsoleContent: React.FC = () => {
                 <div className="flex items-center justify-between text-[10px] text-zinc-400 font-bold uppercase tracking-wider px-1 border-b border-white/10 pb-1.5">
                   <span className="flex items-center gap-1.5 text-white">
                     <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
-                    <span>RUNTIME EXECUTION STRAND STREAM (RUN #101)</span>
+                    <span>RUNTIME EXECUTION STREAM</span>
                   </span>
                   <span className="text-amber-400 font-bold">
                     🔵 MODEL CALL | 🟧 TOOL CALL | 🟩 REPLAYED | ⇄ WORKER SWAP
@@ -502,6 +503,9 @@ export const MiniOperatorConsoleContent: React.FC = () => {
                           </div>
                           <span className="text-zinc-500">{seg.ended_at ? "Terminated (SIGKILL)" : "Active Owner"}</span>
                         </div>
+
+                        {/* Worker Progress Bar */}
+                        <WorkerBar segment={seg} />
 
                         {/* Steps */}
                         <div className="space-y-1.5 pt-1">

@@ -97,9 +97,9 @@ export const MiniOperatorConsoleContent: React.FC = () => {
             <div>
               <span className="font-bold text-white text-xs">Guided Interactive Simulation</span>
               <p className="text-[10px] text-zinc-400">
-                {stage === "normal" && "Step 1: Run r101 executing on worker-a#1."}
-                {stage === "crashed" && "Step 2: worker-a#1 terminated abruptly! Lease expiring."}
-                {stage === "recovered" && "Step 3: worker-b#1 reclaimed run. Replayed steps, zero duplicate side-effects."}
+                {stage === "normal" && "Run r101 active: worker-a#1 died after TOOL_INTENT (step 2), worker-b#1 recorded TOOL_RESULT & completed run."}
+                {stage === "crashed" && "worker-a#1 terminated abruptly! Lease expiring."}
+                {stage === "recovered" && "worker-b#1 reclaimed run. Replayed steps, zero duplicate side-effects."}
               </p>
             </div>
           </div>
