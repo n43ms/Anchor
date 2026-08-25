@@ -235,12 +235,12 @@ export const LandingPage: React.FC = () => {
           {/* Relatable Pain-Point Scenarios */}
           <div className="mx-auto max-w-3xl flex flex-col sm:flex-row items-center justify-center gap-2.5 font-sans text-xs sm:text-sm font-bold">
             <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-3.5 py-1 text-amber-300 flex items-center gap-2 shadow-sm">
-              <span className="text-base">💳</span>
-              <span>Agent double-charged a card mid-tool call?</span>
+              <span className="text-base -mt-0.5">💳</span>
+              <span className = "text-xs">Agent double-charged a card mid-tool call?</span>
             </div>
             <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-3.5 py-1 text-rose-300 flex items-center gap-2 shadow-sm">
-              <span className="text-base">💀</span>
-              <span>Woke up to a dead container and lost 4 hrs LLM progress?</span>
+              <span className="text-base -mt-0.5">💀</span>
+              <span className="text-xs">Woke up to a dead container and lost 4 hrs LLM progress?</span>
             </div>
           </div>
 
