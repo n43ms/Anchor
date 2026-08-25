@@ -23,7 +23,28 @@ import {
   BarChart2,
   Wrench,
   AlertTriangle,
+  LayoutDashboard,
+  Activity,
+  Cpu,
+  Flame,
+  Code2,
 } from "lucide-react";
+
+const PAGE_ICONS: Record<string, React.FC<{ className?: string }>> = {
+  "/": LayoutDashboard,
+  "/runs": Activity,
+  "/needs-review": AlertTriangle,
+  "/workers": Cpu,
+  "/workers/deployments": Server,
+  "/chaos": Flame,
+  "/chaos/history": FileText,
+  "/tools": Wrench,
+  "/tools/test-run": Code2,
+  "/metrics": BarChart2,
+  "/logs": Terminal,
+  "/settings/environment": Settings,
+};
+
 
 export function Sidebar() {
   const location = useLocation();
@@ -107,6 +128,7 @@ export function Sidebar() {
                   pathname.startsWith(page.href + "/") &&
                   !allPages.some((p) => p.href !== page.href && pathname === p.href);
                 const active = isExact || isNestedChild;
+                const Icon = PAGE_ICONS[page.href] || Layers;
 
                 return (
                   <Link
@@ -126,7 +148,10 @@ export function Sidebar() {
                         transition={{ type: "spring", stiffness: 350, damping: 30 }}
                       />
                     )}
-                    <span className="relative z-10">{page.label}</span>
+                    <div className="relative z-10 flex items-center gap-2">
+                      <Icon className="h-3.5 w-3.5" />
+                      <span>{page.label}</span>
+                    </div>
                     {active && (
                       <motion.span
                         layoutId="sidebarActiveDot"
@@ -137,6 +162,7 @@ export function Sidebar() {
                   </Link>
                 );
               })}
+
             </div>
           </div>
         ))}

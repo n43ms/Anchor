@@ -679,8 +679,20 @@ questions:
   pricing, and any analytics-driven modal or cookie banner beyond the legal minimum. **No modal may
   stand between an arriving reviewer and the demo**, which is the reason the last exclusion is
   stated rather than assumed.
+- **FR-136**: System MUST present an interactive Mini Operator Console (`<MiniOperatorConsole/>`) on the
+  landing page acting as an exact visual replica of the Operator Console, reusing the exact same UI
+  components (`Dashboard`, `RunThread`, `TimelineTrack`, `InvariantPanel`, `LogsPanel`) in a stylized
+  embedded sandbox container (`max-w-4xl h-[600px] overflow-hidden rounded-xl shadow-2xl ring-1 ring-white/10`).
+- **FR-137**: System MUST decouple the Mini Operator Console replica from backend network calls using a
+  client-side `DemoProvider` and `demo-data.ts` state simulation layer with 300ms simulated latency,
+  allowing visitors and recruiters to interactively click through simulated failures and state recovery
+  without requiring an active backend connection.
+- **FR-138**: System MUST highlight product value for technical recruiters around the mini console via
+  pulsing hotspots, guided tooltips, and feature rails highlighting "Durable Execution" (no lost candidate
+  sessions) and "Real-time Telemetry" (observe candidate debugging live).
 
 **Deployment modes**
+
 
 - **FR-110**: System MUST determine mode at process start from configuration, never from a request, a
   session or a user.

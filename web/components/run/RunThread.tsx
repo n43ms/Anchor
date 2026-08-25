@@ -134,9 +134,10 @@ export function RunThread({
   const totalSteps = segments.reduce((n, s) => n + s.steps.length, 0);
   const markers = useMemo(() => deriveMarkers(segments), [segments]);
 
-  // In compact mode or when terminal: static rendering with 0 CPU/memory overhead
-  // In active full detail view: animated wave
-  const flowing = !compact && animate !== false && !terminal;
+  // In compact mode: static rendering with 0 CPU/memory overhead
+  // In active full detail view: animated wave (always moves even when run halts/finishes)
+  const flowing = !compact && animate !== false;
+
 
   const viewHeight = compact ? 26 : 88;
   const centerY = compact ? 13 : 44;

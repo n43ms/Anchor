@@ -1,0 +1,31 @@
+.strand-bundle-container {
+  isolation: isolate;
+}
+
+.strand-path {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 0 8px rgba(246, 196, 83, 0.6)) drop-shadow(0 0 16px rgba(246, 196, 83, 0.4));
+  transition: opacity 200ms ease-out;
+}
+
+.strand-ribbon-path {
+  mix-blend-mode: plus-lighter;
+  pointer-events: none;
+  stroke-linecap: round;
+}
+
+.strand-marker-node {
+  pointer-events: auto;
+}
+
+.strand-label-text {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.05em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9), 0 0 8px rgba(0, 0, 0, 0.8);
+}
+
+.strand-number-text {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  letter-spacing: -0.01em;
+}

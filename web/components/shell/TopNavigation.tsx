@@ -39,7 +39,7 @@ export function TopNavigation({ inspectorOpen = true, onToggleInspector }: TopNa
           className="group flex items-center gap-2.5 text-sm font-bold tracking-tight text-white transition-colors"
         >
           {/* Geometric Anchor SVG Logo */}
-          <div className="relative flex h-8 w-8 items-center justify-center rounded-xl border border-white/[0.1] bg-white/[0.04] p-1.5 transition-all group-hover:border-strand-gold/50 group-hover:bg-strand-gold/10">
+          <div className="relative flex h-8 w-8 items-center justify-center rounded-xl border border-strand-gold/40 bg-strand-gold/10 p-1.5 transition-all group-hover:border-strand-gold/60 group-hover:bg-strand-gold/20">
             <svg
               viewBox="0 0 24 24"
               fill="none"
@@ -54,6 +54,7 @@ export function TopNavigation({ inspectorOpen = true, onToggleInspector }: TopNa
               <path d="M5 12H2a10 10 0 0 0 20 0h-3" />
             </svg>
           </div>
+
           <div className="flex flex-col">
             <div className="flex items-center gap-1.5 leading-none">
               <span className="font-ui font-extrabold uppercase tracking-wider text-white">

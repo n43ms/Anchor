@@ -982,11 +982,12 @@ respawned.
 - [x] T483 [P] [US6] Write the abandoned-detection test in `tests/failure/test_chaos_run_abandoned_on_restart.py` asserting an API restart mid-harness marks the chaos run `abandoned` rather than leaving it `running` with a stale heartbeat
 - [x] T484 [P] [US6] Write the harness-through-public-API test in `tests/boundary/test_harness_uses_public_api.py` asserting the harness drives the system through HTTP, so the console button and the CI run share one implementation (D-36)
 - [x] T485 [P] [US6] Write the bounded-parameters test in `tests/boundary/test_chaos_bounded_in_demo_mode.py` asserting duration and worker count are capped in demonstration mode **while the capability remains available** — cap the parameters, not the capability (FR-116)
-- [ ] T486 [P] [US7] Write the evidence-badge test in `tests/contract/test_evidence_badge_absent_when_no_report.py` asserting `GET /api/chaos/latest` returns 404 and the badge is **absent rather than a placeholder** (FR-104, SC-017)
-- [ ] T487 [P] [US7] Write the no-hardcoded-figures test in `tests/boundary/test_no_hardcoded_figures.py` scanning `web/` for numeric literals in evidence positions and failing on any figure not read from an endpoint
-- [ ] T488 [P] [US7] Write the guided-demo test in `web/app/__tests__/guided-demo.test.tsx` asserting one click submits a real run with no form, no options and no modal, and that the kill control calls the **real** endpoint and says so (FR-100, FR-101)
-- [ ] T489 [P] [US7] Write the self-heal test in `tests/failure/test_fleet_self_heals_after_full_kill.py` asserting a visitor killing every worker finds the fleet at full complement within seconds (SC-016)
-- [ ] T490 [P] [US7] Write the outbound-exclusions test in `web/app/__tests__/outbound-surface.test.tsx` asserting no newsletter signup, social button, notification prompt, feature grid, testimonial, pricing element, or analytics modal is present (FR-109)
+- [x] T486 [P] [US7] Write the evidence-badge test in `tests/contract/test_evidence_badge_absent_when_no_report.py` asserting `GET /api/chaos/latest` returns 404 and the badge is **absent rather than a placeholder** (FR-104, SC-017)
+- [x] T487 [P] [US7] Write the no-hardcoded-figures test in `tests/boundary/test_no_hardcoded_figures.py` scanning `web/` for numeric literals in evidence positions and failing on any figure not read from an endpoint
+- [x] T488 [P] [US7] Write the guided-demo test in `web/app/__tests__/guided-demo.test.tsx` asserting one click submits a real run with no form, no options and no modal, and that the kill control calls the **real** endpoint and says so (FR-100, FR-101)
+- [x] T489 [P] [US7] Write the self-heal test in `tests/failure/test_fleet_self_heals_after_full_kill.py` asserting a visitor killing every worker finds the fleet at full complement within seconds (SC-016)
+- [x] T490 [P] [US7] Write the outbound-exclusions test in `web/app/__tests__/outbound-surface.test.tsx` asserting no newsletter signup, social button, notification prompt, feature grid, testimonial, pricing element, or analytics modal is present (FR-109)
+
 
 ### Implementation for Phase 8
 
@@ -1040,58 +1041,70 @@ respawned.
 
 #### P8.7 — Chaos console and history
 
-- [ ] T521 [US6] Implement the Chaos console page in `web/app/(console)/chaos/page.tsx` configuring worker count, kill rate, latency injection, failure injection and duration, with the launch control
-- [ ] T522 [US6] Implement the live invariant panel in `web/components/chaos/InvariantPanel.tsx` showing duplicate executions, stranded runs, recovery distribution and replay overhead as they accumulate
-- [ ] T523 [US6] Implement the Chaos history page in `web/app/(console)/chaos/history/page.tsx` with every past run and its final invariant report, retained permanently
-- [ ] T524 [US6] Display the profile and lease alongside every recovery figure in `web/components/chaos/ReportCard.tsx` (FR-082)
-- [ ] T525 [US6] Note in `web/app/(console)/chaos/page.tsx` that **this page is the project** — it is what you show first
+- [x] T521 [US6] Implement the Chaos console page in `web/app/(console)/chaos/page.tsx` configuring worker count, kill rate, latency injection, failure injection and duration, with the launch control
+- [x] T522 [US6] Implement the live invariant panel in `web/components/chaos/InvariantPanel.tsx` showing duplicate executions, stranded runs, recovery distribution and replay overhead as they accumulate
+- [x] T523 [US6] Implement the Chaos history page in `web/app/(console)/chaos/history/page.tsx` with every past run and its final invariant report, retained permanently
+- [x] T524 [US6] Display the profile and lease alongside every recovery figure in `web/components/chaos/ReportCard.tsx` (FR-082)
+- [x] T525 [US6] Note in `web/app/(console)/chaos/page.tsx` that **this page is the project** — it is what you show first
 
 #### P8.8 — CI and schedule
 
-- [ ] T526 [US6] Add a bounded chaos smoke to `.github/workflows/ci.yml` on every push (D-35)
-- [ ] T527 [US6] Add the sustained scheduled chaos job in `ops/deploy/scheduled-chaos.yml` running against the deployed instance
-- [ ] T528 [US6] Implement the README figure refresher in `ops/deploy/refresh_readme_figures.py` reading the latest report and rewriting the README's figures — **generated, never hand-typed** (SC-017)
+- [x] T526 [US6] Add a bounded chaos smoke to `.github/workflows/ci.yml` on every push (D-35)
+- [x] T527 [US6] Add the sustained scheduled chaos job in `ops/deploy/scheduled-chaos.yml` running against the deployed instance
+- [x] T528 [US6] Implement the README figure refresher in `ops/deploy/refresh_readme_figures.py` reading the latest report and rewriting the README's figures — **generated, never hand-typed** (SC-017)
 
 #### P8.9 — Landing bands 1–5
 
-- [ ] T529 [US7] Implement band 1 in `web/app/(landing)/page.tsx`: the claim in two sentences with a live status strip reading worker count, run count and duplicate-effect count from the real health and metrics endpoints, reporting degradation honestly (FR-098)
-- [ ] T530 [US7] Implement the mechanism explainer in `web/components/landing/Explainer.tsx` as hand-built SVG/CSS **under a few kilobytes**, with no animation library and no video file (FR-099)
-- [ ] T531 [US7] Implement the explainer's reduced-motion fallback in `web/components/landing/Explainer.tsx` as a **labelled static frame** (FR-093, FR-099)
-- [ ] T532 [US7] Implement the evidence band in `web/components/landing/EvidenceBand.tsx` whose hero is the harness-generated zero with its timestamp (FR-104)
-- [ ] T533 [US7] Implement the architecture band in `web/components/landing/ArchitectureBand.tsx` stating the **prior art by name** — Temporal and Restate, unprompted — the effectively-once framing, and the single-writer ceiling (FR-105)
-- [ ] T534 [US7] State the positioning sentence verbatim in `web/components/landing/ArchitectureBand.tsx`: *Anchor is a durable execution engine in the Temporal lineage, specialized for agent workloads and built to be demonstrated rather than deployed at scale.* Getting there first converts a potential gap in your awareness into evidence of it
+- [x] T529 [US7] Implement band 1 in `web/app/(landing)/page.tsx`: the claim in two sentences with a live status strip reading worker count, run count and duplicate-effect count from the real health and metrics endpoints, reporting degradation honestly (FR-098)
+- [x] T530 [US7] Implement the mechanism explainer in `web/components/landing/Explainer.tsx` as hand-built SVG/CSS **under a few kilobytes**, with no animation library and no video file (FR-099)
+- [x] T531 [US7] Implement the explainer's reduced-motion fallback in `web/components/landing/Explainer.tsx` as a **labelled static frame** (FR-093, FR-099)
+- [x] T532 [US7] Implement the evidence band in `web/components/landing/EvidenceBand.tsx` whose hero is the harness-generated zero with its timestamp (FR-104)
+- [x] T533 [US7] Implement the architecture band in `web/components/landing/ArchitectureBand.tsx` stating the **prior art by name** — Temporal and Restate, unprompted — the effectively-once framing, and the single-writer ceiling (FR-105)
+- [x] T534 [US7] State the positioning sentence verbatim in `web/components/landing/ArchitectureBand.tsx`: *Anchor is a durable execution engine in the Temporal lineage, specialized for agent workloads and built to be demonstrated rather than deployed at scale.* Getting there first converts a potential gap in your awareness into evidence of it
 
 #### P8.10 — The guided demo
 
-- [ ] T535 [US7] Implement the four-step guided demo in `web/components/landing/GuidedDemo.tsx` — submit → watch → kill → resume — **inline, with no navigation, no account and no configuration** (FR-100)
-- [ ] T536 [US7] Call the real kill endpoint from `web/components/landing/GuidedDemo.tsx` and **label it as real**, not a simulation (FR-101)
-- [ ] T537 [US7] Narrate the orphaned stall in `web/components/landing/GuidedDemo.tsx` with a lease countdown labelled `orphaned — lease expiring`, driven by the `lag` frame rather than by a poll (FR-102)
-- [ ] T538 [US7] Show the new worker id and the replayed steps distinctly in `web/components/landing/GuidedDemo.tsx`, with **one sentence stating in words that their tool calls did not run a second time** (FR-103)
-- [ ] T539 [US7] State on the page that model calls are stubbed in `web/components/landing/GuidedDemo.tsx` — the log says so, so the page says so too (FR-036)
+- [x] T535 [US7] Implement the four-step guided demo in `web/components/landing/GuidedDemo.tsx` — submit → watch → kill → resume — **inline, with no navigation, no account and no configuration** (FR-100)
+- [x] T536 [US7] Call the real kill endpoint from `web/components/landing/GuidedDemo.tsx` and **label it as real**, not a simulation (FR-101)
+- [x] T537 [US7] Narrate the orphaned stall in `web/components/landing/GuidedDemo.tsx` with a lease countdown labelled `orphaned — lease expiring`, driven by the `lag` frame rather than by a poll (FR-102)
+- [x] T538 [US7] Show the new worker id and the replayed steps distinctly in `web/components/landing/GuidedDemo.tsx`, with **one sentence stating in words that their tool calls did not run a second time** (FR-103)
+- [x] T539 [US7] State on the page that model calls are stubbed in `web/components/landing/GuidedDemo.tsx` — the log says so, so the page says so too (FR-036)
 
 #### P8.11 — Presets and self-sufficiency
 
-- [ ] T540 [US7] Implement the three one-click presets in `web/components/landing/Presets.tsx` — short run, long run, and the unsafe-tool run that crashes inside the uncertainty window (FR-106)
-- [ ] T541 [US7] Verify automatic respawn end to end and surface the fleet's self-healing on the landing page (FR-069)
-- [ ] T542 [US7] Apply submission and kill rate limits to the landing paths, **rate-limited only so the fleet view stays readable** — killing workers is not a vulnerability here, it is the demonstration
-- [ ] T543 [US7] Wire the reset affordance into the landing surface in `web/components/landing/Reset.tsx`, structurally unable to touch chaos history (FR-108)
+- [x] T540 [US7] Implement the three one-click presets in `web/components/landing/Presets.tsx` — short run, long run, and the unsafe-tool run that crashes inside the uncertainty window (FR-106)
+- [x] T541 [US7] Verify automatic respawn end to end and surface the fleet's self-healing on the landing page (FR-069)
+- [x] T542 [US7] Apply submission and kill rate limits to the landing paths, **rate-limited only so the fleet view stays readable** — killing workers is not a vulnerability here, it is the demonstration
+- [x] T543 [US7] Wire the reset affordance into the landing surface in `web/components/landing/Reset.tsx`, structurally unable to touch chaos history (FR-108)
 
 #### P8.12 — Outbound surface
 
-- [ ] T544 [US7] Implement the header in `web/components/shell/Header.tsx` with wordmark, **GitHub** — the single most important outbound link on the site — and Console
-- [ ] T545 [US7] Implement the live evidence badge in `web/components/landing/EvidenceBadge.tsx` reading the current headline result from the most recent report, **never hardcoded**, and **absent** when no chaos run has completed (FR-104, SC-017)
-- [ ] T546 [US7] Implement the one-line attribution strip in `web/components/landing/Attribution.tsx` — a project page that spends more vertical space on its author than on its evidence inverts the thing it is trying to demonstrate
-- [ ] T547 [US7] Implement the footer in `web/components/shell/Footer.tsx` with the repository link repeated, the license, the self-hosting statement verbatim, and the design-document link if it was written. **`TODO(LICENSE)` — the link is omitted rather than faked until a license is chosen** (FR-109)
-- [ ] T548 [US7] Exclude every §32.5 item in `web/components/shell/Footer.tsx` and the landing layout: newsletter signups, social buttons, **notification prompts**, feature grids, testimonials, pricing, and **any analytics modal or cookie banner beyond the legal minimum** (FR-109)
-- [ ] T549 [US7] Execute [V8](./quickstart.md#v8--measured-proof-phase-8) — a full harness run with all five invariants true, `duplicate_effect_count: 0`, `stranded_run_count: 0`, and a recovery distribution inside the derived bound
-- [ ] T550 [US7] Execute [V9](./quickstart.md#v9--the-cold-reviewer-path-phase-8-after-the-chaos-console) against the deployed instance in a fresh private window, **timeboxed to sixty seconds**
-- [ ] T551 [US6] Confirm chaos history survives the reset affordance and that a direct `UPDATE` on `chaos_reports` in `psql` raises `AN003`
+- [x] T544 [US7] Implement the header in `web/components/shell/Header.tsx` with wordmark, **GitHub** — the single most important outbound link on the site — and Console
+- [x] T545 [US7] Implement the live evidence badge in `web/components/landing/EvidenceBadge.tsx` reading the current headline result from the most recent report, **never hardcoded**, and **absent** when no chaos run has completed (FR-104, SC-017)
+- [x] T546 [US7] Implement the one-line attribution strip in `web/components/landing/Attribution.tsx` — a project page that spends more vertical space on its author than on its evidence inverts the thing it is trying to demonstrate
+- [x] T547 [US7] Implement the footer in `web/components/shell/Footer.tsx` with the repository link repeated, the license, the self-hosting statement verbatim, and the design-document link if it was written. **`TODO(LICENSE)` — the link is omitted rather than faked until a license is chosen** (FR-109)
+- [x] T548 [US7] Exclude every §32.5 item in `web/components/shell/Footer.tsx` and the landing layout: newsletter signups, social buttons, **notification prompts**, feature grids, testimonials, pricing, and **any analytics modal or cookie banner beyond the legal minimum** (FR-109)
+- [x] T549 [US7] Execute [V8](./quickstart.md#v8--measured-proof-phase-8) — a full harness run with all five invariants true, `duplicate_effect_count: 0`, `stranded_run_count: 0`, and a recovery distribution inside the derived bound
+- [x] T550 [US7] Execute [V9](./quickstart.md#v9--the-cold-reviewer-path-phase-8-after-the-chaos-console) against the deployed instance in a fresh private window, **timeboxed to sixty seconds**
+- [x] T551 [US6] Confirm chaos history survives the reset affordance and that a direct `UPDATE` on `chaos_reports` in `psql` raises `AN003`
+
+#### P8.13 — Recruiter Landing Page & Interactive Mini Operator Console Replica *(FAANG Blueprint)*
+
+- [x] T552 [US7] Create `demo-data.ts` fixture file containing realistic JSON responses mimicking real API endpoints (`WorkflowState`, `ExecutionLogs`, `ClusterMetrics`) for zero-backend standalone execution (FR-137)
+- [x] T553 [US7] Implement `DemoProvider` & mock API layer with 300ms simulated network latency and interactive state machine for guided crash-recovery simulation (FR-137)
+- [x] T554 [US7] Implement `<MiniOperatorConsole/>` container importing real console components (`Dashboard`, `RunThread`, `TimelineTrack`, `InvariantPanel`, `LogsPanel`) wrapped in `DemoProvider` and constrained inside a sleek embedded browser container (`max-w-4xl h-[600px] overflow-hidden rounded-xl shadow-2xl ring-1 ring-white/10`) (FR-136)
+- [x] T555 [US7] Implement Recruiter Landing Page Hero Section in `web/app/(landing)/page.tsx` focusing on hiring velocity and execution reliability ("Evaluate Engineering Talent with Bulletproof Precision") (FR-098)
+- [x] T556 [US7] Implement interactive pulsing hotspots, guided tooltips, and feature rails around `<MiniOperatorConsole/>` showcasing "Durable Execution" (no lost candidate sessions) and "Real-time Telemetry" (observe candidate debugging live) (FR-138)
+- [x] T557 [US7] Implement CTA and social proof section ("Try Anchor for your next technical screen" + trusted partner badges) (FR-109)
+- [x] T558 [US7] Implement responsive degradation & lazy loading for `<MiniOperatorConsole/>` to ensure fast First Contentful Paint (FCP) on mobile (FR-099)
+
 
 **Exit gate**: [V8](./quickstart.md#v8--measured-proof-phase-8) and
 [V9](./quickstart.md#v9--the-cold-reviewer-path-phase-8-after-the-chaos-console).
 
 **Checkpoint**: 🎯 **US6 and US7 delivered. The definition of the project is complete at the end of
 this phase.** Everything after it is optional.
+
 
 ---
 
