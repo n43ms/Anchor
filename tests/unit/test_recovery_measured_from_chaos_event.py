@@ -62,7 +62,9 @@ async def test_recovery_ms_measured_from_kill_to_reclaim(db_pool: asyncpg.Pool) 
             killed_at,
         )
 
-        report = await compute_report(conn, chaos_run_id=chaos_run_id, run_ids=[run_id], duration_seconds=10)
+        report = await compute_report(
+            conn, chaos_run_id=chaos_run_id, run_ids=[run_id], duration_seconds=10
+        )
 
     assert report.recovery is not None
     assert report.recovery.p50 >= 200

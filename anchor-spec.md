@@ -1010,7 +1010,7 @@ Section 13.1 sets the design position as "closer to a flight recorder than to a 
 
 **"Flashy" is defined here as high production value, never as decoration.** The distinction is load-bearing and worth stating precisely, because it is the difference between a console that reads as professional tooling and one that reads as an unfinished project with a template bolted on:
 
-| Reads as FAANG-grade | Reads as a template |
+| Reads as Production-Grade | Reads as a template |
 |---|---|
 | Live data moving on screen | Gradient hero background |
 | A number counting up because a run completed | A number counting up on page load for effect |

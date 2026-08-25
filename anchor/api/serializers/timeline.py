@@ -266,7 +266,11 @@ async def build_run_timeline(conn: asyncpg.Connection[Any], run_id: int) -> RunT
         recovery_seconds = total_recovery_s
 
     terminal_event = next(
-        (e for e in reversed(events) if e["type"] in ("RUN_COMPLETED", "RUN_FAILED", "RUN_CANCELLED")),
+        (
+            e
+            for e in reversed(events)
+            if e["type"] in ("RUN_COMPLETED", "RUN_FAILED", "RUN_CANCELLED")
+        ),
         None,
     )
     derived_status = run_row["status"]

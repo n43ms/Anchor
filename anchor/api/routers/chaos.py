@@ -82,7 +82,9 @@ async def get_pool(request: Request) -> asyncpg.Pool:
     return pool
 
 
-async def _fetch_report_row(conn: asyncpg.Connection[Any], chaos_run_id: int) -> asyncpg.Record | None:
+async def _fetch_report_row(
+    conn: asyncpg.Connection[Any], chaos_run_id: int
+) -> asyncpg.Record | None:
     return await conn.fetchrow(
         f"""
         SELECT {CHAOS_REPORT_COLUMNS}
@@ -211,7 +213,9 @@ async def list_chaos_runs(
 
 
 @router.get("/api/chaos/latest", response_model=ChaosReportResponse)
-async def latest_chaos_report(pool: Annotated[asyncpg.Pool, Depends(get_pool)]) -> ChaosReportResponse:
+async def latest_chaos_report(
+    pool: Annotated[asyncpg.Pool, Depends(get_pool)],
+) -> ChaosReportResponse:
     """Read by the landing page's evidence band and the live evidence badge.
     404 when no report exists — the badge is absent, never a placeholder
     (FR-104, SC-017, constitution Principle VIII).
@@ -240,7 +244,9 @@ async def get_chaos_report(
     async with pool.acquire() as conn:
         run_exists = await conn.fetchval("SELECT 1 FROM chaos_runs WHERE id = $1", chaos_run_id)
         if not run_exists:
-            raise ApiError(status_code=404, error="chaos_run_not_found", message="chaos run not found")
+            raise ApiError(
+                status_code=404, error="chaos_run_not_found", message="chaos run not found"
+            )
         report_row = await _fetch_report_row(conn, chaos_run_id)
     if report_row is None:
         raise ApiError(

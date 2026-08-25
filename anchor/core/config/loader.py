@@ -40,7 +40,6 @@ class BootstrapEnv(BaseSettings):
     )
     code_version: str = "dev"
 
-
     @property
     def worker_labels(self) -> list[str]:
         return [label.strip() for label in self.worker_label_pool.split(",") if label.strip()]

@@ -133,7 +133,9 @@ async def _fencing_events(conn: asyncpg.Connection[Any], *, run_ids: list[int]) 
     return int(count)
 
 
-async def _uncertainty_entries(conn: asyncpg.Connection[Any], *, run_ids: list[int]) -> dict[str, int]:
+async def _uncertainty_entries(
+    conn: asyncpg.Connection[Any], *, run_ids: list[int]
+) -> dict[str, int]:
     if not run_ids:
         return {}
     rows = await conn.fetch(
@@ -183,7 +185,9 @@ async def compute_report(
     run_ids: list[int],
     duration_seconds: int,
 ) -> ChaosReport:
-    invariants = await run_all(conn, run_ids=run_ids, bound_seconds=max(float(duration_seconds) * 2.0, 120.0))
+    invariants = await run_all(
+        conn, run_ids=run_ids, bound_seconds=max(float(duration_seconds) * 2.0, 120.0)
+    )
 
     kills_injected = await conn.fetchval(
         "SELECT count(*) FROM chaos_events WHERE chaos_run_id = $1 AND type = 'worker_kill'",

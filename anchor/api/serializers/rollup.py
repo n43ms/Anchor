@@ -109,7 +109,6 @@ SET count = metrics_rollup.count + EXCLUDED.count,
 """
 
 
-
 async def _bump(
     conn: asyncpg.Connection[Any],
     *,

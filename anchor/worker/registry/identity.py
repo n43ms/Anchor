@@ -38,7 +38,6 @@ async def claim_identity(conn: asyncpg.Connection[Any], label_pool: list[str]) -
     """
     await conn.execute("LOCK TABLE worker_label_incarnations IN EXCLUSIVE MODE")
     for label in label_pool:
-
         held = await conn.fetchval(
             """
             SELECT EXISTS (

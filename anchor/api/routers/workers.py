@@ -124,7 +124,9 @@ async def kill_worker(
         )
 
     async with pool.acquire() as conn:
-        exists = await conn.fetchval("SELECT EXISTS (SELECT 1 FROM workers WHERE id = $1)", worker_id)
+        exists = await conn.fetchval(
+            "SELECT EXISTS (SELECT 1 FROM workers WHERE id = $1)", worker_id
+        )
         if not exists:
             raise ApiError(status_code=404, error="worker_not_found", message="worker not found")
         async with conn.transaction():

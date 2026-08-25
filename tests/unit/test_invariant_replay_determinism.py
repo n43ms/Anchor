@@ -34,7 +34,9 @@ def _event(seq: int, type_: EventType, payload: dict[str, object]) -> RunEvent:
 
 def test_identical_logs_match() -> None:
     events = [
-        _event(1, EventType.RUN_SUBMITTED, {"agent_type": "demo_minimal", "input": {}, "is_demo": True}),
+        _event(
+            1, EventType.RUN_SUBMITTED, {"agent_type": "demo_minimal", "input": {}, "is_demo": True}
+        ),
         _event(2, EventType.STEP_STARTED, {"step_index": 0, "action_kind": "model"}),
     ]
     assert logs_reconstruct_identically(events, list(events))
@@ -42,11 +44,19 @@ def test_identical_logs_match() -> None:
 
 def test_mutated_log_is_detected() -> None:
     events_a = [
-        _event(1, EventType.RUN_SUBMITTED, {"agent_type": "demo_minimal", "input": {}, "is_demo": True}),
+        _event(
+            1, EventType.RUN_SUBMITTED, {"agent_type": "demo_minimal", "input": {}, "is_demo": True}
+        ),
         _event(
             2,
             EventType.LLM_CALLED,
-            {"step_index": 0, "prompt_hash": "h", "response": "A", "model": "stub", "stubbed": True},
+            {
+                "step_index": 0,
+                "prompt_hash": "h",
+                "response": "A",
+                "model": "stub",
+                "stubbed": True,
+            },
         ),
     ]
     events_b = [
@@ -54,7 +64,13 @@ def test_mutated_log_is_detected() -> None:
         _event(
             2,
             EventType.LLM_CALLED,
-            {"step_index": 0, "prompt_hash": "h", "response": "B", "model": "stub", "stubbed": True},
+            {
+                "step_index": 0,
+                "prompt_hash": "h",
+                "response": "B",
+                "model": "stub",
+                "stubbed": True,
+            },
         ),
     ]
     assert not logs_reconstruct_identically(events_a, events_b)

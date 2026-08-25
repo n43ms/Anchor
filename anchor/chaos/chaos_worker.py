@@ -59,7 +59,9 @@ class ChaosWorker:
         self._task: asyncio.Task[None] | None = None
 
     @classmethod
-    async def start(cls, pool: asyncpg.Pool, *, live: LiveSettings, code_version: str) -> ChaosWorker:
+    async def start(
+        cls, pool: asyncpg.Pool, *, live: LiveSettings, code_version: str
+    ) -> ChaosWorker:
         async with pool.acquire() as conn:
             registered = await register(
                 conn,

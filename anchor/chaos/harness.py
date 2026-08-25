@@ -79,7 +79,9 @@ class _RunState:
     run_ids: list[int] = field(default_factory=list)
 
 
-async def mark_abandoned_chaos_runs(conn: asyncpg.Connection[Any], *, stale_after_s: float = 60.0) -> int:
+async def mark_abandoned_chaos_runs(
+    conn: asyncpg.Connection[Any], *, stale_after_s: float = 60.0
+) -> int:
     """Called once at API startup (T497, T483): a `chaos_runs` row still
     `running` with a `heartbeat_at` older than `stale_after_s` means the
     process that owned it (this harness is not durable, per the module
@@ -274,13 +276,18 @@ async def _sustain(
             workers_resp = await client.get("/api/workers")
             workers_resp.raise_for_status()
             candidates = [w["id"] for w in workers_resp.json()["items"] if w["stopped_at"] is None]
-            await inject_random_kill(client, chaos_run_id=chaos_run_id, candidate_worker_ids=candidates)
+            await inject_random_kill(
+                client, chaos_run_id=chaos_run_id, candidate_worker_ids=candidates
+            )
 
         if config.latency_injection_ms > 0 and random.random() < 0.3:
             async with pool.acquire() as conn:
                 state.run_ids.append(
                     await inject_latency(
-                        client, conn, chaos_run_id=chaos_run_id, latency_ms=config.latency_injection_ms
+                        client,
+                        conn,
+                        chaos_run_id=chaos_run_id,
+                        latency_ms=config.latency_injection_ms,
                     )
                 )
 

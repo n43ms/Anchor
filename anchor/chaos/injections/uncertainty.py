@@ -66,7 +66,9 @@ async def inject_uncertainty_crash(
     after_seq = 0
     intent_seen = False
     while asyncio.get_running_loop().time() < deadline:
-        events_resp = await client.get(f"/api/runs/{run_id}/events", params={"after_seq": after_seq})
+        events_resp = await client.get(
+            f"/api/runs/{run_id}/events", params={"after_seq": after_seq}
+        )
         events_resp.raise_for_status()
         body = events_resp.json()
         reached_terminal = False
@@ -74,10 +76,7 @@ async def inject_uncertainty_crash(
             after_seq = item["seq"]
             if item["type"] == "TOOL_INTENT" and item["payload"]["tool_name"] == target_tool_name:
                 intent_seen = True
-            elif (
-                item["type"] == "TOOL_RESULT"
-                and item["payload"]["tool_name"] == target_tool_name
-            ):
+            elif item["type"] == "TOOL_RESULT" and item["payload"]["tool_name"] == target_tool_name:
                 # The call already completed before this poll caught it —
                 # the window closed; nothing to crash inside anymore.
                 return None

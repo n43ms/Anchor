@@ -137,9 +137,7 @@ async def check_single_writer_per_epoch(conn: asyncpg.Connection[Any]) -> Invari
         }
         for r in rows
     ]
-    return InvariantResult(
-        "single_writer_per_epoch", passed=not violations, violations=violations
-    )
+    return InvariantResult("single_writer_per_epoch", passed=not violations, violations=violations)
 
 
 _TERMINAL_STATUSES = ("completed", "failed", "cancelled", "needs_review")
@@ -173,9 +171,7 @@ async def check_terminal_reachability(
         {"invariant": "terminal_reachability", "run_id": r["id"], "status": r["status"]}
         for r in rows
     ]
-    return InvariantResult(
-        "terminal_reachability", passed=not violations, violations=violations
-    )
+    return InvariantResult("terminal_reachability", passed=not violations, violations=violations)
 
 
 async def stranded_run_count(conn: asyncpg.Connection[Any], *, run_ids: list[int]) -> int:
@@ -204,7 +200,9 @@ def logs_reconstruct_identically(events_a: list[RunEvent], events_b: list[RunEve
     purity. The unit test instead passes a deliberately mutated second log
     to prove this comparison can fail.
     """
-    return canonical_state_hash(reconstruct(events_a)) == canonical_state_hash(reconstruct(events_b))
+    return canonical_state_hash(reconstruct(events_a)) == canonical_state_hash(
+        reconstruct(events_b)
+    )
 
 
 async def check_replay_determinism(

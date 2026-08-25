@@ -33,7 +33,9 @@ async def _insert_run(conn: asyncpg.Connection, *, status: str, age_seconds: flo
         )
         return int(run_id)
 
-    finished_at_clause = "now()" if status in ("completed", "failed", "cancelled", "needs_review") else "NULL"
+    finished_at_clause = (
+        "now()" if status in ("completed", "failed", "cancelled", "needs_review") else "NULL"
+    )
     run_id = await conn.fetchval(
         f"INSERT INTO runs (agent_type, status, created_at, finished_at) "
         f"VALUES ('demo_minimal', $1, now() - ($2 * interval '1 second'), {finished_at_clause}) RETURNING id",

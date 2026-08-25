@@ -57,7 +57,11 @@ async def run_events_ws(websocket: WebSocket, run_id: int) -> None:
         await websocket.send_json(
             {
                 "kind": "hello",
-                "data": {"run_id": run_id, "last_seq": last_seq, "deployment_mode": deployment_mode},
+                "data": {
+                    "run_id": run_id,
+                    "last_seq": last_seq,
+                    "deployment_mode": deployment_mode,
+                },
             }
         )
         await websocket.send_json({"kind": "snapshot", "data": timeline.model_dump()})

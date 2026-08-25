@@ -97,7 +97,9 @@ async def get_metrics(
 
         # 1. Core totals
         runs_total = await conn.fetchval("SELECT count(*) FROM runs")
-        steps_total = await conn.fetchval("SELECT count(*) FROM run_events WHERE type = 'STEP_COMPLETED'")
+        steps_total = await conn.fetchval(
+            "SELECT count(*) FROM run_events WHERE type = 'STEP_COMPLETED'"
+        )
         duplicate_side_effects = await conn.fetchval(
             "SELECT count(*) FROM run_events WHERE type = 'STEP_SKIPPED_ON_REPLAY'"
         )
@@ -106,7 +108,9 @@ async def get_metrics(
         )
 
         # 2. Run Status Breakdown
-        status_rows = await conn.fetch("SELECT status, count(*) AS n FROM runs GROUP BY status ORDER BY count(*) DESC")
+        status_rows = await conn.fetch(
+            "SELECT status, count(*) AS n FROM runs GROUP BY status ORDER BY count(*) DESC"
+        )
         status_breakdown = [{"status": r["status"], "count": int(r["n"])} for r in status_rows]
 
         # 3. Event Type Frequency
@@ -155,14 +159,18 @@ async def get_metrics(
         dead_letter_rows = await conn.fetch(
             "SELECT status, count(*) AS count FROM runs WHERE status IN ('failed', 'needs_review') GROUP BY status"
         )
-        dead_letter_reasons = [{"error_type": r["status"], "count": int(r["count"])} for r in dead_letter_rows]
+        dead_letter_reasons = [
+            {"error_type": r["status"], "count": int(r["count"])} for r in dead_letter_rows
+        ]
 
         # Time series points for state distribution
         now_dt = datetime.utcnow()
         run_state_by_bucket = {}
         counts_map = {r["status"]: int(r["n"]) for r in status_rows}
         for i in range(5, -1, -1):
-            t_str = datetime.fromtimestamp(now_dt.timestamp() - i * (window_seconds / 5)).isoformat()
+            t_str = datetime.fromtimestamp(
+                now_dt.timestamp() - i * (window_seconds / 5)
+            ).isoformat()
             run_state_by_bucket[t_str] = counts_map
 
         fencing_events_series = [
