@@ -34,3 +34,17 @@
   background: rgba(255, 255, 255, 0.3);
 }
 
+@keyframes shimmerRtl {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.animate-shimmer-rtl {
+  animation: shimmerRtl 2.5s linear infinite;
+}
+
+

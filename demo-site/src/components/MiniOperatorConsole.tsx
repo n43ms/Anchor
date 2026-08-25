@@ -68,8 +68,10 @@ export const MiniOperatorConsoleContent: React.FC = () => {
       label: "Runs",
       items: [
         { id: "runs-all", label: "All runs", icon: Activity, badge: `${runs.length}` },
-        { id: "runs-needs-review", label: "Needs review", icon: AlertTriangle, badge: "0" },
+        { id: "runs-needs-review", label: "Needs review", icon: AlertTriangle, badge: "1" },
       ],
+
+
     },
     {
       label: "Workers",
@@ -231,17 +233,7 @@ export const MiniOperatorConsoleContent: React.FC = () => {
               <span>▶ Run Demo Agent</span>
             </button>
 
-            {stage === "normal" && (
-              <button
-                type="button"
-                onClick={() => killWorker("worker-a#1")}
-                disabled={isSimulating}
-                className="flex items-center gap-1.5 rounded-lg border border-rose-500/50 bg-rose-500/20 px-2.5 py-1 text-[10px] font-bold text-rose-300 hover:bg-rose-500/30 transition-all cursor-pointer"
-              >
-                <Zap className="h-3 w-3 text-rose-400" />
-                <span>Simulate Worker Kill</span>
-              </button>
-            )}
+
 
             {stage === "crashed" && (
               <button
@@ -333,21 +325,32 @@ export const MiniOperatorConsoleContent: React.FC = () => {
                   <div
                     key={r.id}
                     onClick={() => {
+                      if (r.id === 102) return;
                       setSelectedRunId(r.id);
                       setActiveTab("run-detail");
                     }}
-                    className="flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.02] p-3 hover:border-amber-500/40 transition-all cursor-pointer"
+                    className={`flex items-center justify-between rounded-xl border border-white/5 bg-white/[0.02] p-3 transition-all ${
+                      r.id === 102 ? "cursor-default opacity-85" : "hover:border-amber-500/40 cursor-pointer"
+                    }`}
                   >
+
                     <div>
                       <div className="font-bold text-white">#{r.display_id} — {r.agent_type}</div>
                       <div className="text-[10px] text-zinc-500 mt-0.5">Created {r.created_at}</div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2 py-0.5 text-[9px] text-emerald-400 font-bold">
+                      <span
+                        className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${
+                          r.status === "needs_review"
+                            ? "border border-amber-500/40 bg-amber-500/10 text-amber-400 font-mono uppercase"
+                            : "border border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                        }`}
+                      >
                         {r.status}
                       </span>
-                      <span className="rounded bg-white/5 px-2 py-0.5 text-zinc-300">{r.owner_worker_id || "unassigned"}</span>
+                      <span className="rounded bg-white/5 px-2 py-0.5 text-zinc-300 font-mono text-[10px]">{r.owner_worker_id || "unassigned"}</span>
                     </div>
+
                     <div className="text-right">
                       <div className="text-emerald-400 font-bold">0 duplicates</div>
                       <div className="text-[10px] text-zinc-500">{r.summary.handoff_count} handoffs</div>
@@ -360,14 +363,62 @@ export const MiniOperatorConsoleContent: React.FC = () => {
 
           {/* VIEW 3: RUNS - NEEDS REVIEW */}
           {activeTab === "runs-needs-review" && (
-            <div className="rounded-xl border border-white/10 bg-black/60 p-5 text-center space-y-3">
-              <CheckCircle2 className="h-8 w-8 text-emerald-400 mx-auto" />
-              <h3 className="text-sm font-bold text-white">Zero Runs Parking in Needs Review</h3>
-              <p className="text-xs text-zinc-400 max-w-md mx-auto">
-                Unsafe tool calls that crash inside the uncertainty window park here cleanly without double-executing side effects.
-              </p>
+            <div className="space-y-4 font-mono text-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-white/[0.08] bg-black/40 p-4 backdrop-blur-2xl">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="font-ui text-sm font-bold uppercase tracking-wider text-white">Needs Review Queue</h2>
+                    <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 font-mono text-[10px] text-amber-400 border border-amber-500/30 font-semibold">
+                      1 PENDING
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-zinc-400 font-mono mt-0.5">
+                    Runs halted at the uncertainty window following a worker crash during non-idempotent tool execution
+                  </p>
+                </div>
+              </div>
+
+              {/* Needs Review Item Card matching real operator console */}
+              <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 backdrop-blur-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="font-mono text-xs font-bold text-white flex items-center gap-1.5">
+                    <AlertTriangle className="h-4 w-4 text-amber-400" />
+                    <span>r102 · financial_payout_agent</span>
+                  </div>
+                  <span className="rounded-full border border-amber-500/40 bg-amber-500/20 px-2.5 py-0.5 font-mono text-[10px] font-semibold text-amber-300">
+                    ACTION REQUIRED
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3 text-[11px] font-mono text-zinc-400">
+                  <span>agent: <strong className="text-white">financial_payout_agent</strong></span>
+                  <span className="text-zinc-600">·</span>
+                  <span>failing step: <strong className="text-white">2 (check_compliance)</strong></span>
+                  <span className="text-zinc-600">·</span>
+                  <span>last owner: <strong className="text-white">worker-c#1</strong></span>
+                </div>
+
+                {/* Operator Resolution Action Badges (Static Display) */}
+                <div className="border-t border-white/10 pt-3 space-y-2">
+                  <div className="text-[11px] font-semibold text-white">Available operator resolutions:</div>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="rounded-xl border border-amber-500/40 bg-amber-500/15 px-3 py-1 text-[11px] font-mono font-medium text-amber-300">
+                      mark executed
+                    </span>
+                    <span className="rounded-xl border border-amber-500/40 bg-amber-500/15 px-3 py-1 text-[11px] font-mono font-medium text-amber-300">
+                      mark not executed
+                    </span>
+                    <span className="rounded-xl border border-amber-500/40 bg-amber-500/15 px-3 py-1 text-[11px] font-mono font-medium text-amber-300">
+                      retry
+                    </span>
+                  </div>
+                </div>
+
+              </div>
             </div>
           )}
+
+
 
           {/* VIEW 4: RUN DETAIL */}
           {activeTab === "run-detail" && (

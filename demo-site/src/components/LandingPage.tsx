@@ -47,7 +47,8 @@ const LinkedinIcon: React.FC<{ className?: string }> = ({ className = "h-4 w-4" 
 export const LandingPage: React.FC = () => {
   const { killWorker, setActiveTab } = useDemo();
   const [copied, setCopied] = useState(false);
-  const [heroPreset, setHeroPreset] = useState<"normal" | "crash" | "replay">("crash");
+  const [heroPreset, setHeroPreset] = useState<"normal" | "crash">("crash");
+
   const [showArchDetails, setShowArchDetails] = useState(false);
   const [showWhyDetails, setShowWhyDetails] = useState(false);
 
@@ -107,21 +108,8 @@ export const LandingPage: React.FC = () => {
         ],
       },
     ],
-    replay: [
-      {
-        worker_id: "worker-b#1",
-        epoch: 2,
-        started_at: new Date(Date.now() - 5000).toISOString(),
-        ended_at: null,
-        steps: [
-          { step_index: 0, name: "analyze_user_requirements", status: "done" as const, action_kind: "model" as const, started_at: "", completed_at: null, executed: false },
-          { step_index: 1, name: "execute_db_migration", status: "done" as const, action_kind: "tool" as const, started_at: "", completed_at: null, executed: false },
-          { step_index: 2, name: "fetch_external_api_payload", status: "done" as const, action_kind: "tool" as const, started_at: "", completed_at: null, executed: false },
-          { step_index: 3, name: "synthesize_llm_final_response", status: "done" as const, action_kind: "model" as const, started_at: "", completed_at: null, executed: true },
-        ],
-      },
-    ],
   };
+
 
   return (
     <div className="min-h-screen bg-black text-zinc-100 font-sans selection:bg-amber-500/20 selection:text-amber-200">
@@ -174,28 +162,28 @@ export const LandingPage: React.FC = () => {
               onClick={() => scrollToId("try-anchor-cli-container")}
               className="hover:text-amber-400 transition-colors cursor-pointer"
             >
-              Try Anchor
+              Try Free
             </button>
             <button
               type="button"
               onClick={() => scrollToId("operator-console-container")}
               className="hover:text-amber-400 transition-colors cursor-pointer"
             >
-              Console
+              Demo Console
             </button>
             <button
               type="button"
               onClick={() => scrollToId("why-anchor-matrix-container")}
               className="hover:text-amber-400 transition-colors cursor-pointer"
             >
-              Why Anchor
+              Durability
             </button>
             <button
               type="button"
               onClick={() => scrollToId("engineering-core-container")}
               className="hover:text-amber-400 transition-colors cursor-pointer"
             >
-              Engineering
+              How It Works
             </button>
           </nav>
 
@@ -236,31 +224,47 @@ export const LandingPage: React.FC = () => {
 
 
 
-      {/* 2. Hero Section (Fits 100% in Initial Viewport) */}
-      <section className="relative pt-4 pb-3 px-4">
-        <div className="mx-auto max-w-4xl text-center space-y-2.5">
-          <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-white max-w-3xl mx-auto leading-tight">
+      {/* 2. Hero Section (Fully visible in 1st frame at 100% zoom) */}
+      <section className="relative pt-3 pb-4 px-4">
+        <div className="mx-auto max-w-4xl text-center space-y-3">
+          {/* Main Headline */}
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white max-w-3xl mx-auto leading-tight">
             Durable Execution Engine for <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-200 to-amber-500">Mission-Critical AI Agents.</span>
           </h1>
 
-          <p className="text-xs sm:text-sm text-zinc-400 max-w-2xl mx-auto font-sans leading-normal">
-            Eliminate lost state and duplicate API calls when executing multi-step LLM agent pipelines. Anchor guarantees atomic two-phase tool journaling, monotonic epoch fencing, and sub-second crash recovery.
+          {/* Relatable Pain-Point Scenarios */}
+          <div className="mx-auto max-w-3xl flex flex-col sm:flex-row items-center justify-center gap-2.5 font-sans text-xs sm:text-sm font-bold">
+            <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-3.5 py-1 text-amber-300 flex items-center gap-2 shadow-sm">
+              <span className="text-base">💳</span>
+              <span>Agent double-charged a card mid-tool call?</span>
+            </div>
+            <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-3.5 py-1 text-rose-300 flex items-center gap-2 shadow-sm">
+              <span className="text-base">💀</span>
+              <span>Woke up to a dead container and lost 4 hrs LLM progress?</span>
+            </div>
+          </div>
+
+
+          {/* Hero Subtitle */}
+          <p className="text-sm sm:text-base text-zinc-300 max-w-3xl mx-auto font-sans leading-relaxed">
+            Eliminate <span className="text-white font-semibold">lost state</span> and <span className="text-white font-semibold">duplicate API calls</span> when executing multi-step LLM agent pipelines. Anchor guarantees <span className="text-amber-300 font-semibold">atomic two-phase tool journaling</span>, <span className="text-amber-300 font-semibold">monotonic epoch fencing</span>, and <span className="text-amber-300 font-semibold">sub-second crash recovery</span>.
           </p>
 
+
           {/* Real-Time Agent Execution Stream Header with Interactive Presets */}
-          <div className="mx-auto max-w-3xl rounded-2xl border border-white/10 bg-black/90 p-3 space-y-1.5 shadow-2xl backdrop-blur-xl text-left">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-[10px] font-mono text-zinc-400 border-b border-white/10 pb-1.5">
+          <div className="mx-auto max-w-3xl rounded-xl border border-white/10 bg-black/90 p-2.5 space-y-1 shadow-2xl backdrop-blur-xl text-left">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-[11px] font-mono text-zinc-400 border-b border-white/10 pb-1">
               <span className="flex items-center gap-1.5 font-bold text-white uppercase tracking-wider">
                 <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
                 Real-Time Agent Execution Stream
               </span>
 
               {/* Interactive Strand Presets */}
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1">
                 <button
                   type="button"
                   onClick={() => setHeroPreset("normal")}
-                  className={`rounded-md px-2 py-0.5 text-[9px] font-bold transition-all cursor-pointer ${
+                  className={`rounded-md px-2 py-0.5 text-[10px] font-bold transition-all cursor-pointer ${
                     heroPreset === "normal"
                       ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/50"
                       : "bg-white/5 text-zinc-400 hover:text-white"
@@ -271,24 +275,13 @@ export const LandingPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setHeroPreset("crash")}
-                  className={`rounded-md px-2 py-0.5 text-[9px] font-bold transition-all cursor-pointer ${
+                  className={`rounded-md px-2 py-0.5 text-[10px] font-bold transition-all cursor-pointer ${
                     heroPreset === "crash"
                       ? "bg-amber-500/25 text-amber-300 border border-amber-500/50"
                       : "bg-white/5 text-zinc-400 hover:text-white"
                   }`}
                 >
-                  ⚡ SIGKILL Swap
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setHeroPreset("replay")}
-                  className={`rounded-md px-2 py-0.5 text-[9px] font-bold transition-all cursor-pointer ${
-                    heroPreset === "replay"
-                      ? "bg-blue-500/25 text-blue-300 border border-blue-500/50"
-                      : "bg-white/5 text-zinc-400 hover:text-white"
-                  }`}
-                >
-                  🔄 Replay Cache
+                  ⚡ Worker Swap
                 </button>
               </div>
             </div>
@@ -297,60 +290,68 @@ export const LandingPage: React.FC = () => {
           </div>
 
           {/* Quick Copy CLI Command Box */}
-          <div id="try-anchor-cli-container" className="mx-auto max-w-xl flex items-center justify-between rounded-xl border border-white/10 bg-zinc-950 px-3.5 py-1.5 text-xs font-mono scroll-mt-20">
-            <div className="flex items-center gap-2 text-zinc-300">
-              <Terminal className="h-3.5 w-3.5 text-amber-400" />
-              <span>npx anchor-runtime@latest init</span>
+          <div id="try-anchor-cli-container" className="mx-auto max-w-md flex items-center justify-between rounded-xl border border-amber-500/30 bg-zinc-950/90 px-3.5 py-1.5 text-xs font-mono scroll-mt-20 shadow-md relative overflow-hidden">
+            <div className="flex items-center gap-2">
+              <Terminal className="h-3.5 w-3.5 text-amber-400 shrink-0" />
+              <span className="font-bold tracking-tight text-transparent bg-clip-text bg-[linear-gradient(270deg,#e4e4e7_0%,#fef3c7_35%,#fbbf24_50%,#fef3c7_65%,#e4e4e7_100%)] bg-[length:200%_100%] animate-shimmer-rtl">
+                npx anchor-runtime@latest init
+              </span>
             </div>
             <button
               type="button"
               onClick={handleCopyCmd}
-              className="flex items-center gap-1 text-[10px] text-amber-400 hover:text-amber-300 font-bold cursor-pointer transition-colors"
+              className="flex items-center gap-1 text-[10px] text-amber-400 hover:text-amber-300 font-bold cursor-pointer transition-colors shrink-0 pl-2"
             >
               {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
             </button>
           </div>
 
-          {/* Value Props Tailored specifically for Devs, Startups, & Enterprises (Scaled 1.25x) */}
 
-          <div className="mx-auto max-w-5xl grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 text-left font-mono">
-            <div className="rounded-xl border border-amber-500/40 bg-amber-500/[0.05] p-4 sm:p-5 backdrop-blur-xl space-y-2 shadow-lg">
-              <div className="flex items-center gap-2 text-amber-400 font-bold uppercase text-xs sm:text-sm">
-                <Code2 className="h-4.5 w-4.5" />
-                <span>For Developers</span>
+          {/* Value Props Cards (Prominent & Visible in 1st Frame with Highlighted Keywords) */}
+          <div className="mx-auto max-w-4xl grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 text-left font-mono">
+            <div className="rounded-xl border border-amber-500/40 bg-black/80 p-3.5 space-y-1.5 backdrop-blur-xl shadow-lg hover:border-amber-500/60 transition-all">
+              <div className="flex items-center gap-1.5 text-amber-400 font-bold uppercase text-[11px]">
+                <Code2 className="h-4 w-4" />
+                <span>Developer Integration</span>
               </div>
-              <div className="text-sm sm:text-base font-extrabold text-white font-sans">Self-Healing Step Loops</div>
-              <div className="text-xs sm:text-sm text-zinc-300 leading-relaxed font-sans">
-                Never write custom try/catch retry glue again. If a worker process dies mid-loop, Anchor resumes execution at the exact step index without re-executing completed side effects.
+              <div className="text-xs sm:text-sm font-extrabold text-white font-sans">Self-Healing Step Loops</div>
+              <div className="text-[11px] text-zinc-300 leading-snug font-sans">
+                Never write <span className="text-zinc-100 font-semibold">custom try/catch retry glue</span> again. If a worker process dies mid-loop, Anchor resumes execution at the <span className="text-amber-300 font-semibold">exact step index</span> without re-executing <span className="text-zinc-100 font-semibold">completed side effects</span>.
               </div>
             </div>
 
-            <div className="rounded-xl border border-emerald-500/40 bg-emerald-500/[0.05] p-4 sm:p-5 backdrop-blur-xl space-y-2 shadow-lg">
-              <div className="flex items-center gap-2 text-emerald-400 font-bold uppercase text-xs sm:text-sm">
-                <DollarSign className="h-4.5 w-4.5" />
-                <span>For Startups</span>
+            <div className="rounded-xl border border-emerald-500/40 bg-black/80 p-3.5 space-y-1.5 backdrop-blur-xl shadow-lg hover:border-emerald-500/60 transition-all">
+              <div className="flex items-center gap-1.5 text-emerald-400 font-bold uppercase text-[11px]">
+                <DollarSign className="h-4 w-4" />
+                <span>Cost Efficiency & ROI</span>
               </div>
-              <div className="text-sm sm:text-base font-extrabold text-white font-sans">Zero Wasted LLM Credits</div>
-              <div className="text-xs sm:text-sm text-zinc-300 leading-relaxed font-sans">
-                Save 100% of LLM API costs on crashed runs. Already-executed prompt completions and expensive tool outputs are journaled, preventing duplicate OpenAI/Anthropic charges.
+              <div className="text-xs sm:text-sm font-extrabold text-white font-sans">Zero Wasted LLM Credits</div>
+              <div className="text-[11px] text-zinc-300 leading-snug font-sans">
+                Save <span className="text-emerald-300 font-semibold">100% of LLM API costs</span> on crashed runs. Already-executed <span className="text-zinc-100 font-semibold">prompt completions</span> and <span className="text-emerald-300 font-semibold">expensive tool outputs</span> are journaled, preventing <span className="text-zinc-100 font-semibold">duplicate OpenAI/Anthropic charges</span>.
               </div>
             </div>
 
-            <div className="rounded-xl border border-blue-500/40 bg-blue-500/[0.05] p-4 sm:p-5 backdrop-blur-xl space-y-2 shadow-lg">
-              <div className="flex items-center gap-2 text-blue-400 font-bold uppercase text-xs sm:text-sm">
-                <Briefcase className="h-4.5 w-4.5" />
-                <span>For Enterprises</span>
+            <div className="rounded-xl border border-blue-500/40 bg-black/80 p-3.5 space-y-1.5 backdrop-blur-xl shadow-lg hover:border-blue-500/60 transition-all">
+              <div className="flex items-center gap-1.5 text-blue-400 font-bold uppercase text-[11px]">
+                <Briefcase className="h-4 w-4" />
+                <span>Workflow Resilience</span>
               </div>
-              <div className="text-sm sm:text-base font-extrabold text-white font-sans">Zombie Split-Brain Immunity</div>
-              <div className="text-xs sm:text-sm text-zinc-300 leading-relaxed font-sans">
-                Monotonic epoch fencing guarantees zero split-brain data corruption when containers roll out or nodes partition under cloud infrastructure deploys.
+              <div className="text-xs sm:text-sm font-extrabold text-white font-sans">Zombie Split-Brain Immunity</div>
+              <div className="text-[11px] text-zinc-300 leading-snug font-sans">
+                <span className="text-blue-300 font-semibold">Monotonic epoch fencing</span> guarantees <span className="text-zinc-100 font-semibold">zero split-brain data corruption</span> when containers roll out or <span className="text-blue-300 font-semibold">nodes partition</span> under cloud infrastructure deploys.
               </div>
             </div>
           </div>
+
         </div>
       </section>
 
+
+
+
+
       {/* 3. Featured Showcase: Interactive Demo Console */}
+
       <section id="operator-console-container" className="py-8 px-6 border-t border-white/10 bg-black/90 scroll-mt-14">
         <div className="mx-auto max-w-6xl space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-2">
@@ -362,8 +363,9 @@ export const LandingPage: React.FC = () => {
                 </h2>
               </div>
               <p className="text-xs text-zinc-400 font-sans mt-0.5">
-                Test-drive Anchor's live operator UI, inspect run state replays, and trigger SIGKILL worker failures in real time.
+                Test-drive Anchor's live operator UI and inspect run state replays in real time.
               </p>
+
             </div>
 
             <div className="flex items-center gap-2 font-mono text-xs">
@@ -380,17 +382,11 @@ export const LandingPage: React.FC = () => {
       {/* 4. Competitive Architecture Comparison Matrix */}
       <section id="why-anchor-matrix-container" className="py-16 px-6 border-t border-white/10 bg-black font-mono text-xs scroll-mt-14">
         <div className="mx-auto max-w-5xl space-y-8">
-          <div className="text-center space-y-4 max-w-2xl mx-auto mb-6">
-            <div className="inline-block mb-1">
-              <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3.5 py-1 text-[10px] font-bold text-amber-400 uppercase tracking-wider">
-                ARCHITECTURAL COMPARISON
-              </span>
-            </div>
-
+          <div className="text-center space-y-4 max-w-3xl mx-auto mb-6">
             <h2 className="text-2xl sm:text-3xl font-extrabold text-white pt-1">Why Engineers Choose Anchor</h2>
 
-            <p className="text-zinc-300 text-xs sm:text-sm font-sans pt-1 leading-relaxed">
-              Built natively for PostgreSQL 16 without heavy external orchestrators or memory-only state buffers.
+            <p className="text-zinc-300 text-xs sm:text-sm font-sans pt-1 leading-relaxed text-left sm:text-center">
+              Current AI agent frameworks (LangGraph, CrewAI) rely on <span className="text-zinc-200 font-medium">in-memory buffers or naive Redis checkpoints</span> - causing process crashes to re-execute non-idempotent tool calls, double-charge payment APIs, and corrupt database state. Meanwhile, legacy enterprise orchestrators (Temporal, Step Functions) require hosting <span className="text-zinc-200 font-medium">massive external clusters ($5,000+/mo cloud tax)</span> built for microservices, not non-deterministic Python LLM loops. Anchor fills this void as a lightweight, PostgreSQL-authoritative engine - embedding <span className="text-amber-300 font-semibold">atomic two-phase tool journaling</span> (<code className="text-amber-300">INTENT</code> / <code className="text-emerald-300">RESULT</code>) and <span className="text-amber-300 font-semibold">monotonic epoch fencing</span> to guarantee <span className="text-amber-300 font-semibold">zero duplicate side-effects</span> and <span className="text-amber-300 font-semibold">sub-second recovery</span> natively in SQL.
             </p>
 
             <button
@@ -472,18 +468,12 @@ export const LandingPage: React.FC = () => {
         <div className="mx-auto max-w-5xl space-y-12">
           {/* Section 5A: Consumer Wording: Why Anchor Matters */}
           <div className="space-y-4 text-center max-w-3xl mx-auto mb-6">
-            <div className="inline-block mb-1">
-              <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3.5 py-1 text-xs font-mono font-bold text-amber-400 uppercase tracking-wider">
-                WHY ANCHOR MATTERS
-              </span>
-            </div>
-
             <h2 className="text-3xl font-extrabold text-white pt-1">
               Zero Lost State. Zero Duplicate Charges.
             </h2>
 
             <p className="text-zinc-300 text-sm font-sans leading-relaxed pt-1">
-              When AI agents execute multi-step tasks—like searching database records, calling third-party APIs, or processing payments—server crashes normally result in lost progress and double-billing. Anchor acts as an immutable flight recorder: every step is saved before it runs, so if a server dies, another takes over instantly with zero wasted credits.
+              When AI agents execute multi-step tasks - like searching database records, calling third-party APIs, or processing payments - server crashes normally result in lost progress and double-billing. Anchor acts as an immutable flight recorder: every step is saved before it runs, so if a server dies, another takes over instantly with zero wasted credits.
             </p>
 
             <button
@@ -496,6 +486,7 @@ export const LandingPage: React.FC = () => {
               {showWhyDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </button>
           </div>
+
 
           {showWhyDetails && (
             <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.04] p-5 space-y-4 font-sans text-xs text-zinc-300 mb-8 shadow-2xl animate-fadeIn">

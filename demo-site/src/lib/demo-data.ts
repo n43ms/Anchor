@@ -31,7 +31,7 @@ export const DEMO_WORKERS: Worker[] = [
     id: "worker-a#1",
     label: "worker-a",
     incarnation: 1,
-    hostname: "node-us-east-1a",
+    hostname: "anchor-worker-a",
     pid: 4821,
     started_at: new Date(Date.now() - 3600000).toISOString(),
     last_seen_at: new Date().toISOString(),
@@ -48,7 +48,7 @@ export const DEMO_WORKERS: Worker[] = [
     id: "worker-b#1",
     label: "worker-b",
     incarnation: 1,
-    hostname: "node-us-east-1b",
+    hostname: "anchor-worker-b",
     pid: 4822,
     started_at: new Date(Date.now() - 3600000).toISOString(),
     last_seen_at: new Date().toISOString(),
@@ -65,7 +65,7 @@ export const DEMO_WORKERS: Worker[] = [
     id: "worker-c#1",
     label: "worker-c",
     incarnation: 1,
-    hostname: "node-us-west-2a",
+    hostname: "anchor-worker-c",
     pid: 4823,
     started_at: new Date(Date.now() - 3600000).toISOString(),
     last_seen_at: new Date().toISOString(),
@@ -82,7 +82,7 @@ export const DEMO_WORKERS: Worker[] = [
     id: "worker-d#1",
     label: "worker-d",
     incarnation: 1,
-    hostname: "node-eu-central-1a",
+    hostname: "anchor-worker-d",
     pid: 4824,
     started_at: new Date(Date.now() - 3600000).toISOString(),
     last_seen_at: new Date().toISOString(),
@@ -99,7 +99,7 @@ export const DEMO_WORKERS: Worker[] = [
     id: "worker-e#1",
     label: "worker-e",
     incarnation: 1,
-    hostname: "node-ap-south-1a",
+    hostname: "anchor-worker-e",
     pid: 4825,
     started_at: new Date(Date.now() - 3600000).toISOString(),
     last_seen_at: new Date().toISOString(),
@@ -108,6 +108,7 @@ export const DEMO_WORKERS: Worker[] = [
     uptime_ms: 3600000,
     current_run_count: 1,
     capacity: 10,
+
     steps_executed: 412,
     code_version: "v1.4.2-prod",
     role: "runner",
@@ -221,6 +222,75 @@ export const DEMO_RUN_TIMELINE_CRASHED: RunTimeline = {
   },
 };
 
+export const DEMO_RUN_NEEDS_REVIEW: RunListItem = {
+  id: 102,
+  display_id: "r102",
+  agent_type: "financial_payout_agent",
+  status: "needs_review",
+  epoch: 1,
+  owner_worker_id: null,
+  lease_expires_at: null,
+  orphaned: false,
+  current_step_index: 2,
+  step_count: 3,
+  attempts: 1,
+  priority: 5,
+  is_demo: true,
+  cancel_requested_at: null,
+  created_at: new Date(Date.now() - 45000).toISOString(),
+  claimed_at: new Date(Date.now() - 42000).toISOString(),
+  finished_at: null,
+  elapsed_ms: 45000,
+  segments: [
+    {
+      worker_id: "worker-c#1",
+      epoch: 1,
+      claim_reason: "initial",
+      started_at: new Date(Date.now() - 42000).toISOString(),
+      ended_at: new Date(Date.now() - 38000).toISOString(),
+      steps: [
+        {
+          step_index: 0,
+          name: "validate_payout_payload",
+          status: "done",
+          action_kind: "model",
+          started_at: new Date(Date.now() - 42000).toISOString(),
+          completed_at: new Date(Date.now() - 40500).toISOString(),
+          duration_ms: 1500,
+          idempotency_key: "r102:s0:val:99a1",
+          idempotency_key_display: "99a1b2c3",
+          executed: true,
+        },
+        {
+          step_index: 1,
+          name: "check_compliance_limits",
+          status: "done",
+          action_kind: "tool",
+          started_at: new Date(Date.now() - 40000).toISOString(),
+          completed_at: new Date(Date.now() - 38500).toISOString(),
+          duration_ms: 1500,
+          idempotency_key: "r102:s1:comp:88b2",
+          idempotency_key_display: "88b2c3d4",
+          executed: true,
+        },
+      ],
+      log: [
+        { timestamp: new Date(Date.now() - 42000).toISOString(), text: "Claimed run r102 (epoch 1)", level: "info" },
+        { timestamp: new Date(Date.now() - 40500).toISOString(), text: "Step 0 (Model) complete: validate_payout_payload ($50,000)", level: "success" },
+        { timestamp: new Date(Date.now() - 38500).toISOString(), text: "Step 1 (Tool) complete: check_compliance_limits", level: "success" },
+        { timestamp: new Date(Date.now() - 38000).toISOString(), text: "⚠️ Halted at Step 2: Payout of $50,000 exceeds auto-approval threshold ($10,000). Parked in needs_review.", level: "warning" },
+      ],
+    },
+  ],
+  summary: {
+    duplicate_side_effects: 0,
+    handoff_count: 0,
+    recovery_seconds: 0,
+    effects_executed: 2,
+    replayed_step_count: 0,
+  },
+};
+
 export const DEMO_RUNS_LIST: RunListItem[] = [
   {
     id: 101,
@@ -244,7 +314,9 @@ export const DEMO_RUNS_LIST: RunListItem[] = [
     segments: DEMO_RUN_TIMELINE_CRASHED.segments,
     summary: DEMO_RUN_TIMELINE_CRASHED.summary,
   },
+  DEMO_RUN_NEEDS_REVIEW,
 ];
+
 
 export const DEMO_CHAOS_REPORT: ChaosReport = {
   id: 42,

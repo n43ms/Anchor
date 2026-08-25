@@ -24,7 +24,8 @@ export function SystemInspector({ onClose }: { onClose: () => void }) {
   const totalCapacity = workers.reduce((acc, w) => acc + w.capacity, 0);
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-md flex-col border-l border-white/10 bg-zinc-950/95 font-mono text-xs text-zinc-100 backdrop-blur-2xl shadow-2xl animate-in slide-in-from-right duration-200">
+    <div className="absolute inset-y-0 right-0 z-40 flex w-full max-w-md flex-col border-l border-white/10 bg-zinc-950/95 font-mono text-xs text-zinc-100 backdrop-blur-2xl shadow-2xl animate-in slide-in-from-right duration-200">
+
       {/* Inspector Drawer Titlebar */}
       <div className="flex items-center justify-between border-b border-white/10 p-4 bg-black/60">
         <div className="flex items-center gap-2">

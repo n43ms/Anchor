@@ -117,8 +117,9 @@ async def get_metrics(
 
         # 4. Worker Fleet Activity
         worker_rows = await conn.fetch(
-            "SELECT id, label, incarnation, status, capacity, current_run_count FROM workers ORDER BY id ASC"
+            "SELECT id, label, incarnation, capacity, current_run_count FROM workers ORDER BY id ASC"
         )
+
         worker_fleet = [
             {
                 "id": r["id"],

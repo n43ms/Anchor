@@ -9,7 +9,8 @@ x-python-env: &python-env
   # instance) leaves it unset and is therefore demonstration mode by default
   # — fail-closed, per constitution Principle VII / research.md §31.
   ANCHOR_AUTHORING_EXECUTE: "true"
-  ANCHOR_WORKER_LABEL_POOL: worker-a,worker-b,worker-c
+  ANCHOR_WORKER_LABEL_POOL: worker-a,worker-b,worker-c,worker-d,worker-e,worker-f,worker-g,worker-h,worker-i,worker-j,worker-k,worker-l,worker-m,worker-n,worker-o,worker-p,worker-q,worker-r,worker-s,worker-t,worker-u,worker-v,worker-w,worker-x,worker-y,worker-z
+
   ANCHOR_CODE_VERSION: ${ANCHOR_CODE_VERSION:-dev}
   GEMINI_API_KEY: ${GEMINI_API_KEY:-}
   OPENAI_API_KEY: ${OPENAI_API_KEY:-}
