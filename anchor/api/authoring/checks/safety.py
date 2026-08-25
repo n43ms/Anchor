@@ -1,8 +1,9 @@
 """The missing-safety-declaration check (plan.md P9.1, T570).
 
 A draft may declare a new tool inline with the `@anchor.tool(...)` /
-`@tool(...)` decorator (`anchorplans.md` Pillar 1's `@anchor.tool(safety=
-"retry_safe")`). `anchor.runtime.tools.registry.register` already refuses
+`@tool(...)` decorator (`docs/tools.md`'s SDK-convenience form of
+`@anchor.tool(safety="retry_safe")`). `anchor.runtime.tools.registry.register`
+already refuses
 a `safety` value outside `retry_safe` / `reconcilable` / `unsafe` at
 registration time (`_validate`), but a missing `safety=` keyword entirely
 is a `TypeError` at decoration time — a mistake worth catching here,

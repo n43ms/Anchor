@@ -685,11 +685,11 @@ questions:
   embedded sandbox container (`max-w-4xl h-[600px] overflow-hidden rounded-xl shadow-2xl ring-1 ring-white/10`).
 - **FR-137**: System MUST decouple the Mini Operator Console replica from backend network calls using a
   client-side `DemoProvider` and `demo-data.ts` state simulation layer with 300ms simulated latency,
-  allowing visitors and recruiters to interactively click through simulated failures and state recovery
-  without requiring an active backend connection.
-- **FR-138**: System MUST highlight product value for technical recruiters around the mini console via
-  pulsing hotspots, guided tooltips, and feature rails highlighting "Durable Execution" (no lost candidate
-  sessions) and "Real-time Telemetry" (observe candidate debugging live).
+  allowing visitors to interactively click through simulated failures and state recovery without
+  requiring an active backend connection.
+- **FR-138**: System MUST highlight product value around the mini console via pulsing hotspots, guided
+  tooltips, and feature rails highlighting "Durable Execution" (no lost sessions) and "Real-time
+  Telemetry" (observe execution live).
 
 **Deployment modes**
 

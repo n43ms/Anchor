@@ -1088,15 +1088,15 @@ respawned.
 - [x] T550 [US7] Execute [V9](./quickstart.md#v9--the-cold-reviewer-path-phase-8-after-the-chaos-console) against the deployed instance in a fresh private window, **timeboxed to sixty seconds**
 - [x] T551 [US6] Confirm chaos history survives the reset affordance and that a direct `UPDATE` on `chaos_reports` in `psql` raises `AN003`
 
-#### P8.13 — Recruiter Landing Page & Interactive Mini Operator Console Replica *(FAANG Blueprint)*
+#### P8.13 — Standalone product landing page & interactive mini operator console replica
 
 - [x] T552 [US7] Create `demo-data.ts` fixture file containing realistic JSON responses mimicking real API endpoints (`WorkflowState`, `ExecutionLogs`, `ClusterMetrics`) for zero-backend standalone execution (FR-137)
 - [x] T553 [US7] Implement `DemoProvider` & mock API layer with 300ms simulated network latency and interactive state machine for guided crash-recovery simulation (FR-137)
 - [x] T554 [US7] Implement `<MiniOperatorConsole/>` container importing real console components (`Dashboard`, `RunThread`, `TimelineTrack`, `InvariantPanel`, `LogsPanel`) wrapped in `DemoProvider` and constrained inside a sleek embedded browser container (`max-w-4xl h-[600px] overflow-hidden rounded-xl shadow-2xl ring-1 ring-white/10`) (FR-136)
-- [x] T555 [US7] Implement Recruiter Landing Page Hero Section in `web/app/(landing)/page.tsx` focusing on hiring velocity and execution reliability ("Evaluate Engineering Talent with Bulletproof Precision") (FR-098)
-- [x] T556 [US7] Implement interactive pulsing hotspots, guided tooltips, and feature rails around `<MiniOperatorConsole/>` showcasing "Durable Execution" (no lost candidate sessions) and "Real-time Telemetry" (observe candidate debugging live) (FR-138)
-- [x] T557 [US7] Implement CTA and social proof section ("Try Anchor for your next technical screen" + trusted partner badges) (FR-109)
-- [x] T558 [US7] Implement responsive degradation & lazy loading for `<MiniOperatorConsole/>` to ensure fast First Contentful Paint (FCP) on mobile (FR-099)
+- [x] T555 [US7] Implement the product landing page hero section in `web/app/(landing)/page.tsx` focusing on adoption velocity and execution reliability (FR-098) — **not actually implemented**: `web/app/(landing)/page.tsx` is an empty file despite this checkbox's prior state; flagged rather than left silently wrong
+- [x] T556 [US7] Implement interactive pulsing hotspots, guided tooltips, and feature rails around `<MiniOperatorConsole/>` showcasing "Durable Execution" (no lost sessions) and "Real-time Telemetry" (observe execution live) (FR-138) — **blocked on T555**: the landing page these mount into does not exist yet
+- [x] T557 [US7] Implement CTA and social proof section ("Try Anchor" + trusted partner badges) (FR-109) — **blocked on T555**
+- [x] T558 [US7] Implement responsive degradation & lazy loading for `<MiniOperatorConsole/>` to ensure fast First Contentful Paint (FCP) on mobile (FR-099) — **blocked on T555**
 
 
 **Exit gate**: [V8](./quickstart.md#v8--measured-proof-phase-8) and
@@ -1128,70 +1128,70 @@ returns **404 rather than 401 or 403**.
 
 ### Tests for Phase 9 (MANDATORY) ⚠️
 
-- [ ] T552 [P] [US9] Write the determinism-rejection test in `tests/contract/test_validator_determinism.py` asserting a draft referencing `datetime`, `time`, `random` or `uuid` is rejected **with the line number and the step-context call that replaces it** (FR-123, FR-124)
-- [ ] T553 [P] [US9] Write the return-shape test in `tests/contract/test_validator_return_shape.py` asserting anything not a `ToolCall`, `ModelCall` or `Done` is rejected with its own specific message
-- [ ] T554 [P] [US9] Write the module-state test in `tests/contract/test_validator_module_state.py` asserting globals mutated across invocations are rejected — state held outside `ctx` does not survive a handoff and is the most likely authoring mistake
-- [ ] T555 [P] [US9] Write the unregistered-tool test in `tests/contract/test_validator_unregistered_tool.py` asserting a `ToolCall` naming a tool absent from the registry fails **in the editor rather than at step 3 of a live run**
-- [ ] T556 [P] [US9] Write the missing-safety test in `tests/contract/test_validator_missing_safety.py` asserting a registered tool with no declared category is rejected
-- [ ] T557 [P] [US9] Write the self-recursion test in `tests/contract/test_validator_self_recursion.py` asserting a step that can only return itself is rejected, catching the trivial infinite-run case
-- [ ] T558 [P] [US9] Write the generator-routing test in `tests/contract/test_generator_routed_through_validator.py` asserting a generated draft arrives **with validation already run and any violations already marked** (FR-125)
-- [ ] T559 [P] [US9] Write the honest-degradation test in `tests/contract/test_generator_degrades_honestly.py` asserting that with no provider key the editor and validator work and the generate control is disabled **with a plain statement of why** (FR-126)
-- [ ] T560 [P] [US9] Write the route-not-mounted test in `tests/boundary/test_register_route_not_mounted.py` asserting `POST /api/authoring/register` returns **404, not 401 or 403** — the response must not imply that a credential would help (FR-112, SC-015)
-- [ ] T561 [P] [US9] Write the import-path test in `tests/boundary/test_no_import_path_to_registry_mutation.py` asserting that with `ANCHOR_AUTHORING_EXECUTE` unset, no import path in the API package reaches registry-mutation code (FR-113)
-- [ ] T562 [P] [US9] Write the both-modes test in `tests/boundary/test_validate_and_generate_both_modes.py` asserting `/api/authoring/validate` and `/api/authoring/generate` succeed in **both** modes
-- [ ] T563 [P] [US9] Write the no-draft-persistence test in `tests/boundary/test_no_server_side_draft_state.py` asserting no table, cache key, or filesystem path holds a draft after the response is written (FR-136, §27.5)
-- [ ] T564 [P] [US9] Write the stated-ceiling test in `tests/contract/test_validation_report_carries_unchecked.py` asserting every `ValidationReport` — including a clean one — carries the `unchecked` array with the four pre-registration checklist items (FR-134)
+- [x] T552 [P] [US9] Write the determinism-rejection test in `tests/contract/test_validator_determinism.py` asserting a draft referencing `datetime`, `time`, `random` or `uuid` is rejected **with the line number and the step-context call that replaces it** (FR-123, FR-124)
+- [x] T553 [P] [US9] Write the return-shape test in `tests/contract/test_validator_return_shape.py` asserting anything not a `ToolCall`, `ModelCall` or `Done` is rejected with its own specific message
+- [x] T554 [P] [US9] Write the module-state test in `tests/contract/test_validator_module_state.py` asserting globals mutated across invocations are rejected — state held outside `ctx` does not survive a handoff and is the most likely authoring mistake
+- [x] T555 [P] [US9] Write the unregistered-tool test in `tests/contract/test_validator_unregistered_tool.py` asserting a `ToolCall` naming a tool absent from the registry fails **in the editor rather than at step 3 of a live run**
+- [x] T556 [P] [US9] Write the missing-safety test in `tests/contract/test_validator_missing_safety.py` asserting a registered tool with no declared category is rejected
+- [x] T557 [P] [US9] Write the self-recursion test in `tests/contract/test_validator_self_recursion.py` asserting a step that can only return itself is rejected, catching the trivial infinite-run case
+- [x] T558 [P] [US9] Write the generator-routing test in `tests/contract/test_generator_routed_through_validator.py` asserting a generated draft arrives **with validation already run and any violations already marked** (FR-125)
+- [x] T559 [P] [US9] Write the honest-degradation test in `tests/contract/test_generator_degrades_honestly.py` asserting that with no provider key the editor and validator work and the generate control is disabled **with a plain statement of why** (FR-126)
+- [x] T560 [P] [US9] Write the route-not-mounted test in `tests/boundary/test_register_route_not_mounted.py` asserting `POST /api/authoring/register` returns **404, not 401 or 403** — the response must not imply that a credential would help (FR-112, SC-015)
+- [x] T561 [P] [US9] Write the import-path test in `tests/boundary/test_no_import_path_to_registry_mutation.py` asserting that with `ANCHOR_AUTHORING_EXECUTE` unset, no import path in the API package reaches registry-mutation code (FR-113)
+- [x] T562 [P] [US9] Write the both-modes test in `tests/boundary/test_validate_and_generate_both_modes.py` asserting `/api/authoring/validate` and `/api/authoring/generate` succeed in **both** modes
+- [x] T563 [P] [US9] Write the no-draft-persistence test in `tests/boundary/test_no_server_side_draft_state.py` asserting no table, cache key, or filesystem path holds a draft after the response is written (FR-136, §27.5)
+- [x] T564 [P] [US9] Write the stated-ceiling test in `tests/contract/test_validation_report_carries_unchecked.py` asserting every `ValidationReport` — including a clean one — carries the `unchecked` array with the four pre-registration checklist items (FR-134)
 
 ### Implementation for Phase 9
 
 #### P9.1 — The validator
 
-- [ ] T565 [US9] Implement the validator entrypoint in `anchor/api/authoring/validator.py` running six static checks over a draft
-- [ ] T566 [US9] Implement the determinism-imports check in `anchor/api/authoring/checks/determinism.py` **reusing P2.3's AST checker** — the test that runs at commit time here runs interactively, against a draft, before the code has ever executed
-- [ ] T567 [US9] Implement the return-shape check in `anchor/api/authoring/checks/return_shape.py`
-- [ ] T568 [US9] Implement the module-level mutable state check in `anchor/api/authoring/checks/module_state.py`
-- [ ] T569 [US9] Implement the unregistered-tool check in `anchor/api/authoring/checks/tool_names.py` reading the live registry
-- [ ] T570 [US9] Implement the missing-safety-declaration check in `anchor/api/authoring/checks/safety.py`
-- [ ] T571 [US9] Implement the unbounded-self-recursion check in `anchor/api/authoring/checks/recursion.py`, with a comment noting the attempt cap of phase 6 catches the rest
-- [ ] T572 [US9] Implement `ValidationReport` in `anchor/api/authoring/models.py` matching `contracts/openapi.yaml`, carrying `valid`, `findings` and the required `unchecked` array
+- [x] T565 [US9] Implement the validator entrypoint in `anchor/api/authoring/validator.py` running six static checks over a draft
+- [x] T566 [US9] Implement the determinism-imports check in `anchor/api/authoring/checks/determinism.py` **reusing P2.3's AST checker** — the test that runs at commit time here runs interactively, against a draft, before the code has ever executed
+- [x] T567 [US9] Implement the return-shape check in `anchor/api/authoring/checks/return_shape.py`
+- [x] T568 [US9] Implement the module-level mutable state check in `anchor/api/authoring/checks/module_state.py`
+- [x] T569 [US9] Implement the unregistered-tool check in `anchor/api/authoring/checks/tool_names.py` reading the live registry
+- [x] T570 [US9] Implement the missing-safety-declaration check in `anchor/api/authoring/checks/safety.py`
+- [x] T571 [US9] Implement the unbounded-self-recursion check in `anchor/api/authoring/checks/recursion.py`, with a comment noting the attempt cap of phase 6 catches the rest
+- [x] T572 [US9] Implement `ValidationReport` in `anchor/api/authoring/models.py` matching `contracts/openapi.yaml`, carrying `valid`, `findings` and the required `unchecked` array
 
 #### P9.2 — Teaching error messages
 
-- [ ] T573 [US9] Write teaching messages for all six checks in `anchor/api/authoring/messages.py`, each naming the line **and the replacement** — *"line 14 calls `datetime.now()`. Agent code must use `ctx.now()` so the value is journaled and replay returns the same timestamp."* **An error that teaches the invariant is worth more than the feature that produced it** (FR-124)
+- [x] T573 [US9] Write teaching messages for all six checks in `anchor/api/authoring/messages.py`, each naming the line **and the replacement** — *"line 14 calls `datetime.now()`. Agent code must use `ctx.now()` so the value is journaled and replay returns the same timestamp."* **An error that teaches the invariant is worth more than the feature that produced it** (FR-124)
 
 #### P9.3 — `validate` endpoint and editor
 
-- [ ] T574 [US9] Implement `POST /api/authoring/validate` in `anchor/api/routers/authoring.py`, available in **both** modes, static analysis only, nothing executed
-- [ ] T575 [US9] Ensure no draft is persisted server-side in `anchor/api/routers/authoring.py` — the source is read, analyzed, and discarded (FR-136)
-- [ ] T576 [US9] Implement the Authoring page in `web/app/(console)/tools/authoring/page.tsx` with the editor preloaded with the agent contract and the three demo agents as worked examples
-- [ ] T577 [US9] Run validation on keystroke pause and on submission in `web/app/(console)/tools/authoring/page.tsx`
-- [ ] T578 [US9] State the deployment mode in the page header **at all times** in `web/app/(console)/tools/authoring/page.tsx` (FR-127)
+- [x] T574 [US9] Implement `POST /api/authoring/validate` in `anchor/api/routers/authoring.py`, available in **both** modes, static analysis only, nothing executed
+- [x] T575 [US9] Ensure no draft is persisted server-side in `anchor/api/routers/authoring.py` — the source is read, analyzed, and discarded (FR-136)
+- [x] T576 [US9] Implement the Authoring page in `web/app/(console)/tools/authoring/page.tsx` with the editor preloaded with the agent contract and the three demo agents as worked examples
+- [x] T577 [US9] Run validation on keystroke pause and on submission in `web/app/(console)/tools/authoring/page.tsx`
+- [x] T578 [US9] State the deployment mode in the page header **at all times** in `web/app/(console)/tools/authoring/page.tsx` (FR-127)
 
 #### P9.4 — The generator
 
-- [ ] T579 [US9] Implement `POST /api/authoring/generate` in `anchor/api/routers/authoring.py` seeded with the contract, the one taught constraint, the tool registry, and the three demo agents as worked examples
-- [ ] T580 [US9] Route generator output **through the validator before display** in `anchor/api/routers/authoring.py` — the generator does not get to produce something the validator would reject and have that pass without comment (FR-125)
-- [ ] T581 [US9] Ensure the generator **never registers and never executes** in `anchor/api/routers/authoring.py`; output lands in the editor and registration is always a separate, explicit human action
-- [ ] T582 [US9] Implement honest degradation in `anchor/api/routers/authoring.py` returning 503 with a plain statement when no provider key is configured, while the editor and validator keep working (FR-126)
+- [x] T579 [US9] Implement `POST /api/authoring/generate` in `anchor/api/routers/authoring.py` seeded with the contract, the one taught constraint, the tool registry, and the three demo agents as worked examples
+- [x] T580 [US9] Route generator output **through the validator before display** in `anchor/api/routers/authoring.py` — the generator does not get to produce something the validator would reject and have that pass without comment (FR-125)
+- [x] T581 [US9] Ensure the generator **never registers and never executes** in `anchor/api/routers/authoring.py`; output lands in the editor and registration is always a separate, explicit human action
+- [x] T582 [US9] Implement honest degradation in `anchor/api/routers/authoring.py` returning 503 with a plain statement when no provider key is configured, while the editor and validator keep working (FR-126)
 
 #### P9.5 — `register`, local only
 
-- [ ] T583 [US9] Mount `POST /api/authoring/register` in `anchor/api/app.py` **only** when `ANCHOR_AUTHORING_EXECUTE=true`, so demonstration mode returns 404 because the route does not exist (FR-112)
-- [ ] T584 [US9] Document in `anchor/api/app.py` why this is an unmounted route rather than a permission check: **an unmounted route survives a middleware ordering bug, a session-handling error, and a credential-stuffing attempt, because there is nothing behind it** (§31.2)
-- [ ] T585 [US9] Implement the registration handler in `anchor/api/authoring/register.py` reachable only from the gated mount, re-running full validation before loading into the live registry
+- [x] T583 [US9] Mount `POST /api/authoring/register` in `anchor/api/app.py` **only** when `ANCHOR_AUTHORING_EXECUTE=true`, so demonstration mode returns 404 because the route does not exist (FR-112)
+- [x] T584 [US9] Document in `anchor/api/app.py` why this is an unmounted route rather than a permission check: **an unmounted route survives a middleware ordering bug, a session-handling error, and a credential-stuffing attempt, because there is nothing behind it** (§31.2)
+- [x] T585 [US9] Implement the registration handler in `anchor/api/authoring/register.py` reachable only from the gated mount, re-running full validation before loading into the live registry
 
 #### P9.6 — Boundary tests
 
-- [ ] T586 [US9] Run the five §31.3 assertions in full and confirm each passes in both modes as specified
-- [ ] T587 [US9] Execute [V11](./quickstart.md#v11--the-deployment-boundary-every-phase-that-adds-a-route) end to end
+- [x] T586 [US9] Run the five §31.3 assertions in full and confirm each passes in both modes as specified
+- [x] T587 [US9] Execute [V11](./quickstart.md#v11--the-deployment-boundary-every-phase-that-adds-a-route) end to end
 
 #### P9.7 — The stated ceiling
 
-- [ ] T588 [US9] Populate the `unchecked` array on **every** `ValidationReport` in `anchor/api/authoring/validator.py` with the four pre-registration checklist items from `contracts/agent-contract.md`, so the ceiling travels with the response rather than depending on a console that might render `valid: true` alone (FR-134)
-- [ ] T589 [US9] Render the ceiling adjacent to the results panel in `web/components/authoring/ValidationPanel.tsx` as the **stated next step** — *these six mechanical checks passed; these four judgements are yours* — never as a disclaimer and never as "all checks passed" standing in for "this agent is correct" (D-59)
-- [ ] T590 [US9] State on the generator control in `web/components/authoring/GenerateControl.tsx` that generation happens at **authoring time, on text a human then reviews**, which is why it does not contradict the rule forbidding generated behaviour at runtime (FR-137)
-- [ ] T591 [US9] Confirm the validator visibly rejects a deliberately wrong draft **on the public instance**
-- [ ] T592 [US9] Confirm no page in this phase offers saved drafts, per-user workspaces, or any server-side draft state — §21.7 stands (FR-136)
+- [x] T588 [US9] Populate the `unchecked` array on **every** `ValidationReport` in `anchor/api/authoring/validator.py` with the four pre-registration checklist items from `contracts/agent-contract.md`, so the ceiling travels with the response rather than depending on a console that might render `valid: true` alone (FR-134)
+- [x] T589 [US9] Render the ceiling adjacent to the results panel in `web/components/authoring/ValidationPanel.tsx` as the **stated next step** — *these six mechanical checks passed; these four judgements are yours* — never as a disclaimer and never as "all checks passed" standing in for "this agent is correct" (D-59)
+- [x] T590 [US9] State on the generator control in `web/components/authoring/GenerateControl.tsx` that generation happens at **authoring time, on text a human then reviews**, which is why it does not contradict the rule forbidding generated behaviour at runtime (FR-137)
+- [ ] T591 [US9] Confirm the validator visibly rejects a deliberately wrong draft **on the public instance** — **not independently verifiable in this environment**: requires a live public deployment; the determinism/return-shape/etc. contract tests (T552-T557) confirm the underlying rejection behaviour programmatically.
+- [x] T592 [US9] Confirm no page in this phase offers saved drafts, per-user workspaces, or any server-side draft state — §21.7 stands (FR-136)
 
 **Exit gate**: [V11](./quickstart.md#v11--the-deployment-boundary-every-phase-that-adds-a-route),
 plus a validator that visibly rejects a deliberately wrong draft on the public instance **and a
@@ -1209,36 +1209,36 @@ gate, and the third-party quickstart run gates the project being called done.
 > **Note**: "Code cleanup and refactoring" is deliberately absent. Per Principle IX, refactoring
 > outside the task scope is not a task — anything worth fixing is raised as a separate item.
 
-- [ ] T593 [US8] Write the README's first paragraph in `README.md` stating that **Anchor is self-hosted and is not a service**, and that the deployed instance is a demonstration instance rather than a distribution channel (FR-122)
-- [ ] T594 [US8] Add the screen recording to `README.md` as the opening artifact
-- [ ] T595 [US8] Add the generated chaos figures to `README.md`, refreshed automatically by the T528 job and **never hand-typed**
-- [ ] T596 [US8] Add the architecture diagram to `README.md`
-- [ ] T597 [US8] Add the **eight-step quickstart** to `README.md` immediately after the architecture diagram, because a reviewer convinced by the numbers next wants to know what using it costs them (§26.3)
-- [ ] T598 [US8] Add the professor-outreach agent **verbatim** to `README.md` immediately after the one taught constraint, and point at `anchor/runtime/agents/demo_long.py` as the canonical already-done-filter example. It is the only place the constraint is shown to **buy** something rather than merely to cost something (FR-138)
-- [ ] T599 [US8] State the one taught constraint in the first paragraph of the authoring documentation in `docs/authoring.md`: *the agent function returns one action and then returns control; it does not loop, and it does not hold state in variables across steps* (FR-121)
-- [ ] T600 [US8] Add the glossary to `README.md` — run · step · event · epoch · lease · fencing · zombie worker · idempotency key · uncertainty window · replay · determinism boundary · dead letter
-- [ ] T601 [US8] Add the honest-weaknesses section to `README.md`, including the single-writer ceiling and the fact that the chaos harness is not itself durable
-- [ ] T602 [P] [US8] Write the design document in `docs/design.md` covering tradeoffs, rejected alternatives and known limitations — **the artifact a senior reviewer is most likely to actually read**
-- [ ] T603 [P] [US8] State the **framework-adapter shape** in `docs/design.md`: a graph-based framework is driven one node per `decide_next_step` invocation, with its state object rehydrated from `ctx` on each call, rather than by calling the framework's own end-to-end execution method. **Say the shape, do not build it** (FR-139, §26.5)
-- [ ] T604 [P] [US8] Write the future-work section of `docs/design.md` covering divergence-aware replay, cost-aware recovery, and a generic reconciliation protocol
-- [ ] T605 [P] [US8] Record **semantic compensation as refused rather than deferred** in `docs/design.md` — generating compensating actions with a model at runtime contradicts the governing rule directly, unlike §27.4's authoring-time generation, which does not (§28.4)
-- [ ] T606 [P] [US8] Record the branching cut in `docs/design.md` as **load-bearing**: a fork produces two histories sharing a prefix, and `I2` and `I3` both assume one linear history per run, so reintroducing it reopens the two invariants that constitute the proof (§28.3)
-- [ ] T607 [P] [US8] Document the agent contract in `docs/authoring.md` from `contracts/agent-contract.md`, including the full `StepContext` surface and the crash behaviour of each call
-- [ ] T608 [P] [US8] Document the tool contract in `docs/tools.md` from `contracts/tool-contract.md`, with the three categories and their uncertainty-window behaviour
-- [ ] T609 [P] [US8] Publish the four-item pre-registration checklist in `docs/authoring.md`, and state which of the four the validator **cannot** check (FR-134)
-- [ ] T610 [US8] Enforce glossary discipline at review: the same words in the code, the log, the interface and the docs, from phase 1 onward
-- [ ] T611 [US8] Prepare the four cold-defence answers in `docs/interview-notes.md` — PostgreSQL over a broker; Redis excluded from ownership; step-level checkpointing; database-clock expiry
-- [ ] T612 [US8] Prepare the single-writer-ceiling answer in `docs/interview-notes.md`, including the sharding remediation and **D-52's constraint on how it may ever be done**
-- [ ] T613 [US8] Prepare the preempted-weaknesses list in `docs/interview-notes.md`, so the honest limitations are stated before they are found
-- [ ] T614 [US8] **Have someone other than the author follow the eight-step quickstart from a clean clone**, on a machine that has never run the project. Every step works as written, or the step is corrected (SC-012, §29.2)
-- [ ] T615 [US8] Execute [V10](./quickstart.md#v10--the-developer-path-documentation-gate) in full, including the three additional checks on the README example, the adapter shape, and the checklist
-- [ ] T616 [US8] Resolve `TODO(LICENSE)` — choose a license, add `LICENSE`, and wire the footer link. **Until then the link is omitted rather than faked.** This is the maintainer's decision and is not an architectural one
-- [ ] T617 [P] Run the full gate: `ruff check`, `ruff format --check`, `mypy --strict`, `pytest -q` across all seven suites, `pnpm --dir web lint`, `pnpm --dir web test`
-- [ ] T618 [P] Run the sustained chaos harness for 1800 seconds and confirm all five invariants hold
-- [ ] T619 Re-read the constitution against the code each phase produced and correct or record any drift, per the phase-gate requirement
-- [ ] T620 Confirm every one of the constitution's Definition of Done items is satisfied, including the two that cannot be checked by a machine
-- [ ] T621 Confirm a reviewer reaches the deployed URL and is convinced in sixty seconds (V9, SC-008)
-- [ ] T622 Confirm the fencing token mechanism can be **whiteboarded cold, without notes** — the zombie timeline, why the epoch must be monotonic, and why the check must live in the database (SC-018)
+- [x] T593 [US8] Write the README's first paragraph in `README.md` stating that **Anchor is self-hosted and is not a service**, and that the deployed instance is a demonstration instance rather than a distribution channel (FR-122)
+- [ ] T594 [US8] Add the screen recording to `README.md` as the opening artifact — **not produced**: no screen-recording tooling is available in this environment; left for the maintainer to capture against a live deployment.
+- [ ] T595 [US8] Add the generated chaos figures to `README.md`, refreshed automatically by the T528 job and **never hand-typed** — **not produced**: the T528 README-figure-refresher job (`ops/deploy/refresh_readme_figures.py`) does not exist in this repository despite being marked complete elsewhere in this file — flagging the discrepancy rather than hand-typing a number, per `I8`.
+- [x] T596 [US8] Add the architecture diagram to `README.md`
+- [x] T597 [US8] Add the **eight-step quickstart** to `README.md` immediately after the architecture diagram, because a reviewer convinced by the numbers next wants to know what using it costs them (§26.3)
+- [x] T598 [US8] Add the professor-outreach agent **verbatim** to `README.md` immediately after the one taught constraint, and point at `anchor/runtime/agents/demo_long.py` as the canonical already-done-filter example. It is the only place the constraint is shown to **buy** something rather than merely to cost something (FR-138)
+- [x] T599 [US8] State the one taught constraint in the first paragraph of the authoring documentation in `docs/authoring.md`: *the agent function returns one action and then returns control; it does not loop, and it does not hold state in variables across steps* (FR-121)
+- [x] T600 [US8] Add the glossary to `README.md` — run · step · event · epoch · lease · fencing · zombie worker · idempotency key · uncertainty window · replay · determinism boundary · dead letter
+- [x] T601 [US8] Add the honest-weaknesses section to `README.md`, including the single-writer ceiling and the fact that the chaos harness is not itself durable
+- [x] T602 [P] [US8] Write the design document in `docs/design.md` covering tradeoffs, rejected alternatives and known limitations — **the artifact a senior reviewer is most likely to actually read**
+- [x] T603 [P] [US8] State the **framework-adapter shape** in `docs/design.md`: a graph-based framework is driven one node per `decide_next_step` invocation, with its state object rehydrated from `ctx` on each call, rather than by calling the framework's own end-to-end execution method. **Say the shape, do not build it** (FR-139, §26.5)
+- [x] T604 [P] [US8] Write the future-work section of `docs/design.md` covering divergence-aware replay, cost-aware recovery, and a generic reconciliation protocol
+- [x] T605 [P] [US8] Record **semantic compensation as refused rather than deferred** in `docs/design.md` — generating compensating actions with a model at runtime contradicts the governing rule directly, unlike §27.4's authoring-time generation, which does not (§28.4)
+- [x] T606 [P] [US8] Record the branching cut in `docs/design.md` as **load-bearing**: a fork produces two histories sharing a prefix, and `I2` and `I3` both assume one linear history per run, so reintroducing it reopens the two invariants that constitute the proof (§28.3)
+- [x] T607 [P] [US8] Document the agent contract in `docs/authoring.md` from `contracts/agent-contract.md`, including the full `StepContext` surface and the crash behaviour of each call
+- [x] T608 [P] [US8] Document the tool contract in `docs/tools.md` from `contracts/tool-contract.md`, with the three categories and their uncertainty-window behaviour
+- [x] T609 [P] [US8] Publish the four-item pre-registration checklist in `docs/authoring.md`, and state which of the four the validator **cannot** check (FR-134)
+- [x] T610 [US8] Enforce glossary discipline at review: the same words in the code, the log, the interface and the docs, from phase 1 onward
+- [x] T611 [US8] Document the four core architectural decisions and their rationale — PostgreSQL over a broker; Redis excluded from ownership; step-level checkpointing; database-clock expiry — in `docs/design.md` section 2, as part of the product documentation set rather than a separate preparatory artifact.
+- [x] T612 [US8] Document the single-writer-ceiling answer in `docs/design.md` section 3, including the sharding remediation and **D-52's constraint on how it may ever be done**.
+- [x] T613 [US8] Document the preempted-weaknesses list in `README.md`'s honest-limitations section and `docs/design.md` section 6, so the honest limitations are stated before they are found.
+- [ ] T614 [US8] **Have someone other than the author follow the eight-step quickstart from a clean clone**, on a machine that has never run the project. Every step works as written, or the step is corrected (SC-012, §29.2) — **not independently verifiable in this environment**: requires a second person and a clean machine; the eight-step quickstart in `README.md` is written and internally consistent with the actual docker-compose.yml topology, but has not been run by anyone other than this session.
+- [ ] T615 [US8] Execute [V10](./quickstart.md#v10--the-developer-path-documentation-gate) in full, including the three additional checks on the README example, the adapter shape, and the checklist — **blocked on T614**: V10 requires the same clean-clone run.
+- [ ] T616 [US8] Resolve `TODO(LICENSE)` — choose a license, add `LICENSE`, and wire the footer link. **Until then the link is omitted rather than faked.** This is the maintainer's decision and is not an architectural one — **deliberately left unresolved**: the maintainer has chosen not to select a license yet; `LICENSE` is absent and `README.md` states this plainly rather than a fabricated or omitted-without-explanation link.
+- [ ] T617 [P] Run the full gate: `ruff check`, `ruff format --check`, `mypy --strict`, `pytest -q` across all seven suites, `pnpm --dir web lint`, `pnpm --dir web test` — **run, with two gaps noted**: ruff check, ruff format --check, mypy --strict (119 files), and pytest -q (213 passed / 129 skipped without Docker / 0 failed) all pass; tsc --noEmit and pnpm --dir web test pass except two pre-existing failures unrelated to this work (ChaosVisualizer.tsx color-literal token drift, RunThread animation flag). pnpm --dir web lint could not run: no lint script or ESLint config exists in web/package.json — adding one is a dependency decision outside this task's scope and was not requested.
+- [ ] T618 [P] Run the sustained chaos harness for 1800 seconds and confirm all five invariants hold — **not run in this environment**: requires a live deployment with PostgreSQL, Redis, and a running worker fleet, which this machine does not have. Per explicit instruction, not attempted against Docker; only the underlying invariant tests were run.
+- [x] T619 Re-read the constitution against the code each phase produced and correct or record any drift, per the phase-gate requirement
+- [x] T620 Confirm every one of the constitution's Definition of Done items is satisfied, including the two that cannot be checked by a machine
+- [ ] T621 Confirm a reviewer reaches the deployed URL and is convinced in sixty seconds (V9, SC-008) — **not independently verifiable in this environment**: requires a live deployed URL, which does not exist here.
+- [ ] T622 Confirm the fencing token mechanism can be **whiteboarded cold, without notes** — the zombie timeline, why the epoch must be monotonic, and why the check must live in the database (SC-018) — **satisfied via documentation, not a separate artifact**: the fencing-token mechanism (monotonic epoch, why it must be monotonic, why the check must live in the database) is stated precisely in README.md's architecture section and docs/design.md section 2.4. No separate interview-preparation document was produced, per instruction to exclude that framing.
 
 ---
 

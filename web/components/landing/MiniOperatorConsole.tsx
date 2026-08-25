@@ -1,5 +1,5 @@
 import React from "react";
-import { useDemo } from "../../context/DemoProvider";
+import { DemoProvider, useDemo } from "../../context/DemoProvider";
 import { RunDetail } from "../run/RunDetail";
 import { InvariantPanel } from "../chaos/InvariantPanel";
 import { ChaosVisualizer } from "../chaos/ChaosVisualizer";

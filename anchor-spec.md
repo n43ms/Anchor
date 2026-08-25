@@ -97,7 +97,7 @@ The engineering response is predictable and inadequate: they revoke the agent's 
 
 **Workflow engines** — Temporal, Restate, AWS Step Functions — genuinely do solve this class of problem. That is the strongest available evidence that the problem is real, hard, and worth solving. Anchor is an implementation in the same lineage, scoped specifically to agent workloads.
 
-**State this openly.** In an interview, say: *"This is a durable execution engine in the Temporal lineage, specialized for agent runs."* Naming the prior art demonstrates you understand where your work sits. Implying you invented the category demonstrates the opposite.
+**State this openly:** *"This is a durable execution engine in the Temporal lineage, specialized for agent runs."* Naming the prior art demonstrates an understanding of where this work sits. Implying the category was invented here would demonstrate the opposite.
 
 ---
 
@@ -149,7 +149,7 @@ To resume, a worker reads the log in order and rebuilds the agent's context exac
 
 ### 3.2 The determinism boundary
 
-This is the deepest idea in the project and the one most likely to impress a strong interviewer.
+This is the deepest idea in the project and the one on which the rest of the correctness argument rests.
 
 Replay only works if replaying produces the same decisions. But agents are saturated with non-determinism: model outputs vary between calls, tool results change over time, the current timestamp is different on every execution, random values are random.
 
@@ -270,7 +270,7 @@ t = 52   Worker A wakes and attempts to append with epoch 5
 
 No consensus protocol. No distributed lock manager. No external coordination service. A single monotonic counter enforced by a database constraint, and split-brain becomes structurally impossible.
 
-**This is the best interview story the project produces.** It is a real distributed-systems failure mode with a clean, well-known solution, and having implemented it — and hit the bug that motivates it — is rare at any level of experience, let alone undergraduate.
+**This is the strongest technical case study the project produces.** It is a real distributed-systems failure mode with a clean, well-known solution, and having implemented it — and hit the bug that motivates it — is a meaningful engineering result at any level of experience.
 
 ---
 
@@ -597,7 +597,7 @@ The kill endpoint is a **first-class product feature**, not a debug affordance. 
 
 ## 9. Failure modes and how the system handles them
 
-This table is the core of the project's interview value. Every row is a question you may be asked.
+This table is the core of the project's technical case: every row is a claim a reviewer can independently verify against the test suite.
 
 | Failure | What happens | Mechanism |
 |---|---|---|
@@ -869,34 +869,34 @@ Item six is the real bar.
 
 ## 17. How this reads to a technical reviewer
 
-### 17.1 The resume entry
+### 17.1 Positioning summary
 
 > **Anchor — Durable Execution Runtime for AI Agents**
 > Python · FastAPI · PostgreSQL · Redis · React (Vite) · Docker
 >
-> - Built an event-sourced execution engine checkpointing agent runs at step granularity, enabling automatic recovery from worker failure with median resumption in [X] seconds and no re-execution of completed work.
-> - Implemented effectively-once tool execution via a two-phase idempotency journal with canonical argument hashing and per-tool uncertainty policies, verified across [N] randomized worker kills with zero duplicate side effects.
-> - Designed lease-based work distribution with monotonic fencing tokens and skip-locked claiming, eliminating split-brain execution from stalled workers without any external coordination service.
-> - Built a chaos harness enforcing five continuous invariants (no duplicate effects, log monotonicity, single-writer-per-epoch, terminal-state reachability, replay determinism) and an operator console visualizing run handoff between workers in real time.
+> - An event-sourced execution engine checkpointing agent runs at step granularity, enabling automatic recovery from worker failure with median resumption in [X] seconds and no re-execution of completed work.
+> - Effectively-once tool execution via a two-phase idempotency journal with canonical argument hashing and per-tool uncertainty policies, verified across [N] randomized worker kills with zero duplicate side effects.
+> - Lease-based work distribution with monotonic fencing tokens and skip-locked claiming, eliminating split-brain execution from stalled workers without any external coordination service.
+> - A chaos harness enforcing five continuous invariants (no duplicate effects, log monotonicity, single-writer-per-epoch, terminal-state reachability, replay determinism) and an operator console visualizing run handoff between workers in real time.
 
-Every clause names a specific distributed-systems mechanism. A reviewer who knows the field recognizes every term. A reviewer who doesn't recognizes that the vocabulary is unusual for a student.
+Every clause names a specific distributed-systems mechanism, each backed by a test that would fail if the claim were false.
 
-### 17.2 The interview conversations this earns you
+### 17.2 Frequently asked technical questions
 
-- **"Explain exactly-once semantics."** You can correct the premise — true exactly-once is impossible — and explain what you actually built, why the distinction matters, and how the uncertainty window is handled per tool.
-- **"How do you handle a node that appears dead but isn't?"** Fencing tokens, with the zombie timeline drawn out step by step.
-- **"Why Postgres instead of Kafka?"** Transactional coupling of claim, epoch, lease, and append in one statement. A genuinely senior answer.
-- **"What breaks when you add more workers?"** The single-writer bottleneck, plus how you'd shard the log by run id.
-- **"How do you make replay work when LLM outputs are non-deterministic?"** The determinism boundary, and the constraint it places on agent code.
-- **"What was your hardest bug?"** Most likely spurious fencing caused by a lease shorter than a step, or an idempotency key that varied across replay due to non-canonical serialization. Both are specific, hard-won, and instantly credible.
-- **"How do you know it works?"** The chaos harness and its five invariants. This is the strongest possible answer to that question and most candidates cannot give one.
+- **"Explain exactly-once semantics."** True exactly-once is impossible; what is actually built is effectively-once tool execution, and the distinction matters because the uncertainty window is handled explicitly, per tool, rather than assumed away.
+- **"How do you handle a node that appears dead but isn't?"** Fencing tokens — see the zombie timeline in §6.
+- **"Why Postgres instead of Kafka?"** Transactional coupling of claim, epoch, lease, and append in one statement — see `docs/design.md` §2.1.
+- **"What breaks when you add more workers?"** The single-writer bottleneck; see `docs/design.md` §3 for the ceiling and the `run_id`-keyed sharding answer.
+- **"How do you make replay work when LLM outputs are non-deterministic?"** The determinism boundary, and the constraint it places on agent code — see §3.2 and `docs/authoring.md`.
+- **"What was the hardest correctness bug to close?"** Spurious fencing caused by a lease shorter than a step, and an idempotency key that varied across replay due to non-canonical serialization — both closed by dedicated tests (`D-27`, canonical-serialization property test).
+- **"How do you know it works?"** The chaos harness and its five continuous invariants, measured against a real database under sustained worker kills.
 
-### 17.3 Weaknesses to preempt rather than hide
+### 17.3 Known limitations, stated upfront
 
-- **Single region, single database.** Don't claim otherwise. Frame it accurately: correctness under partial failure within a fleet, not global distribution. Have the sharding answer ready.
-- **You did not invent the category.** Name Temporal and Restate unprompted. Positioning your work relative to known prior art reads as maturity; implied novelty reads as naivety and invites a correction you don't want.
-- **The agent workloads are simple.** Intentionally so, and say it: the runtime is agnostic to the agent, and a complex agent would obscure the mechanism being demonstrated rather than showcase it.
-- **Throughput is modest.** Correct, and irrelevant. The claim is correctness under failure, not scale. Do not let the conversation drift onto an axis where the project isn't trying to compete.
+- **Single region, single database.** The claim is correctness under partial failure within a fleet, not global distribution. The sharding answer (`run_id`-keyed, never time-range) is in `docs/design.md` §3.
+- **This does not invent the category.** Temporal and Restate solve an overlapping problem at a different scope; Anchor is a specialization to agent workloads, not a novel category.
+- **The demo agent workloads are intentionally simple.** The runtime is agnostic to the agent; a complex agent would obscure the mechanism being demonstrated rather than showcase it.
+- **Throughput is modest and not the point.** The claim under test is correctness under failure, not scale.
 
 ---
 
@@ -1008,7 +1008,7 @@ Section 13.1 sets the design position as "closer to a flight recorder than to a 
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**"Flashy" is defined here as high production value, never as decoration.** The distinction is load-bearing and worth stating precisely, because it is the difference between a console that reads as professional tooling and one that reads as a student project with a template bolted on:
+**"Flashy" is defined here as high production value, never as decoration.** The distinction is load-bearing and worth stating precisely, because it is the difference between a console that reads as professional tooling and one that reads as an unfinished project with a template bolted on:
 
 | Reads as FAANG-grade | Reads as a template |
 |---|---|
@@ -1122,7 +1122,7 @@ The hero figure is the zero. It is the only hero figure in the entire product (�
 ╚═══════════════════════════════════════════════════════════════════╝
 ```
 
-Band 5 puts §1.5 and §17.3 on the page rather than saving them for an interview. A landing page that names its own prior art and states its own ceiling is doing something almost no portfolio project does, and it converts the two most likely objections into evidence of judgment before they are ever raised.
+Band 5 puts §1.5 and §17.3 on the page rather than leaving them undiscovered until a reviewer digs. A landing page that names its own prior art and states its own ceiling is doing something most comparable projects skip, and it converts the two most likely objections into evidence of judgment before they are ever raised.
 
 ### 21.4 The guided demo — the interaction that has to land
 
@@ -1314,7 +1314,7 @@ Section 13.2 requires that "the tool did not run twice" be **visible rather than
              replayed, NOT re-executed              executed now
 ```
 
-**Solid fill means "this executed." Ghosted fill means "this was read back from the log."** The distinction is carried by fill weight and opacity, not by hue — which means it survives grayscale, survives every form of color blindness, survives a screen recording compressed by a video codec, and survives being viewed on a bad projector in an interview room. Given that this single distinction is the visual expression of the project's headline guarantee, it must not depend on the most fragile channel available.
+**Solid fill means "this executed." Ghosted fill means "this was read back from the log."** The distinction is carried by fill weight and opacity, not by hue — which means it survives grayscale, survives every form of color blindness, survives a screen recording compressed by a video codec, and survives being viewed on a low-quality projector during a live walkthrough. Given that this single distinction is the visual expression of the project's headline guarantee, it must not depend on the most fragile channel available.
 
 Rules for the track:
 
@@ -1345,7 +1345,7 @@ Applying the general rules to these specifically:
 
 - **The zero is the hero figure, and there is exactly one hero figure per view.** Competing 48px numbers cancel each other out. On the chaos console, the zero wins; everything else is a stat tile.
 - **Never a dual-axis chart.** Recovery latency and throughput are different scales and get separate charts. This is the most common charting mistake and the easiest to avoid by rule.
-- **The throughput chart is the emphasis form on purpose.** One measured line against a dashed ideal-linear reference makes the divergence point self-evident, which is precisely the §14 conversation about the single Postgres writer being the ceiling. The chart asks the interview question for you.
+- **The throughput chart is the emphasis form on purpose.** One measured line against a dashed ideal-linear reference makes the divergence point self-evident, which is precisely the §14 discussion of the single Postgres writer being the ceiling. The chart raises the obvious question for you.
 - **Sequential ramps on dark must not go darker than the mid-dark step**, or the low bins recede into the surface and read as empty rather than as small.
 - **Stacked segments get the same 2px surface gap** as timeline segments.
 - **A legend is present for every chart with two or more series**, and single-series charts get none — the title already names what is plotted, and a one-swatch legend restates it.
@@ -1781,7 +1781,7 @@ The two decisions above are independent in motivation and share one mechanism, w
 
 Because a claim (I4) also locks that same row to increment the epoch, a claim and an append can never interleave. The epoch the trigger validates against cannot change between being read and being enforced. **One lock, and I2, I3, I4, and I5 all hold across it** — which is the §4.2 instinct of putting the atomic unit in one transaction, applied to the append path rather than only the claim path.
 
-This is also the answer to "what serializes the log?" in an interview, and it is a better answer than naming the unique constraint, because the constraint detects a problem the lock prevents.
+This is also the answer to "what serializes the log?", and it is a better answer than naming the unique constraint alone, because the constraint detects a problem the lock prevents.
 
 ### 25.5 Configuration — background renewal, two profiles
 
@@ -1816,7 +1816,7 @@ This matters beyond the demo: §17.3 commits to preempting weaknesses rather tha
 |---|---|---|
 | **A — Renew from a background task** | A concurrent renewer extends the lease on its own timer regardless of step progress. The constraint becomes `lease > renewal_interval + margin`, independent of step duration, so a short lease and long steps coexist. | Adds concurrency inside the worker. A hung step no longer expires its own lease, so `step_timeout` becomes the only thing bounding a stuck run — it must be enforced rigorously. Still does not reach 1.8s: that needs `lease ≈ 3s`, which risks spurious fencing on a 1s GC pause, the bug §6.1 warns is hardest to diagnose. |
 | **B — Accept slower recovery and republish the number** | Keep renewal between steps. Set the lease honestly and report the recovery time it actually produces — single-digit to low tens of seconds. | The headline number gets less impressive. It also gets *true*, and a defensible 8s beats an indefensible 1.8s under questioning. |
-| **C — Two profiles, reported separately** | A demo and chaos profile with short steps (§21.5 stubs model calls at 2–5s) and a correspondingly short lease; a production profile sized for real model calls. Publish recovery per profile and state the lease each was measured under. | Two configurations to keep honest. But it is the only option that gives a fast live demo *and* a configuration that could run a real agent — and stating "recovery is bounded by lease duration, here is the tradeoff, here are both points on it" is a stronger interview answer than either number alone. |
+| **C — Two profiles, reported separately** | A demo and chaos profile with short steps (§21.5 stubs model calls at 2–5s) and a correspondingly short lease; a production profile sized for real model calls. Publish recovery per profile and state the lease each was measured under. | Two configurations to keep honest. But it is the only option that gives a fast live demo *and* a configuration that could run a real agent — and stating "recovery is bounded by lease duration, here is the tradeoff, here are both points on it" is a stronger technical answer than either number alone. |
 
 **Decision: C, with A as the mechanism underneath it.** A background renewer decouples the lease from step duration, which is what makes two sensible profiles possible at all; C is then the reporting discipline that keeps the published number honest.
 
@@ -2058,7 +2058,7 @@ Three properties make this stronger than an auth check rather than merely cheape
 
 - **There is no code path to attack.** An unmounted route cannot be reached by a credential-stuffing attempt, a session bug, or a misconfigured middleware ordering. The public instance does not contain the capability.
 - **It matches the actual trust boundary.** A developer running locally is executing their own code on their own machine — the normal case, requiring no permission from anyone. The restriction is not about *who* is asking; it is about *whose machine* is at risk. Binding it to identity would model the situation incorrectly.
-- **It is one line to explain in an interview**, and the explanation demonstrates that the RCE was recognised rather than missed.
+- **It is one line to explain**, and the explanation demonstrates that the RCE risk was recognised rather than missed.
 
 **The page states its mode in the header at all times.** On the public instance: *"Author-and-validate mode. This instance does not execute submitted code. Run locally to register and execute."* Silently disabling the button would read as a bug.
 

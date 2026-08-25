@@ -1,5 +1,5 @@
 /**
- * Demo Data Fixtures for Standalone Recruiter Landing Page & Mini Operator Console.
+ * Demo Data Fixtures for the Standalone Product Landing Page & Mini Operator Console.
  * Fully decoupled from backend for instant zero-latency simulation.
  */
 
@@ -121,7 +121,7 @@ export const DEMO_WORKERS: Worker[] = [
 export const DEMO_RUN_TIMELINE_CRASHED: RunTimeline = {
   id: 101,
   display_id: "r101",
-  agent_type: "candidate_eval_agent",
+  agent_type: "document_review_agent",
   status: "running",
   started_at: new Date(Date.now() - 14000).toISOString(),
   step_count: 4,
@@ -228,7 +228,7 @@ export const DEMO_RUNS_LIST: RunListItem[] = [
   {
     id: 101,
     display_id: "r101",
-    agent_type: "candidate_eval_agent",
+    agent_type: "document_review_agent",
     status: "running",
     epoch: 2,
     owner_worker_id: "worker-b#1",
@@ -351,10 +351,10 @@ export const DEMO_TOOLS: ToolDescriptor[] = [
     default_policy: "retry_safe",
     declaration_hash: "hash_init_v1",
     executable: true,
-    description: "Spawns an isolated candidate code evaluation container.",
+    description: "Spawns an isolated document verification container.",
   },
   {
-    name: "compile_candidate_solution",
+    name: "compile_submitted_document",
     safety: "retry_safe",
     naturally_idempotent: true,
     provider_accepts_key: false,
@@ -362,7 +362,7 @@ export const DEMO_TOOLS: ToolDescriptor[] = [
     default_policy: "retry_safe",
     declaration_hash: "hash_compile_v1",
     executable: true,
-    description: "Compiles candidate submission with strict flags.",
+    description: "Compiles the submitted document with strict flags.",
   },
   {
     name: "run_unit_test_suite",
@@ -376,7 +376,7 @@ export const DEMO_TOOLS: ToolDescriptor[] = [
     description: "Executes test runner and reconciles test log against DB idempotency key.",
   },
   {
-    name: "send_candidate_result_email",
+    name: "send_processing_result_email",
     safety: "unsafe",
     naturally_idempotent: false,
     provider_accepts_key: false,
@@ -393,7 +393,7 @@ export const DEMO_EVENTS: RunEvent[] = [
     run_id: 101,
     seq: 1,
     type: "RUN_SUBMITTED",
-    payload: { agent_type: "candidate_eval_agent", priority: 10 },
+    payload: { agent_type: "document_review_agent", priority: 10 },
     epoch: 0,
     worker_id: "api",
     step_index: null,

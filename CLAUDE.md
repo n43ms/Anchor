@@ -3,7 +3,8 @@
 **Read `.specify/memory/constitution.md` before doing anything in this repository.** It governs
 every task here — the eight durability invariants, the architecture and database rules, the fixed
 toolchain, the build phases, the workflow, and the definition of done. It is the absorbed and
-superseding version of the engineering standard formerly kept in `engineers/anchorengineer.md`.
+superseding version of the engineering standard formerly kept in `anchorengineer.md`, retained at
+the repository root only as the historical source of the absorbed standard.
 
 `anchor-spec.md` is the source of truth for intent. The constitution is the source of truth for
 conduct, and it states which spec sections govern when the spec disagrees with itself.
