@@ -63,6 +63,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import random
 import time
 from typing import Any
@@ -84,6 +85,7 @@ from anchor.core.replay.load import load_run_events
 from anchor.core.replay.reconstruct import reconstruct
 from anchor.runtime.agents.registry import resolve
 from anchor.runtime.tools.demo import DEMO_TOOLS
+from anchor.runtime.tools.registry import as_tool_registry
 from anchor.runtime.tools.model import get_model_adapter
 from anchor.worker.admission.limiter import has_capacity
 from anchor.worker.renewer import final_renewal, renew_forever
@@ -209,7 +211,27 @@ async def execute_run(
     if live is None:
         live = LiveSettings(current=settings, version=0)
 
+    try:
+        import importlib
+        redis_asyncio = importlib.import_module("redis.asyncio")
+        from anchor.api.authoring.register import register_draft as _register_draft
+        from anchor.runtime.tools.registry import register_tool
+        redis_url = os.getenv("ANCHOR_REDIS_URL", "redis://localhost:6379/0")
+        r_client = redis_asyncio.from_url(redis_url)
+        try:
+            redis_raw = await r_client.get(f"anchor:authoring:draft:{agent_type}")
+            if redis_raw:
+                source_str = redis_raw.decode("utf-8") if isinstance(redis_raw, bytes) else str(redis_raw)
+                _register_draft(source_str, agent_type)
+                for decl in as_tool_registry().values():
+                    await register_tool(conn, decl, code_version=os.getenv("ANCHOR_CODE_VERSION", "dev"))
+        finally:
+            await r_client.aclose()
+    except Exception as e:
+        logger.error("Failed to load Redis draft for agent %s: %s", agent_type, e, exc_info=True)
+
     decide_next_step = resolve(agent_type)
+
     if decide_next_step is None:
         async with conn.transaction():
             await append(
@@ -395,7 +417,7 @@ async def _run_steps(
             run_context=run_context,
             conn=conn,
             model_adapter=model_adapter,
-            tool_registry=DEMO_TOOLS,
+            tool_registry={**DEMO_TOOLS, **as_tool_registry()},
             max_payload_bytes=settings.max_event_payload_bytes,
             step_timeout_ms=settings.step_timeout_ms,
         )

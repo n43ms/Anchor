@@ -39,11 +39,13 @@ logger = logging.getLogger("anchor.api.request")
 
 _RUN_ID_IN_PATH = re.compile(r"/api/runs/(\d+)")
 
+import os
+
 # --- Rate limiting (T359-T360) ---
 
-SUBMISSION_LIMIT_PER_MINUTE = 10
-KILL_LIMIT_PER_MINUTE = 5
-DEMO_HOURLY_CAP = 20
+SUBMISSION_LIMIT_PER_MINUTE = int(os.getenv("ANCHOR_SUBMISSION_LIMIT_PER_MINUTE", "60"))
+KILL_LIMIT_PER_MINUTE = int(os.getenv("ANCHOR_KILL_LIMIT_PER_MINUTE", "30"))
+DEMO_HOURLY_CAP = int(os.getenv("ANCHOR_DEMO_HOURLY_CAP", "1000"))
 
 _SUBMISSION_WINDOW_S = 60.0
 _KILL_WINDOW_S = 60.0
@@ -52,9 +54,7 @@ _DEMO_CAP_WINDOW_S = 3600.0
 
 class _TokenBucket:
     """Fixed-window counter per key (client IP), reset when the window
-    elapses. A window counter, not a leaky/rolling bucket — simpler, and
-    adequate for "don't let one visitor dominate a shared demo instance",
-    which is the entire requirement (§21.6).
+    elapses.
     """
 
     def __init__(self, *, limit: int, window_s: float) -> None:
@@ -63,6 +63,8 @@ class _TokenBucket:
         self._windows: dict[str, tuple[float, int]] = {}
 
     def allow(self, key: str) -> bool:
+        if self._limit <= 0:
+            return True
         now = time.monotonic()
         window_start, count = self._windows.get(key, (now, 0))
         if now - window_start >= self._window_s:

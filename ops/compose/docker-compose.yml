@@ -12,6 +12,7 @@ x-python-env: &python-env
   ANCHOR_WORKER_LABEL_POOL: worker-a,worker-b,worker-c,worker-d,worker-e,worker-f,worker-g,worker-h,worker-i,worker-j,worker-k,worker-l,worker-m,worker-n,worker-o,worker-p,worker-q,worker-r,worker-s,worker-t,worker-u,worker-v,worker-w,worker-x,worker-y,worker-z
 
   ANCHOR_CODE_VERSION: ${ANCHOR_CODE_VERSION:-dev}
+  PYTHONPATH: /app
   GEMINI_API_KEY: ${GEMINI_API_KEY:-}
   OPENAI_API_KEY: ${OPENAI_API_KEY:-}
 

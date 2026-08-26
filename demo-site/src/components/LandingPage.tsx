@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { MiniOperatorConsole } from "./MiniOperatorConsole";
 import { MechanismExplainer } from "./MechanismExplainer";
 import { RunThread } from "./RunThread";
+import { QuickstartModal } from "./QuickstartModal";
 import { useDemo } from "../context/DemoProvider";
 import {
   ShieldCheck,
@@ -46,12 +47,11 @@ const LinkedinIcon: React.FC<{ className?: string }> = ({ className = "h-4 w-4" 
 
 export const LandingPage: React.FC = () => {
   const { killWorker, setActiveTab } = useDemo();
+  const [isQuickstartModalOpen, setIsQuickstartModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [heroPreset, setHeroPreset] = useState<"normal" | "crash">("crash");
-
   const [showArchDetails, setShowArchDetails] = useState(false);
   const [showWhyDetails, setShowWhyDetails] = useState(false);
-
 
   const scrollToId = (id: string) => {
     const el = document.getElementById(id);
@@ -65,7 +65,7 @@ export const LandingPage: React.FC = () => {
   };
 
   const handleCopyCmd = () => {
-    navigator.clipboard.writeText("npx anchor-runtime@latest init");
+    navigator.clipboard.writeText("pip install anchor-runtime && anchor init");
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -159,24 +159,32 @@ export const LandingPage: React.FC = () => {
           <nav className="hidden lg:flex items-center gap-6 font-mono text-xs font-semibold text-zinc-300">
             <button
               type="button"
-              onClick={() => scrollToId("try-anchor-cli-container")}
-              className="hover:text-amber-400 transition-colors cursor-pointer"
+              onClick={() => setIsQuickstartModalOpen(true)}
+              className="hover:text-amber-400 transition-colors cursor-pointer flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-amber-300 font-bold"
             >
-              Try Free
+              <BookOpen className="h-3.5 w-3.5 text-amber-400" />
+              <span>Quickstart Guide</span>
             </button>
             <button
               type="button"
               onClick={() => scrollToId("operator-console-container")}
               className="hover:text-amber-400 transition-colors cursor-pointer"
             >
-              Demo Console
+              Operator Console
+            </button>
+            <button
+              type="button"
+              onClick={() => scrollToId("agent-sdk-code")}
+              className="hover:text-amber-400 transition-colors cursor-pointer text-amber-300 font-bold"
+            >
+              Agent Runtime SDK
             </button>
             <button
               type="button"
               onClick={() => scrollToId("why-anchor-matrix-container")}
               className="hover:text-amber-400 transition-colors cursor-pointer"
             >
-              Durability
+              Durability Matrix
             </button>
             <button
               type="button"
@@ -203,21 +211,11 @@ export const LandingPage: React.FC = () => {
               href="https://github.com/n43ms/Anchor"
               target="_blank"
               rel="noreferrer"
-
               className="hidden sm:flex items-center gap-1 rounded-xl border border-white/10 bg-white/5 px-2.5 py-1 text-zinc-300 hover:text-white transition-all font-semibold text-[11px]"
             >
               <GithubIcon className="h-3 w-3" />
               <span>GitHub</span>
             </a>
-
-            <button
-              type="button"
-              onClick={() => scrollToId("operator-console-container")}
-              className="flex items-center gap-1.5 rounded-xl border border-amber-500/40 bg-amber-500/15 px-3 py-1 text-amber-300 hover:bg-amber-500/25 transition-all font-bold cursor-pointer text-[11px]"
-            >
-              <Activity className="h-3.5 w-3.5" />
-              <span>Console</span>
-            </button>
           </div>
         </div>
       </header>
@@ -290,22 +288,27 @@ export const LandingPage: React.FC = () => {
             <RunThread segments={heroPresetSegments[heroPreset]} />
           </div>
 
-          {/* Quick Copy CLI Command Box */}
-          <div id="try-anchor-cli-container" className="mx-auto max-w-md flex items-center justify-between rounded-xl border border-amber-500/30 bg-zinc-950/90 px-3.5 py-1.5 text-xs font-mono scroll-mt-20 shadow-md relative overflow-hidden">
-            <div className="flex items-center gap-2">
-              <Terminal className="h-3.5 w-3.5 text-amber-400 shrink-0" />
-              <span className="font-bold tracking-tight text-transparent bg-clip-text bg-[linear-gradient(270deg,#e4e4e7_0%,#fef3c7_35%,#fbbf24_50%,#fef3c7_65%,#e4e4e7_100%)] bg-[length:200%_100%] animate-shimmer-rtl">
-                npx anchor-runtime@latest init
+          {/* Highlighted Quickstart Guide Clicker Button */}
+          <button
+            type="button"
+            id="try-anchor-cli-container"
+            onClick={() => setIsQuickstartModalOpen(true)}
+            className="mx-auto max-w-md flex items-center justify-between rounded-xl border border-amber-500/50 bg-gradient-to-r from-amber-500/20 via-zinc-950 to-amber-500/20 hover:border-amber-400 hover:scale-[1.03] active:scale-[0.98] transition-all px-4 py-2 text-xs font-mono scroll-mt-20 shadow-xl shadow-amber-500/10 relative overflow-hidden cursor-pointer group"
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-6 w-6 items-center justify-center rounded-lg border border-amber-500/40 bg-amber-500/20 text-amber-400 shrink-0">
+                <BookOpen className="h-3.5 w-3.5" />
+              </div>
+              <span className="font-extrabold tracking-wide uppercase text-transparent bg-clip-text bg-[linear-gradient(270deg,#e4e4e7_0%,#fef3c7_35%,#fbbf24_50%,#fef3c7_65%,#e4e4e7_100%)] bg-[length:200%_100%] animate-shimmer-rtl text-[11.5px]">
+                ⚡ Quickstart & Agent Code Preview
               </span>
             </div>
-            <button
-              type="button"
-              onClick={handleCopyCmd}
-              className="flex items-center gap-1 text-[10px] text-amber-400 hover:text-amber-300 font-bold cursor-pointer transition-colors shrink-0 pl-2"
-            >
-              {copied ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
-            </button>
-          </div>
+
+            <div className="flex items-center gap-1 text-[11px] text-amber-300 font-extrabold group-hover:translate-x-0.5 transition-transform shrink-0 pl-2">
+              <span>View Code</span>
+              <ArrowRight className="h-3.5 w-3.5 text-amber-400" />
+            </div>
+          </button>
 
 
           {/* Value Props Cards (Prominent & Visible in 1st Frame with Highlighted Keywords) */}
@@ -351,22 +354,23 @@ export const LandingPage: React.FC = () => {
 
 
 
-      {/* 3. Featured Showcase: Interactive Demo Console */}
-
+      {/* 3. Featured Showcase: Anchor Operator Console */}
       <section id="operator-console-container" className="py-8 px-6 border-t border-white/10 bg-black/90 scroll-mt-14">
-        <div className="mx-auto max-w-6xl space-y-4">
+        <div className="mx-auto max-w-6xl space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-2">
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5 flex-wrap">
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse" />
                 <h2 className="text-lg font-bold text-white uppercase tracking-wider font-mono">
-                  Interactive Demo Console
+                  Interactive Operator Console
                 </h2>
+                <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-[10.5px] text-emerald-400 font-mono font-bold">
+                  Runs • Workers • Fleet Telemetry • Chaos Engine
+                </span>
               </div>
-              <p className="text-xs text-zinc-400 font-sans mt-0.5">
-                Test-drive Anchor's live operator UI and inspect run state replays in real time.
+                 <p className="text-xs text-zinc-200 font-sans mt-1 leading-relaxed">
+                You can inspect <span className="text-amber-300 font-semibold">step-level execution replays</span>, monitor <span className="text-emerald-300 font-semibold">multi-worker fleet heartbeats</span>, trigger <span className="text-amber-300 font-semibold">live chaos fault injections</span>, and audit real-time telemetry.
               </p>
-
             </div>
 
             <div className="flex items-center gap-2 font-mono text-xs">
@@ -377,6 +381,71 @@ export const LandingPage: React.FC = () => {
           </div>
 
           <MiniOperatorConsole />
+
+          {/* Python SDK Code Showcase Section Below Interactive Console */}
+          <div id="agent-sdk-code" className="pt-6 border-t border-white/10 space-y-4 scroll-mt-16">
+            <div className="flex items-center justify-between px-2">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Code2 className="h-4 w-4 text-amber-400" />
+                  <h3 className="text-base font-extrabold text-white tracking-wide font-mono">
+                    How Your Agent Code Looks
+                  </h3>
+                  <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-400 font-mono font-semibold">app.py</span>
+                </div>
+                <p className="text-xs text-zinc-200 font-sans mt-0.5 leading-relaxed">
+                  Your agent code stays <span className="text-amber-300 font-semibold">clean, native Python</span> — decorated with <span className="text-amber-300 font-semibold">atomic 2-phase tool safety</span>, automatic environment loading, and <span className="text-emerald-300 font-semibold">crash-resilient step replays</span>.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsQuickstartModalOpen(true)}
+                className="hidden sm:flex items-center gap-1.5 rounded-xl border border-amber-500/40 bg-amber-500/15 px-3.5 py-1.5 text-xs font-mono font-bold text-amber-300 hover:bg-amber-500/25 transition-all cursor-pointer shadow-md"
+              >
+                <span>Full Quickstart Guide</span>
+                <ArrowRight className="h-3.5 w-3.5 text-amber-400" />
+              </button>
+            </div>
+
+            {/* Embedded Code Card */}
+            <div className="rounded-2xl border border-white/10 bg-black shadow-2xl overflow-hidden font-mono text-xs">
+              <div className="flex items-center justify-between border-b border-white/10 bg-zinc-950 px-4 py-2 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
+                  <span className="text-white font-bold">app.py</span>
+                  <span className="text-zinc-500 text-[10px]">(Python Workflow SDK)</span>
+                </div>
+                <span className="text-[10px] text-emerald-400 font-semibold">Auto .env • Multi-Tool Replay</span>
+              </div>
+
+              <div className="p-4 bg-black/95 text-[11.5px] leading-relaxed overflow-x-auto custom-scrollbar">
+                <pre className="text-zinc-200">
+                  <code>
+                    <span className="text-purple-400 font-bold">import</span> <span className="text-white">anchor</span>, <span className="text-white">json</span>{"\n\n"}
+                    <span className="text-zinc-500 italic"># 1. Custom Tool 0: Fetch Customer Data (Retry-Safe)</span>{"\n"}
+                    <span className="text-amber-400 font-bold">@anchor.tool</span><span className="text-zinc-300">(safety=</span><span className="text-emerald-400">"retry_safe"</span><span className="text-zinc-300">, naturally_idempotent=</span><span className="text-rose-400 font-bold">True</span><span className="text-zinc-300">)</span>{"\n"}
+                    <span className="text-purple-400 font-bold">def</span> <span className="text-blue-400 font-bold">fetch_customer</span><span className="text-zinc-300">(customer_id: </span><span className="text-cyan-300">str</span><span className="text-zinc-300">) -&gt; </span><span className="text-cyan-300">dict</span><span className="text-zinc-300">:</span>{"\n"}
+                    <span className="text-purple-400 font-bold">    return</span> <span className="text-zinc-300">&#123;</span><span className="text-emerald-400">"id"</span><span className="text-zinc-300">: customer_id, </span><span className="text-emerald-400">"email"</span><span className="text-zinc-300">: </span><span className="text-emerald-400">"aditya@anchor.dev"</span><span className="text-zinc-300">, </span><span className="text-emerald-400">"tier"</span><span className="text-zinc-300">: </span><span className="text-emerald-400">"VIP"</span><span className="text-zinc-300">&#125;</span>{"\n\n"}
+                    <span className="text-zinc-500 italic"># 2. Custom Tool 1: Dispatch Email Notification (Unsafe Side-Effect)</span>{"\n"}
+                    <span className="text-amber-400 font-bold">@anchor.tool</span><span className="text-zinc-300">(safety=</span><span className="text-emerald-400">"unsafe"</span><span className="text-zinc-300">)</span>{"\n"}
+                    <span className="text-purple-400 font-bold">def</span> <span className="text-blue-400 font-bold">send_welcome_email</span><span className="text-zinc-300">(email: </span><span className="text-cyan-300">str</span><span className="text-zinc-300">, tier: </span><span className="text-cyan-300">str</span><span className="text-zinc-300">) -&gt; </span><span className="text-cyan-300">dict</span><span className="text-zinc-300">:</span>{"\n"}
+                    <span className="text-purple-400 font-bold">    return</span> <span className="text-zinc-300">&#123;</span><span className="text-emerald-400">"status"</span><span className="text-zinc-300">: </span><span className="text-emerald-400">"sent"</span><span className="text-zinc-300">, </span><span className="text-emerald-400">"to"</span><span className="text-zinc-300">: email, </span><span className="text-emerald-400">"tier"</span><span className="text-zinc-300">: tier&#125;</span>{"\n\n"}
+                    <span className="text-zinc-500 italic"># 3. Multi-Tool Durable Agent Workflow</span>{"\n"}
+                    <span className="text-amber-400 font-bold">@anchor.agent</span><span className="text-zinc-300">(name=</span><span className="text-emerald-400">"onboarding_agent"</span><span className="text-zinc-300">)</span>{"\n"}
+                    <span className="text-purple-400 font-bold">def</span> <span className="text-blue-400 font-bold">onboarding_agent</span><span className="text-zinc-300">(ctx: anchor.StepContext):</span>{"\n"}
+                    <span className="text-zinc-300">    customer = </span><span className="text-purple-400 font-bold">yield</span><span className="text-white font-bold"> anchor.ToolCall</span><span className="text-zinc-300">(</span><span className="text-emerald-400">"fetch_customer"</span><span className="text-zinc-300">, &#123;</span><span className="text-emerald-400">"customer_id"</span><span className="text-zinc-300">: ctx.input[</span><span className="text-emerald-400">"customer_id"</span><span className="text-zinc-300">]&#125;)</span>{"\n"}
+                    <span className="text-zinc-300">    email_res = </span><span className="text-purple-400 font-bold">yield</span><span className="text-white font-bold"> anchor.ToolCall</span><span className="text-zinc-300">(</span><span className="text-emerald-400">"send_welcome_email"</span><span className="text-zinc-300">, &#123;</span><span className="text-emerald-400">"email"</span><span className="text-zinc-300">: customer[</span><span className="text-emerald-400">"email"</span><span className="text-zinc-300">], </span><span className="text-emerald-400">"tier"</span><span className="text-zinc-300">: customer[</span><span className="text-emerald-400">"tier"</span><span className="text-zinc-300">]&#125;)</span>{"\n"}
+                    <span className="text-purple-400 font-bold">    yield</span><span className="text-white font-bold"> anchor.Done</span><span className="text-zinc-300">(&#123;</span><span className="text-emerald-400">"status"</span><span className="text-zinc-300">: </span><span className="text-emerald-400">"completed"</span><span className="text-zinc-300">, </span><span className="text-emerald-400">"customer"</span><span className="text-zinc-300">: customer, </span><span className="text-emerald-400">"email"</span><span className="text-zinc-300">: email_res&#125;)</span>{"\n\n"}
+                    <span className="text-zinc-500 italic"># 4. Trigger & Submit to Cluster</span>{"\n"}
+                    <span className="text-purple-400 font-bold">if</span> <span className="text-rose-400">__name__</span> == <span className="text-emerald-400">"__main__"</span><span className="text-zinc-300">:</span>{"\n"}
+                    <span className="text-zinc-300">    result = anchor.run(</span><span className="text-emerald-400">"onboarding_agent"</span><span className="text-zinc-300">, input=&#123;</span><span className="text-emerald-400">"customer_id"</span><span className="text-zinc-300">: </span><span className="text-emerald-400 font-bold">"cust_99"</span><span className="text-zinc-300">&#125;)</span>{"\n"}
+                    <span className="text-blue-400">    print</span><span className="text-zinc-300">(json.dumps(result, indent=</span><span className="text-amber-400">2</span><span className="text-zinc-300">))</span>
+                  </code>
+                </pre>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -673,6 +742,12 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
       </footer>
+
+      {/* Developer Quickstart Modal */}
+      <QuickstartModal
+        isOpen={isQuickstartModalOpen}
+        onClose={() => setIsQuickstartModalOpen(false)}
+      />
     </div>
   );
 };

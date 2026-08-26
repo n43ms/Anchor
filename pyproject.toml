@@ -36,12 +36,28 @@ dev = [
 # No dependency outside this set without maintainer approval (research.md D-04).
 # Every addition is a constitution-governed decision, not a routine `uv add`.
 
+[project.scripts]
+anchor = "anchor.cli:main"
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "demo-site",
+    "tests",
+    ".pytest_cache",
+    ".mypy_cache",
+    "*.log"
+]
+
 [tool.hatch.build.targets.wheel]
 packages = ["anchor"]
+exclude = [
+    "demo-site",
+    "tests"
+]
 
 [tool.ruff]
 target-version = "py312"

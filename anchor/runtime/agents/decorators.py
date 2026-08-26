@@ -31,10 +31,8 @@ def agent(
         agent_name = name or fn.__name__
         agent_desc = description or (inspect.getdoc(fn) or "")
 
-        if inspect.isgeneratorfunction(fn):
-            adapted_fn = wrap_generator_agent(fn)
-        else:
-            adapted_fn = fn
+        adapted_fn = wrap_generator_agent(fn) if inspect.isgeneratorfunction(fn) else fn
+        setattr(adapted_fn, "__original_fn__", fn)
 
         register_agent_in_process(
             name=agent_name,

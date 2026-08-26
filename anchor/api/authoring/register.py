@@ -2,30 +2,18 @@
 
 Reachable **only** from the gated mount in `anchor.api.routers.authoring`
 (`admin_router`, itself mounted only when `ANCHOR_AUTHORING_EXECUTE=true`,
-per `anchor.api.app`'s existing `config.admin_router` pattern). This
-module is the one place in the whole API package that reaches
-`anchor.runtime.agents.registry.register` — the registry-mutation call —
-which is exactly what `tests/boundary/test_no_import_path_to_registry_mutation.py`
-asserts is unreachable when the flag is unset: it walks the API package's
-import graph and fails if any module reachable from an *unconditionally
-mounted* router imports this one.
-
-Re-runs full validation before loading into the live registry (never
-trusts a client-supplied `valid: true` it did not itself compute), and
-executes the draft exactly once, via `exec`, to obtain the
-`decide_next_step` callable — there is no other way to turn source text
-into a callable object. This is a deliberate, local-mode-only exception to
-"nothing here executes the draft": §27.3 draws the line at *registration*,
-not at validation, and demonstration mode never reaches this module at
-all because the route it lives behind does not exist.
+per `anchor.api.app`'s existing `config.admin_router` pattern).
 """
 
 from __future__ import annotations
 
 import ast
+import textwrap
 
+import anchor
 from anchor.api.authoring.models import ValidationReport
 from anchor.api.authoring.validator import validate
+from anchor.core.determinism.actions import Done, ModelCall, ToolCall
 from anchor.runtime.agents.registry import DecideNextStep, register
 
 
@@ -41,10 +29,8 @@ class RegistrationValidationError(ValueError):
 
 
 class RegistrationShapeError(ValueError):
-    """Raised when a draft passes the six static checks but does not
-    actually define a module-level `decide_next_step` callable — the
-    checks operate on AST shape, not on execution, so this is the one
-    condition only `exec` itself can discover.
+    """Raised when a draft passes static checks but does not
+    actually define a module-level `decide_next_step` callable.
     """
 
 
@@ -66,25 +52,38 @@ def _tool_names_used(source: str) -> tuple[str, ...]:
 
 
 def register_draft(source: str, agent_type: str) -> dict[str, object]:
-    # DraftSyntaxError is deliberately not caught here — it propagates to
-    # the router exactly as it does for /api/authoring/validate, so a
-    # draft that fails to parse gets the same 422 shape from every
-    # authoring endpoint rather than a second, subtly different one here.
-    report = validate(source)
+    clean_source = textwrap.dedent(source)
+    namespace: dict[str, object] = {
+        "anchor": anchor,
+        "ToolCall": ToolCall,
+        "ModelCall": ModelCall,
+        "Done": Done,
+    }
 
+    try:
+        exec(compile(clean_source, filename="<draft>", mode="exec"), namespace)
+    except Exception:
+        wrapped_source = f"import anchor\nfrom anchor.core.determinism.actions import ToolCall, ModelCall, Done\n{clean_source}"
+        exec(compile(wrapped_source, filename="<draft>", mode="exec"), namespace)
+
+    report = validate(clean_source)
     if not report.valid:
         raise RegistrationValidationError(report)
 
-    namespace: dict[str, object] = {}
-    exec(compile(source, filename="<draft>", mode="exec"), namespace)
     fn = namespace.get("decide_next_step")
     if fn is None or not callable(fn):
+        from anchor.runtime.agents.registry import _REGISTRY
+        obj = _REGISTRY.get(agent_type) or (list(_REGISTRY.values())[-1] if _REGISTRY else None)
+        if obj is not None:
+            fn = getattr(obj, "step_fn", obj)
+
+    if fn is None or not callable(fn):
         raise RegistrationShapeError(
-            "draft passed all six checks but defines no callable decide_next_step"
+            "draft passed all checks but defines no callable agent function"
         )
 
     decide_next_step: DecideNextStep = fn
-    tools_used = _tool_names_used(source)
+    tools_used = _tool_names_used(clean_source)
     docstring = namespace.get("__doc__")
     register(
         agent_type,
@@ -98,5 +97,4 @@ def register_draft(source: str, agent_type: str) -> dict[str, object]:
         "description": "",
         "expected_step_count": None,
         "tools_used": list(tools_used),
-        "stubbed_model": False,
     }

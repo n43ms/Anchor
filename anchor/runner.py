@@ -1,12 +1,20 @@
 """Single-file execution runner helper (Phase 10, T630; contracts/agent-contract.md).
 
-Allows running an Anchor agent workflow in a single local call via `anchor.run("agent_name", input={...})`.
+Allows running an Anchor agent workflow via `anchor.run("agent_name", input={...})`.
+If a live Anchor cluster is reachable (http://localhost:8000 or ANCHOR_API_URL), submits the run to PostgreSQL
+so real Docker workers race to claim it and stream real-time 3D telemetry to the Console (http://localhost:3000).
+Falls back to local in-memory execution if no cluster server is reachable.
 """
 
 from __future__ import annotations
 
 import asyncio
 import inspect
+import json
+import os
+import time
+import urllib.error
+import urllib.request
 from typing import Any
 
 from anchor.core.determinism.actions import Done, ToolCall
@@ -15,7 +23,7 @@ from anchor.runtime.tools.registry import resolve as resolve_tool
 
 
 class MockSingleFileContext:
-    """A light in-memory StepContext for local single-file runner execution."""
+    """A light in-memory StepContext for local offline runner execution."""
 
     def __init__(self, run_input: dict[str, Any] | None = None) -> None:
         self.step_index = 0
@@ -42,16 +50,124 @@ class MockSingleFileContext:
         return "single-file-run-uuid-101"
 
 
+def _check_api_health(api_url: str) -> bool:
+    """Check if live Anchor API server is reachable."""
+    health_url = f"{api_url.rstrip('/')}/api/health"
+    try:
+        req = urllib.request.Request(health_url, method="GET")
+        with urllib.request.urlopen(req, timeout=1.5) as resp:
+            return bool(resp.status == 200)
+    except Exception:
+        return False
+
+
+def _register_agent_with_api(api_url: str, agent: str, step_fn: Any) -> bool:
+    """Attempts to register local script's source text with live cluster via POST /api/authoring/register."""
+    register_url = f"{api_url.rstrip('/')}/api/authoring/register"
+    try:
+        target_fn = getattr(step_fn, "__original_fn__", step_fn)
+        module = inspect.getmodule(target_fn)
+        if module is not None and hasattr(module, "__file__"):
+            source = inspect.getsource(module)
+        else:
+            source = inspect.getsource(target_fn)
+
+        payload_bytes = json.dumps({"source": source, "agent_type": agent}).encode("utf-8")
+        req = urllib.request.Request(
+            register_url,
+            data=payload_bytes,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=5.0) as resp:
+            return bool(resp.status == 201)
+    except Exception as e:
+        print(f"[Anchor Client] Registration details: {e}")
+        if hasattr(e, "read"):
+            try:
+                print("Registration response body:", e.read().decode("utf-8"))
+            except Exception:
+                pass
+        return False
+
+
+def _submit_api_run(api_url: str, agent: str, input_payload: dict[str, Any]) -> int:
+    """POST /api/runs to register job in PostgreSQL for live worker fleet."""
+    submit_url = f"{api_url.rstrip('/')}/api/runs"
+    payload_bytes = json.dumps({"agent_type": agent, "input": input_payload}).encode("utf-8")
+    req = urllib.request.Request(
+        submit_url,
+        data=payload_bytes,
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=10.0) as resp:
+        data = json.loads(resp.read().decode("utf-8"))
+        return int(data["id"])
+
+
+def _poll_api_run_result(
+    api_url: str, run_id: int, max_wait_seconds: float = 60.0
+) -> dict[str, Any]:
+    """Poll GET /api/runs/{id} until terminal state and return output."""
+    get_url = f"{api_url.rstrip('/')}/api/runs/{run_id}"
+    start_time = time.time()
+
+    while time.time() - start_time < max_wait_seconds:
+        req = urllib.request.Request(get_url, method="GET")
+        try:
+            with urllib.request.urlopen(req, timeout=5.0) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                status = data.get("status")
+                if status in ("completed", "failed", "cancelled", "needs_review"):
+                    events_url = f"{api_url.rstrip('/')}/api/runs/{run_id}/events"
+                    try:
+                        req_ev = urllib.request.Request(events_url, method="GET")
+                        with urllib.request.urlopen(req_ev, timeout=5.0) as resp_ev:
+                            ev_data = json.loads(resp_ev.read().decode("utf-8"))
+                            items = ev_data.get("items", ev_data.get("events", []))
+                            for ev in reversed(items):
+                                if ev.get("type") in ("RUN_COMPLETED", "RUN_FAILED"):
+                                    out = ev.get("payload", {}).get("output")
+                                    if isinstance(out, dict):
+                                        return out
+                    except Exception:
+                        pass
+                    return {"status": status, "output": data.get("output")}
+        except Exception:
+            pass
+        time.sleep(0.5)
+
+    raise TimeoutError(f"Run {run_id} did not reach terminal state within {max_wait_seconds}s")
+
+
 async def execute_run_async(
     agent: str,
     input: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Asynchronously execute a registered agent step-by-step in memory."""
+    """Execute run: routes to live cluster if reachable, else runs locally in-memory."""
+    api_url = os.getenv("ANCHOR_API_URL", "http://localhost:8000").strip()
+    input_payload = input or {}
     step_fn = resolve_agent(agent)
+
+    # Check if live cluster API is available
+    if await asyncio.to_thread(_check_api_health, api_url):
+        if step_fn is not None:
+            await asyncio.to_thread(_register_agent_with_api, api_url, agent, step_fn)
+        try:
+            run_id = await asyncio.to_thread(_submit_api_run, api_url, agent, input_payload)
+            print(
+                f"[Anchor Client] Submitted Run #{run_id} to live cluster ({api_url}). Streaming to console..."
+            )
+            return await asyncio.to_thread(_poll_api_run_result, api_url, run_id)
+        except Exception as e:
+            print(f"[Anchor Client] API submission warning: {e}. Falling back to local runner...")
+
+    # Fallback to local in-memory step execution
     if step_fn is None:
         raise ValueError(f"Agent {agent!r} is not registered in agent_registry.")
 
-    ctx = MockSingleFileContext(run_input=input)
+    ctx = MockSingleFileContext(run_input=input_payload)
     max_steps = 100
 
     for step in range(max_steps):

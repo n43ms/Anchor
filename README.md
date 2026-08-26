@@ -9,54 +9,67 @@ Built and maintained by **Aditya Nema** — [linkedin.com/in/adityaxnema](https:
 
 ## Quickstart
 
-No API keys, no accounts, no external service. Model calls are stubbed on every path that matters, so
-running this costs compute and nothing else.
+No API keys, no accounts, no external service required to get started.
 
-**1. Clone and start**
+**1. Install the Local SDK Interface**
 
 ```bash
-git clone <repo> && cd anchor
+pip install anchor-runtime
+```
+
+> Gives you the `@anchor.tool` and `@anchor.agent` syntax, type hints, and auto-complete in VSCode/PyCharm.
+
+**2. Start Services via Docker Compose**
+
+```bash
 docker compose -f ops/compose/docker-compose.yml up
 ```
 
-Brings up PostgreSQL, Redis, the API, three workers, and the console at `http://localhost:3000`
-(API at `http://localhost:8000`). `docker compose up` sets `ANCHOR_AUTHORING_EXECUTE=true`, which is
-what makes this deployment **local mode**; any other deployment leaves it unset and is therefore
-**demonstration mode** by default (fail-closed — see [`docs/authoring.md`](docs/authoring.md)).
+> Brings up PostgreSQL 16 (with DDL triggers `AN001`–`AN004`), Redis 7, the API Server (`http://localhost:8000`), three worker replicas, and the 3D Operator Console with In-Console Authoring Studio at `http://localhost:3000`.
 
-Verify the fleet before anything else:
+**3. Write & Run Your Agent (`app.py`)**
 
-```bash
-curl -s localhost:8000/api/health | jq '{database_reachable, worker_count, deployment_mode, degraded}'
-# → database_reachable: true, worker_count: 3, deployment_mode: "local", degraded: false
-```
-
-**2. Write the agent** — `anchor/runtime/agents/my_agent.py`, one function:
+Create a single Python file, `app.py`:
 
 ```python
-def decide_next_step(ctx: StepContext) -> ToolCall | ModelCall | Done: ...
+import anchor
+
+
+# 1. Define tools with explicit crash safety policies
+@anchor.tool(safety="retry_safe", naturally_idempotent=True)
+async def search_academic_papers(topic: str) -> dict:
+    """Read-only database search."""
+    return {"papers": ["Paxos Made Simple", "Raft Consensus"]}
+
+
+@anchor.tool(safety="unsafe")
+async def send_summary_email(to: str, count: int) -> dict:
+    """Sends live email summary (non-idempotent side effect)."""
+    return {"status": "delivered", "recipient": to}
+
+
+# 2. Write agent decision logic (Line-by-line yield syntax)
+@anchor.agent(name="research_agent")
+def decide_next_step(ctx: anchor.StepContext):
+    search_data = yield anchor.ToolCall("search_academic_papers", {"topic": ctx.input["topic"]})
+    papers = search_data["papers"]
+
+    email_res = yield anchor.ToolCall(
+        "send_summary_email", {"to": ctx.input["email"], "count": len(papers)}
+    )
+
+    yield anchor.Done({"status": "completed", "email_delivery": email_res})
+
+
+# 3. Execution Trigger
+if __name__ == "__main__":
+    result = anchor.run(
+        "research_agent", input={"topic": "Consensus", "email": "researcher@stanford.edu"}
+    )
+    print("Workflow Result:", result)
 ```
 
-It receives the reconstructed run state and returns exactly one action.
-
-**3. Write any tools it needs** — `anchor/runtime/tools/my_tool.py`. A plain function; Anchor does not
-inspect what it does.
-
-**4. Declare each tool's safety category** — the only Anchor-specific concept to learn:
-
-```python
-register(ToolDeclaration(name=..., fn=..., safety="retry_safe" | "reconcilable" | "unsafe"))
-```
-
-See [`docs/tools.md`](docs/tools.md) for what each category means and what happens if the process
-crashes mid-call.
-
-**5. Register the agent** — `agent_registry.register("my_agent", my_agent.decide_next_step)`.
-
-**6. Rebuild** — `docker compose up --build`. The agent and its tools now live inside every worker.
-
-**7. Submit a run** — `POST /api/runs {"agent_type": "my_agent", "input": {...}}`, or use the Test run
-form in the console.
+Run `python app.py` in your terminal. `anchor.run()` sends your agent definition to the running Docker cluster, where real Docker workers claim it from PostgreSQL, execute the steps, and stream live 3D telemetry to `http://localhost:3000`!
 
 **8. Watch it, then break it** — open the run in the console, kill its owning worker from the fleet
 page, and watch it resume from where it left off. Check `/api/runs/{id}/effects`: every side effect

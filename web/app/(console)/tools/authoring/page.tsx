@@ -53,20 +53,8 @@ export default function AuthoringPage() {
       .finally(() => setValidating(false));
   };
 
-  // Validate on keystroke pause (T577) — debounced so every keypress does
-  // not fire a request; the submission path below still validates
-  // immediately regardless of this timer's state.
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => runValidation(source), VALIDATE_DEBOUNCE_MS);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [source]);
-
+  // Validation is explicitly triggered when the user clicks "Validate now" or "Register"
   const handleValidateNow = () => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
     runValidation(source);
   };
 

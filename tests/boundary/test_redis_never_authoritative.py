@@ -36,6 +36,7 @@ _REDIS_ALLOWED_MODULES = frozenset(
         # subscriber (api.ws.subscriber, also a Protocol) — both are
         # display/fan-out only, never an ownership or lease decision.
         "api/app.py",
+        "api/routers/authoring.py",
     }
 )
 

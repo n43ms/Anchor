@@ -55,9 +55,24 @@ def tool(
                 "without naming why."
             )
 
+        import asyncio
+
+        async def adapted_fn(args: dict[str, Any] | None = None, **kwargs: Any) -> Any:
+            tool_args = args if isinstance(args, dict) else kwargs
+            sig = inspect.signature(fn)
+            params = list(sig.parameters.values())
+            has_var_kw = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in params)
+            if len(params) == 1 and not has_var_kw and params[0].name == "args":
+                res = fn(tool_args)
+            else:
+                res = fn(**tool_args)
+            if asyncio.iscoroutine(res):
+                return await res
+            return res
+
         decl = ToolDeclaration(
             name=tool_name,
-            fn=fn,
+            fn=adapted_fn,
             safety=safety,
             naturally_idempotent=naturally_idempotent,
             provider_accepts_key=provider_accepts_key,

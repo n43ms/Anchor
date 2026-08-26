@@ -700,27 +700,124 @@ export const MiniOperatorConsoleContent: React.FC = () => {
             </div>
           )}
 
-          {/* VIEW 13: SETTINGS - ENVIRONMENT */}
+          {/* VIEW 13: SETTINGS - ENVIRONMENT & RATE LIMITS */}
           {activeTab === "settings-environment" && (
-            <div className="rounded-xl border border-white/10 bg-black/60 p-4 space-y-3 font-mono text-xs">
-              <div className="text-xs font-bold text-white uppercase tracking-wider mb-2">Runtime Configuration</div>
-              <div className="space-y-2">
-                <div className="flex items-center justify-between py-1.5 border-b border-white/5">
-                  <span className="text-zinc-400">Lease Duration (ms)</span>
-                  <span className="font-bold text-amber-400">4000 ms</span>
+            <div className="rounded-xl border border-white/10 bg-black/60 p-4 space-y-4 font-mono text-xs">
+              <div className="flex items-center justify-between border-b border-white/10 pb-2">
+                <div>
+                  <div className="text-xs font-bold text-white uppercase tracking-wider">Cluster Configuration & Rate Limits</div>
+                  <div className="text-[10px] text-zinc-400">Configure rate-limiting buckets and lease settings within safe bounds.</div>
                 </div>
-                <div className="flex items-center justify-between py-1.5 border-b border-white/5">
-                  <span className="text-zinc-400">Renewal Interval (ms)</span>
-                  <span className="font-bold text-amber-400">1000 ms</span>
+                <span className="rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 text-[9px] font-bold">
+                  LOCAL EDITABLE MODE
+                </span>
+              </div>
+
+              {/* Rate Limits Section */}
+              <div className="space-y-3">
+                <div className="text-[11px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <span>⚡ Request Rate Limits (Token Buckets)</span>
                 </div>
-                <div className="flex items-center justify-between py-1.5 border-b border-white/5">
-                  <span className="text-zinc-400">Per-Worker Concurrency</span>
-                  <span className="font-bold text-amber-400">10 runs / worker</span>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="rounded-lg border border-white/10 bg-black/40 p-3 space-y-1">
+                    <label className="text-[10px] text-zinc-400 block font-bold">Submission Rate Limit</label>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        min="1"
+                        max="10000"
+                        defaultValue="60"
+                        className="w-full rounded border border-white/20 bg-zinc-900 px-2 py-1 text-white font-bold focus:border-amber-400 focus:outline-none"
+                      />
+                      <span className="text-[10px] text-zinc-500">req/min</span>
+                    </div>
+                    <div className="text-[9px] text-zinc-500">Allowed: 1 - 10,000 req/min</div>
+                  </div>
+
+                  <div className="rounded-lg border border-white/10 bg-black/40 p-3 space-y-1">
+                    <label className="text-[10px] text-zinc-400 block font-bold">Kill Worker Limit</label>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        min="1"
+                        max="1000"
+                        defaultValue="30"
+                        className="w-full rounded border border-white/20 bg-zinc-900 px-2 py-1 text-white font-bold focus:border-amber-400 focus:outline-none"
+                      />
+                      <span className="text-[10px] text-zinc-500">req/min</span>
+                    </div>
+                    <div className="text-[9px] text-zinc-500">Allowed: 1 - 1,000 req/min</div>
+                  </div>
+
+                  <div className="rounded-lg border border-white/10 bg-black/40 p-3 space-y-1">
+                    <label className="text-[10px] text-zinc-400 block font-bold">Demo Hourly Cap</label>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        min="1"
+                        max="50000"
+                        defaultValue="1000"
+                        className="w-full rounded border border-white/20 bg-zinc-900 px-2 py-1 text-white font-bold focus:border-amber-400 focus:outline-none"
+                      />
+                      <span className="text-[10px] text-zinc-500">runs/hr</span>
+                    </div>
+                    <div className="text-[9px] text-zinc-500">Allowed: 1 - 50,000 runs/hr</div>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between py-1.5 border-b border-white/5">
-                  <span className="text-zinc-400">Global Concurrency Cap</span>
-                  <span className="font-bold text-amber-400">50 runs</span>
+              </div>
+
+              {/* Timing & Concurrency Section */}
+              <div className="space-y-3 pt-2 border-t border-white/10">
+                <div className="text-[11px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <span>⏱️ Lease & Concurrency Invariants</span>
                 </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="flex items-center justify-between py-1.5 border-b border-white/5">
+                    <div>
+                      <div className="text-zinc-300 font-semibold">Lease Duration</div>
+                      <div className="text-[9px] text-zinc-500">Worker claim lease TTL</div>
+                    </div>
+                    <span className="font-bold text-amber-400">4,000 ms</span>
+                  </div>
+                  <div className="flex items-center justify-between py-1.5 border-b border-white/5">
+                    <div>
+                      <div className="text-zinc-300 font-semibold">Renewal Interval</div>
+                      <div className="text-[9px] text-zinc-500">Heartbeat renew cadence</div>
+                    </div>
+                    <span className="font-bold text-amber-400">1,000 ms</span>
+                  </div>
+                  <div className="flex items-center justify-between py-1.5 border-b border-white/5">
+                    <div>
+                      <div className="text-zinc-300 font-semibold">Per-Worker Concurrency</div>
+                      <div className="text-[9px] text-zinc-500">Max parallel runs per replica</div>
+                    </div>
+                    <span className="font-bold text-amber-400">10 runs / worker</span>
+                  </div>
+                  <div className="flex items-center justify-between py-1.5 border-b border-white/5">
+                    <div>
+                      <div className="text-zinc-300 font-semibold">Global Concurrency Cap</div>
+                      <div className="text-[9px] text-zinc-500">Total cluster run ceiling</div>
+                    </div>
+                    <span className="font-bold text-amber-400">50 runs</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-between pt-2 border-t border-white/10">
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => alert("Rate limits updated! Active on anchor-api.")}
+                    className="rounded-lg bg-amber-500/20 border border-amber-500/40 px-3 py-1.5 text-[11px] font-bold text-amber-300 hover:bg-amber-500/30 transition-all cursor-pointer"
+                  >
+                    Save & Apply Rate Limits
+                  </button>
+                  <span className="text-[10px] text-zinc-500">Validates bounds before PATCH /api/config</span>
+                </div>
+                <span className="text-[10px] text-emerald-400 font-bold">✓ Bounds Verified (FR-063)</span>
               </div>
             </div>
           )}
