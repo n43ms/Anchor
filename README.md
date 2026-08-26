@@ -66,7 +66,7 @@ Steps 2 through 5 are the entire integration surface. Everything else is `docker
 
 **Or author directly in the console.** `docker compose up` also exposes an in-browser editor at
 `/tools/authoring` — write a draft, validate it against six static checks, and, in local mode, load it
-straight into the live agent registry with no rebuild. See "The authoring surface" below.
+straight into the live agent registry with no rebuild. See "The authoring surface" below. *(Running the Web Console standalone outside Docker? Execute `cd web && npx pnpm install && npx pnpm dev` — see [`web/README.md`](web/README.md)).*
 
 ---
 

@@ -1242,6 +1242,29 @@ gate, and the third-party quickstart run gates the project being called done.
 
 ---
 
+## Phase 10 — Ergonomic Developer SDK & DX Layer *(US9)*
+
+**Goal**: Provide `@anchor.tool`, `@anchor.agent`, generator `yield` syntactic sugar, and `anchor.run` to allow developers to build and execute crash-resilient agents in a single Python file while maintaining 100% database durability (`I1`–`I8`).
+
+### Tests for Phase 10 (MANDATORY) ⚠️
+
+- [x] T623 [P] [US9] Write tool decorator tests in `tests/unit/test_sdk_tool_decorator.py` testing `@anchor.tool(safety="retry_safe", naturally_idempotent=True)` registration, description extraction, and safety validation refusal conditions.
+- [x] T624 [P] [US9] Write generator adapter tests in `tests/unit/test_generator_adapter.py` asserting that `wrap_generator_agent` fast-forwards completed step results via `gen.send(cached_result)` from PostgreSQL logs and yields the next unexecuted `ToolCall`.
+- [x] T625 [P] [US9] Write agent decorator tests in `tests/unit/test_sdk_agent_decorator.py` testing `@anchor.agent(name="...")` auto-wrapping of generator functions and registration into `agent_registry`.
+- [x] T626 [P] [US9] Write single-file integration contract test in `tests/contract/test_sdk_single_file.py` asserting a complete single-file agent (`app.py`) runs from start to finish.
+
+### Implementation for Phase 10
+
+- [x] T627 [US9] Implement `@anchor.tool` decorator in `anchor/runtime/tools/decorators.py` extracting docstrings, name, and type annotations while validating safety constraints (`retry_safe`, `reconcilable`, `unsafe`).
+- [x] T628 [US9] Implement `wrap_generator_agent` in `anchor/runtime/agents/adapter.py` adapting `yield` generator functions to `decide_next_step(ctx: StepContext) -> Action`.
+- [x] T629 [US9] Implement `@anchor.agent` decorator in `anchor/runtime/agents/decorators.py` detecting generator functions (`inspect.isgeneratorfunction`) and registering into `agent_registry`.
+- [x] T630 [US9] Implement single-file execution helper `anchor.run` in `anchor/runner.py`.
+- [x] T631 [US9] Export top-level SDK functions (`tool`, `agent`, `run`, `StepContext`, `ToolCall`, `ModelCall`, `Done`) in `anchor/__init__.py`.
+- [x] T632 [US9] Update `docs/authoring.md` and `docs/tools.md` with single-file SDK usage and generator `yield` fast-forward documentation.
+- [x] T633 [US9] Verify full test suite passes (`pytest`), type check passes (`mypy --strict anchor/`), and lint passes (`ruff check .`).
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase dependencies — the real graph
