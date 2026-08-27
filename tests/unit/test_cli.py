@@ -12,7 +12,7 @@ def test_cli_version_flag(capsys: pytest.CaptureFixture[str]) -> None:
             main()
         assert exc_info.value.code == 0
         captured = capsys.readouterr()
-        assert "v1.5.2" in captured.out
+        assert "v1.5.3" in captured.out
 
 
 def test_cli_status_flag(capsys: pytest.CaptureFixture[str]) -> None:

@@ -25,7 +25,7 @@ async def fetch_wikipedia_summary(topic: str) -> dict:
     \"\"\"Fetches live summary and article extract from Wikipedia API.\"\"\"
     encoded_topic = urllib.parse.quote(topic.replace(" ", "_"))
     url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{encoded_topic}"
-    headers = {"User-Agent": "AnchorAgent/1.5.2 (https://github.com/n43ms/Anchor)"}
+    headers = {"User-Agent": "AnchorAgent/1.5.3 (https://github.com/n43ms/Anchor)"}
     req = urllib.request.Request(url, headers=headers)
     try:
         with urllib.request.urlopen(req, timeout=10.0) as resp:
@@ -59,7 +59,7 @@ async def draft_email(recipient: str, subject: str, body: str) -> dict:
 @anchor.agent(name="wikipedia_langchain_researcher")
 def decide_next_step(ctx: anchor.StepContext):
     target_topic = ctx.input.get("topic", "Quantum Computing")
-    recipient_email = ctx.input.get("email", "adityaxnema@gmail.com")
+    recipient_email = ctx.input.get("email", "user@example.com")
 
     # Step 1: Retrieve live research data from Wikipedia
     wiki_data = yield anchor.ToolCall("fetch_wikipedia_summary", {"topic": target_topic})
@@ -83,7 +83,7 @@ def decide_next_step(ctx: anchor.StepContext):
         {
             "recipient": recipient_email,
             "subject": f"Research Brief: {target_topic}",
-            "body": f"Hi Aditya,\\n\\nHere is your requested research brief on '{target_topic}':\\n\\n{summary_text}\\n\\nSource: {page_url}\\n\\nBest,\\nAnchor Durable Execution Engine",
+            "body": f"Hi there,\\n\\nHere is your requested research brief on '{target_topic}':\\n\\n{summary_text}\\n\\nSource: {page_url}\\n\\nBest,\\nAnchor Durable Execution Engine",
         }
     )
 
@@ -100,7 +100,7 @@ def decide_next_step(ctx: anchor.StepContext):
 if __name__ == "__main__":
     result = anchor.run(
         "wikipedia_langchain_researcher",
-        input={"topic": "Quantum Computing", "email": "adityaxnema@gmail.com"}
+        input={"topic": "Quantum Computing", "email": "user@example.com"}
     )
     print("Workflow Output Payload:", json.dumps(result, indent=2))
 """
@@ -153,7 +153,7 @@ services:
       - "6379:6379"
 
   anchor-api:
-    image: n43ms/anchor-api:v1.5.2
+    image: n43ms/anchor-api:v1.5.3
     pull_policy: always
     command: ["sh", "-c", "alembic -c ops/migrations/alembic.ini upgrade head && uvicorn anchor.api.app:app --host 0.0.0.0 --port 8000"]
     ports:
@@ -179,7 +179,7 @@ services:
         condition: service_started
 
   anchor-worker:
-    image: n43ms/anchor-worker:v1.5.2
+    image: n43ms/anchor-worker:v1.5.3
     pull_policy: always
     command: ["python", "-m", "anchor.worker"]
     deploy:
@@ -204,7 +204,7 @@ services:
         condition: service_started
 
   anchor-console:
-    image: n43ms/anchor-console:v1.5.2
+    image: n43ms/anchor-console:v1.5.3
     pull_policy: always
     ports:
       - "3000:3000"
@@ -242,7 +242,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.command == "version":
-        print("Anchor v1.5.2 (Apache 2.0)")
+        print("Anchor v1.5.3 (Apache 2.0)")
         sys.exit(0)
 
     if args.command == "init":

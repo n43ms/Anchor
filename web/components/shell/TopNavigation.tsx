@@ -61,7 +61,7 @@ export function TopNavigation({ inspectorOpen = true, onToggleInspector }: TopNa
                 Anchor
               </span>
               <span className="rounded-full border border-strand-gold/30 bg-strand-gold/10 px-1.5 py-0.2 text-[9px] font-mono font-semibold text-strand-gold">
-                v1.5.2-prod
+                v1.5.3-prod
               </span>
             </div>
             <span className="text-[9px] font-mono uppercase tracking-widest text-zinc-500">
