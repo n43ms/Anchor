@@ -63,13 +63,20 @@ async def applied_revision(conn: asyncpg.Connection[Any]) -> str | None:
     return revision
 
 
-async def assert_schema_matches(conn: asyncpg.Connection[Any]) -> str:
-    """Raise `SchemaVersionMismatchError` on any mismatch; otherwise return
-    the matched revision. Called once, at process startup, before the
+async def assert_schema_matches(conn: asyncpg.Connection[Any], retries: int = 15, delay: float = 1.0) -> str:
+    """Raise `SchemaVersionMismatchError` on any mismatch after retrying; otherwise
+    return the matched revision. Called once, at process startup, before the
     process registers itself or accepts any work.
     """
+    import asyncio
+
     built = built_against_revision()
-    applied = await applied_revision(conn)
-    if applied != built:
-        raise SchemaVersionMismatchError(applied=applied, built_against=built)
-    return built
+    applied: str | None = None
+    for attempt in range(retries):
+        applied = await applied_revision(conn)
+        if applied == built:
+            return built
+        if attempt < retries - 1:
+            await asyncio.sleep(delay)
+
+    raise SchemaVersionMismatchError(applied=applied, built_against=built)
