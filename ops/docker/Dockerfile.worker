@@ -1,0 +1,23 @@
+FROM python:3.12-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libpq5 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+WORKDIR /app
+
+COPY pyproject.toml README.md uv.lock* ./
+RUN uv sync --frozen --no-dev --no-install-project || uv sync --no-dev --no-install-project
+
+COPY anchor ./anchor
+COPY ops/migrations ./ops/migrations
+
+ARG CODE_VERSION=dev
+ENV ANCHOR_CODE_VERSION=${CODE_VERSION}
+ENV PATH="/app/.venv/bin:${PATH}"
+
+RUN uv sync --frozen --no-dev || uv sync --no-dev
+
+CMD ["python", "-m", "anchor.worker"]
