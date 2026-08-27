@@ -78,7 +78,7 @@ export const MiniOperatorConsoleContent: React.FC = () => {
       label: "Workers",
       items: [
         { id: "workers-fleet", label: "Fleet", icon: Cpu, badge: `${health.worker_count}` },
-        { id: "workers-deployments", label: "Deployments", icon: Server, badge: "v1.4.6" },
+        { id: "workers-deployments", label: "Deployments", icon: Server, badge: "v1.4.7" },
       ],
     },
     {
@@ -583,7 +583,7 @@ export const MiniOperatorConsoleContent: React.FC = () => {
               <div className="space-y-2">
                 <div className="flex items-center justify-between rounded-lg border border-white/5 bg-white/[0.02] p-3">
                   <div>
-                    <div className="font-bold text-emerald-400">v1.4.6-prod (Active Release)</div>
+                    <div className="font-bold text-emerald-400">v1.4.7-prod (Active Release)</div>
                     <div className="text-[10px] text-zinc-400 mt-0.5">Schema Revision: 005_chaos</div>
                   </div>
                   <span className="rounded bg-emerald-500/20 text-emerald-300 px-2.5 py-1 text-[10px] font-bold">
@@ -873,7 +873,7 @@ export const MiniOperatorConsoleContent: React.FC = () => {
         <div className="flex items-center justify-between border-t border-white/10 bg-black/60 px-4 py-2 text-[10px] text-zinc-400 shrink-0">
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Connected to Anchor Engine v1.4.6</span>
+            <span>Connected to Anchor Engine v1.4.7</span>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-zinc-500 font-mono">5 Active Worker Nodes</span>
