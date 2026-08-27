@@ -22,7 +22,7 @@
   stroke-dasharray: none;
 }
 
-/* Additive ribbon paths for 3D silk ribbon bundle */
+/* Additive vector paths for 3D execution thread bundle */
 .strand-ribbon-path {
   mix-blend-mode: plus-lighter;
   pointer-events: none;

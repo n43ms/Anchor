@@ -1,23 +1,14 @@
 /**
- * 3D Golden Silk Threads & In-Sync Agent Steps Centerpiece
+ * 3D Ambient Execution Thread Centerpiece
  *
  * Implements:
  * 1. Dense bundle of 64 continuous vector paths (high-resolution line strips)
  * 2. Base trajectory: Gentle macroscopic horizontal dip
  * 3. Volumetric 3D Pinching: Tightly focused at viewport center, spreading at edges
- * 4. Constant traveling wave motion driven by time uniform (x - speed * t)
- * 5. Unique phase & radial offset per strand creating interwoven 3D twisting ribbon
- * 6. Additive blending creating a luminous hot-white core at overlaps
+ * 4. Constant traveling wave motion driven by time uniform
+ * 5. Unique phase & radial offset per strand creating interwoven 3D thread trajectory
+ * 6. Additive blending creating a luminous core at overlaps
  * 7. Edge alpha fading to complete transparency at canvas boundaries
- *
- * This is a decorative background only (aria-hidden, pointer-events-none,
- * behind every surface). It previously anchored four floating "STEP 1:
- * LEASE ACQUIRED" style labels on the strand with invented values (a fixed
- * "seq 4092", "0 duplicate effects" regardless of actual run state) —
- * removed, because a background element rendering fabricated telemetry
- * text is still telemetry a viewer could read as real (constitution
- * Principle VIII: the console must never appear to have data it does not
- * have). The strand motion itself carries no factual claim and stays.
  */
 "use client";
 

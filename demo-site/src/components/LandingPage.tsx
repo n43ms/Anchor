@@ -245,8 +245,9 @@ export const LandingPage: React.FC = () => {
 
 
           {/* Hero Subtitle */}
-          <p className="text-[15.5px] text-zinc-300 max-w-3xl mx-auto font-sans leading-relaxed">
-            Eliminate <span className="text-white font-semibold">lost state</span> and <span className="text-white font-semibold">duplicate API calls</span> when executing multi-step LLM agent pipelines. Anchor guarantees <span className="text-amber-300 font-semibold">atomic two-phase tool journaling</span>, <span className="text-amber-300 font-semibold">monotonic epoch fencing</span>, and  <span className="text-amber-300 font-semibold">sub-second crash recovery</span>.
+          <p className="w-max text-zinc-300 max-w-3xl mx-auto font-sans leading-relaxed">
+            Eliminate <span className="text-white font-semibold">lost state</span> and <span className="text-white font-semibold">duplicate API calls</span> when executing multi-step LLM agent pipelines.<br />
+            <span className="italic font-extrabold text-amber-300">Anchor</span> guarantees <span className="text-amber-300 font-semibold">atomic two-phase tool journaling</span>, <span className="text-amber-300 font-semibold">monotonic epoch fencing</span>, and <span className="text-amber-300 font-semibold">sub-second crash recovery</span>.
           </p>
 
 
@@ -462,16 +463,22 @@ export const LandingPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setShowArchDetails((prev) => !prev)}
-              className="mt-3 inline-flex items-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-xs font-mono font-bold text-amber-300 hover:bg-amber-500/20 transition-all cursor-pointer shadow-md"
+              className="mt-3 inline-flex items-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-xs font-mono font-bold text-amber-300 hover:bg-amber-500/20 transition-all cursor-pointer shadow-md hover:border-amber-500/60"
             >
               <BookOpen className="h-4 w-4 text-amber-400" />
               <span>{showArchDetails ? "Hide Architectural Deep-Dive" : "Read More: Architectural Trade-Offs & Proofs"}</span>
-              {showArchDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              {showArchDetails ? <ChevronUp className="h-4 w-4 text-amber-400 transition-transform duration-300" /> : <ChevronDown className="h-4 w-4 text-amber-400 transition-transform duration-300" />}
             </button>
           </div>
 
-          {showArchDetails && (
-            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/[0.04] p-5 space-y-4 font-sans text-xs text-zinc-300 mb-6 shadow-2xl animate-fadeIn">
+          <div
+            className={`transition-all duration-500 ease-in-out overflow-hidden ${
+              showArchDetails
+                ? "max-h-[1500px] opacity-100 translate-y-0 my-4"
+                : "max-h-0 opacity-0 -translate-y-2 pointer-events-none my-0"
+            }`}
+          >
+            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/[0.04] p-5 space-y-4 font-sans text-xs text-zinc-300 shadow-[0_0_40px_rgba(245,158,11,0.1)]">
               <h4 className="font-mono font-bold text-amber-400 uppercase text-xs">
                 Deep-Dive: Why PostgreSQL Engine Wins Over Volatile In-Memory Checkpoints
               </h4>
@@ -490,7 +497,7 @@ export const LandingPage: React.FC = () => {
                 </div>
               </div>
             </div>
-          )}
+          </div>
 
           <div className="overflow-hidden rounded-2xl border border-white/10 bg-zinc-950 shadow-2xl">
             <table className="w-full text-left text-xs">
@@ -549,17 +556,22 @@ export const LandingPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setShowWhyDetails((prev) => !prev)}
-              className="mt-3 inline-flex items-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-2 text-xs font-mono font-bold text-amber-300 hover:bg-amber-500/20 transition-all cursor-pointer shadow-md"
+              className="mt-3 inline-flex items-center gap-2 rounded-xl border border-emerald-500/40 bg-emerald-500/10 px-4 py-2 text-xs font-mono font-bold text-emerald-300 hover:bg-emerald-500/20 transition-all duration-300 cursor-pointer shadow-md hover:border-emerald-500/60"
             >
-              <BookOpen className="h-4 w-4 text-amber-400" />
+              <BookOpen className="h-4 w-4 text-emerald-400" />
               <span>{showWhyDetails ? "Hide Impact Details" : "Read More: Financial ROI & Execution Safety"}</span>
-              {showWhyDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              <ChevronDown className={`h-4 w-4 text-emerald-400 transition-transform duration-300 ${showWhyDetails ? "rotate-180" : "rotate-0"}`} />
             </button>
           </div>
 
-
-          {showWhyDetails && (
-            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.04] p-5 space-y-4 font-sans text-xs text-zinc-300 mb-8 shadow-2xl animate-fadeIn">
+          <div
+            className={`transition-all duration-500 ease-in-out overflow-hidden ${
+              showWhyDetails
+                ? "max-h-[1500px] opacity-100 translate-y-0 my-4"
+                : "max-h-0 opacity-0 -translate-y-2 pointer-events-none my-0"
+            }`}
+          >
+            <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.04] p-5 space-y-4 font-sans text-xs text-zinc-300 shadow-[0_0_40px_rgba(16,185,129,0.1)]">
               <h4 className="font-mono font-bold text-emerald-400 uppercase text-xs">
                 Deep-Dive: How Anchor Prevents Wasted API Costs & Data Corruption
               </h4>
@@ -578,7 +590,7 @@ export const LandingPage: React.FC = () => {
                 </div>
               </div>
             </div>
-          )}
+          </div>
 
 
 
@@ -732,11 +744,20 @@ export const LandingPage: React.FC = () => {
               href="https://github.com/n43ms/Anchor"
               target="_blank"
               rel="noreferrer"
-
               className="flex items-center gap-1.5 text-zinc-400 hover:text-white transition-colors font-semibold"
             >
               <GithubIcon className="h-3.5 w-3.5" />
               <span>GitHub Repository</span>
+            </a>
+
+            <a
+              href="https://github.com/n43ms/Anchor/blob/main/LICENSE"
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 text-amber-400 hover:text-amber-300 transition-colors font-semibold"
+            >
+              <ShieldCheck className="h-3.5 w-3.5 text-amber-400" />
+              <span>Apache 2.0 Licensed</span>
             </a>
             <span className="text-zinc-600">v1.4.2-prod</span>
           </div>

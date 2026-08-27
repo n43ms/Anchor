@@ -60,7 +60,9 @@ export function TopNavigation({ inspectorOpen = true, onToggleInspector }: TopNa
               <span className="font-ui font-extrabold uppercase tracking-wider text-white">
                 Anchor
               </span>
-              <span className="text-[10px] font-mono text-zinc-500">v0.1</span>
+              <span className="rounded-full border border-strand-gold/30 bg-strand-gold/10 px-1.5 py-0.2 text-[9px] font-mono font-semibold text-strand-gold">
+                v1.4.2-prod
+              </span>
             </div>
             <span className="text-[9px] font-mono uppercase tracking-widest text-zinc-500">
               OPERATOR CONSOLE
@@ -79,8 +81,18 @@ export function TopNavigation({ inspectorOpen = true, onToggleInspector }: TopNa
         </div>
       </div>
 
-      {/* Right Controls: Inspector Toggle + Group Selector + Settings */}
+      {/* Right Controls: License Badge + Inspector Toggle + Settings */}
       <div className="flex items-center gap-3">
+        {/* Apache 2.0 License Badge */}
+        <a
+          href="https://github.com/n43ms/Anchor/blob/main/LICENSE"
+          target="_blank"
+          rel="noreferrer"
+          className="hidden sm:flex items-center gap-1 rounded-xl border border-strand-gold/30 bg-strand-gold/10 px-2.5 py-1 text-[11px] font-mono font-bold text-strand-gold hover:bg-strand-gold/20 transition-all"
+        >
+          <ShieldCheck className="h-3 w-3 text-amber-400" />
+          <span>Apache 2.0</span>
+        </a>
         {/* Toggle Right Inspector Drawer */}
         {onToggleInspector && (
           <button

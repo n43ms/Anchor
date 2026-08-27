@@ -2,8 +2,8 @@
  * anchor-spec.md §24.3, §24.8.
  *
  * Runtime Execution Thread:
- * - Full Detail View: 11-Strand Golden Ribbon (1 Main Light Golden + 10 Background Strands) with Multi-Color HUD Markers & 60fps wave motion
- * - Compact Cockpit View: Static, zero-overhead topological run shape with enlarged golden markers matching the thread
+ * - Full Detail View: 15-Strand Execution Thread Stream with step markers & 60fps wave motion
+ * - Compact Cockpit View: Static, zero-overhead topological run shape with step markers matching the thread
  */
 "use client";
 
@@ -14,10 +14,10 @@ import { deriveMarkers } from "./types";
 import { ThreadMarkers } from "./ThreadMarkers";
 
 const VIEW_WIDTH = 620;
-const STRAND_COUNT = 15; // 1 Main + 14 Background strands for rich ribbon density
+const STRAND_COUNT = 15; // 1 Main + 14 Background strands for thread visualization density
 const SAMPLES_PER_STRAND = 90;
 
-// 14 Dark Golden Background Strands (delicate, highly translucent silk paths)
+// 14 Background Execution Strands (delicate, highly translucent paths)
 const BACKGROUND_STRAND_CONFIGS = [
   { id: 1, opacity: 0.22, width: 1.1, phaseMult: 0.8, radialOffset: -1.4 },
   { id: 2, opacity: 0.14, width: 0.85, phaseMult: 1.6, radialOffset: 1.5 },

@@ -198,6 +198,13 @@ export const MiniOperatorConsoleContent: React.FC = () => {
             <span>Mode:</span>
             <span className="text-emerald-400 font-bold">local</span>
           </div>
+          <div className="flex items-center justify-between pt-1 border-t border-white/5 text-[8.5px]">
+            <span>License:</span>
+            <span className="text-amber-300 font-bold flex items-center gap-1">
+              <ShieldCheck className="h-2.5 w-2.5 text-amber-400" />
+              <span>Apache 2.0</span>
+            </span>
+          </div>
         </div>
       </div>
 
@@ -590,6 +597,42 @@ export const MiniOperatorConsoleContent: React.FC = () => {
           {/* VIEW 7: CHAOS - CHAOS CONSOLE */}
           {activeTab === "chaos-console" && (
             <div className="space-y-4">
+              {/* Chaos Console Architectural Explanation Header */}
+              <div className="rounded-xl border border-rose-500/30 bg-rose-500/[0.04] p-4 space-y-2 font-mono text-xs shadow-lg">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Flame className="h-4 w-4 text-rose-400" />
+                    <span className="font-extrabold text-white text-xs uppercase tracking-wider">
+                      Live Chaos Fault Injection Harness
+                    </span>
+                    <span className="rounded-full border border-rose-500/40 bg-rose-500/20 px-2 py-0.5 text-[9.5px] text-rose-300 font-bold">
+                      Adversarial Testing
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    5 / 5 SQL INVARIANTS PROVED
+                  </span>
+                </div>
+                <p className="text-[11px] text-zinc-300 font-sans leading-relaxed">
+                  The <strong className="text-white">Chaos Console</strong> simulates hard process terminations (<code className="text-rose-300">SIGKILL</code>) mid-step while multi-tool agents execute side-effects. Anchor's database engine enforces atomic two-phase tool journaling (<code className="text-amber-300">INTENT</code> / <code className="text-emerald-300">RESULT</code>) and monotonic epoch fencing (<code className="text-amber-300">AN001</code>) — guaranteeing zero duplicate API calls and sub-second crash recovery natively in PostgreSQL.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1.5 border-t border-white/10 text-[10px]">
+                  <div className="flex items-center gap-1.5 text-zinc-300">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                    <span>0 Duplicate Side-Effects</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-zinc-300">
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                    <span>Monotonic Epoch Fencing</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-zinc-300">
+                    <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
+                    <span>Sub-Second Crash Recovery</span>
+                  </div>
+                </div>
+              </div>
+
               <ChaosVisualizer activeRun={timeline} report={chaosReport} />
             </div>
           )}

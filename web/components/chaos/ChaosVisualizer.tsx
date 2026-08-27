@@ -1,8 +1,7 @@
 /**
  * Anchor Operator Console — Live Chaos Execution Visualizer
- * Provides dedicated golden & dark-red ribbon bundles for each worker process.
- * Reuses the signature 11-strand golden silk ribbon motif per worker node.
- * Dynamically shifts to a glowy dark-red crimson ribbon when SIGKILL / fencing strikes!
+ * Provides execution thread visualization and fault isolation telemetry for each worker process.
+ * Displays real-time worker execution streams, active step progression, and fault-injection events.
  */
 
 import React, { useState, useEffect, useRef } from "react";
@@ -126,7 +125,7 @@ export function ChaosVisualizer({ activeRun, report }: ChaosVisualizerProps) {
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-bold uppercase tracking-wider text-white font-mono">
-                Worker Fleet Ribbon Matrix ({workerCount} Nodes)
+                Worker Fleet Execution Stream ({workerCount} Nodes)
               </h3>
               {isRunning && (
                 <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/20 px-2 py-0.5 text-[10px] font-mono font-bold text-amber-300 uppercase tracking-wide">
@@ -136,7 +135,7 @@ export function ChaosVisualizer({ activeRun, report }: ChaosVisualizerProps) {
               )}
             </div>
             <p className="text-xs text-zinc-400 font-mono">
-              Individual worker golden execution ribbons with glowy dark-red SIGKILL disruption state
+              Per-worker execution thread telemetry with live SIGKILL fault injection state
             </p>
           </div>
         </div>
@@ -158,11 +157,11 @@ export function ChaosVisualizer({ activeRun, report }: ChaosVisualizerProps) {
         </div>
       </div>
 
-      {/* SVG Multi-Worker Ribbon Canvas */}
+      {/* SVG Multi-Worker Execution Canvas */}
       <div className="relative rounded-xl border border-white/[0.08] bg-black/90 p-5 space-y-3 shadow-inner">
         <div className="flex items-center justify-between text-[11px] font-mono text-zinc-400 border-b border-white/[0.06] pb-2">
           <span className="flex items-center gap-1.5 text-zinc-300 font-bold">
-            <Cpu className="h-3.5 w-3.5 text-strand-gold" /> Worker Execution Ribbons
+            <Cpu className="h-3.5 w-3.5 text-strand-gold" /> Worker Execution Threads
           </span>
           <span className="text-zinc-500">Timeline Axis &rarr;</span>
         </div>
@@ -358,10 +357,10 @@ export function ChaosVisualizer({ activeRun, report }: ChaosVisualizerProps) {
         <div className="flex items-center justify-between text-[10px] font-mono text-zinc-400 pt-2 border-t border-white/[0.06]">
           <div className="flex items-center gap-5">
             <span className="flex items-center gap-1.5 text-strand-gold font-semibold">
-              <span className="h-2 w-2 rounded-full bg-amber-400" /> Healthy
+              <span className="h-2 w-2 rounded-full bg-amber-400" /> Active Execution Thread
             </span>
             <span className="flex items-center gap-1.5 text-rose-400 font-semibold">
-              <span className="h-2 w-2 rounded-full bg-rose-500" /> SIGKILL Terminated
+              <span className="h-2 w-2 rounded-full bg-rose-500" /> SIGKILL Disrupted State
             </span>
           </div>
           <span className="text-zinc-400">Total Steps Recorded: <strong className="text-white">{totalSteps}</strong></span>

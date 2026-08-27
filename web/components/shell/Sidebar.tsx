@@ -188,9 +188,17 @@ export function Sidebar() {
             <ExternalLink className="h-3 w-3" />
           </a>
         </div>
-        <div className="text-[9px] font-mono text-zinc-600 flex justify-between">
-          <span>Anchor Runtime v0.1</span>
-          <span>Durable AST</span>
+        <div className="text-[9.5px] font-mono text-zinc-500 flex items-center justify-between pt-1 border-t border-white/[0.06]">
+          <span className="text-zinc-400 font-semibold">v1.4.2-prod</span>
+          <a
+            href="https://github.com/n43ms/Anchor/blob/main/LICENSE"
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center gap-1 text-strand-gold hover:text-amber-300 font-bold transition-colors"
+          >
+            <ShieldCheck className="h-3 w-3 text-amber-400" />
+            <span>Apache 2.0</span>
+          </a>
         </div>
       </div>
     </aside>

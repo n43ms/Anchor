@@ -314,31 +314,31 @@ export const DEMO_RUNS_LIST: RunListItem[] = [
 ];
 
 export const DEMO_CHAOS_REPORT: ChaosReport = {
-  id: 42,
   chaos_run_id: 42,
-  started_at: new Date(Date.now() - 300000).toISOString(),
-  finished_at: new Date(Date.now() - 60000).toISOString(),
-  duration_seconds: 240,
-  worker_count: 3,
-  runs_submitted: 15,
-  runs_completed: 15,
-  kills_injected: 4,
+  invariants: {
+    no_duplicate_effects: true,
+    log_monotonic: true,
+    single_writer_per_epoch: true,
+    terminal_reachability: true,
+    replay_determinism: true,
+  },
+  violations: [],
   duplicate_effect_count: 0,
   stranded_run_count: 0,
-  recovery_ms_p50: 3100,
-  recovery_ms_p95: 4200,
-  recovery_ms_p99: 4800,
-  recovery_ms_max: 5100,
-  mean_steps_replayed: 2.2,
-  mean_replay_ms: 18.4,
-  throughput_steps_per_sec: 2.4,
-  fencing_events_count: 4,
-  uncertainty_resolutions: { retry_safe: 3, reconcilable: 1, unsafe: 0 },
+  kills_injected: 4,
+  runs_total: 15,
+  steps_total: 45,
+  recovery_ms: { p50: 3100, p95: 4200, p99: 4800, max: 5100 },
+  replay_steps_mean: 2.2,
+  replay_ms_mean: 18.4,
+  steps_per_second: 2.4,
+  fencing_events: 4,
+  uncertainty_entries: { retry_safe: 3, reconcilable: 1, unsafe: 0 },
   dead_letter_count: 0,
+  duration_seconds: 240,
   config_profile: "demo",
   lease_duration_ms: 10000,
-  renewal_interval_ms: 2000,
-  violations: [],
+  created_at: new Date().toISOString(),
 };
 
 export const DEMO_TOOLS: ToolDescriptor[] = [
@@ -352,6 +352,7 @@ export const DEMO_TOOLS: ToolDescriptor[] = [
     declaration_hash: "hash_init_v1",
     executable: true,
     description: "Spawns an isolated document verification container.",
+    last_used_at: new Date().toISOString(),
   },
   {
     name: "compile_submitted_document",
@@ -363,6 +364,7 @@ export const DEMO_TOOLS: ToolDescriptor[] = [
     declaration_hash: "hash_compile_v1",
     executable: true,
     description: "Compiles the submitted document with strict flags.",
+    last_used_at: new Date().toISOString(),
   },
   {
     name: "run_unit_test_suite",
@@ -374,6 +376,7 @@ export const DEMO_TOOLS: ToolDescriptor[] = [
     declaration_hash: "hash_test_v1",
     executable: true,
     description: "Executes test runner and reconciles test log against DB idempotency key.",
+    last_used_at: new Date().toISOString(),
   },
   {
     name: "send_processing_result_email",
@@ -384,7 +387,8 @@ export const DEMO_TOOLS: ToolDescriptor[] = [
     default_policy: "unsafe",
     declaration_hash: "hash_email_v1",
     executable: true,
-    description: "Dispatches result email. Halts to needs_review if crash occurs in uncertainty window.",
+    description: "Dispatches customer completion notification email.",
+    last_used_at: new Date().toISOString(),
   },
 ];
 

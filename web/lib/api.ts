@@ -143,8 +143,8 @@ export const api = {
 
   getRuntimeConfig: () => request<RuntimeConfig>("/api/config"),
 
-  updateRuntimeConfig: (values: Record<string, number>) =>
-    request<RuntimeConfig>("/api/config", { method: "PATCH", body: JSON.stringify({ values }) }),
+  updateRuntimeConfig: (values: Record<string, number | string>) =>
+    request<RuntimeConfig>("/api/config", { method: "PATCH", body: JSON.stringify(values) }),
 
   startChaos: (params: ChaosParams) =>
     request<ChaosRun>("/api/chaos/start", { method: "POST", body: JSON.stringify(params) }),

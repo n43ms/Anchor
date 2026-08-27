@@ -164,7 +164,9 @@ export default function EnvironmentPage() {
     // Cast numeric types properly before sending to API
     const payload: Record<string, string | number> = {};
     for (const [k, v] of Object.entries(values)) {
-      payload[k] = SETTINGS_META[k]?.type === "select" ? String(v) : Number(v);
+      if (SETTINGS_META[k]) {
+        payload[k] = SETTINGS_META[k]?.type === "select" ? String(v) : Number(v);
+      }
     }
 
     api
