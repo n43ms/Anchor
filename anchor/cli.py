@@ -73,12 +73,9 @@ services:
 
   anchor-api:
     image: n43ms/anchor-api:latest
-    build:
-      context: .
-      dockerfile: ops/docker/Dockerfile.api
+    command: ["uvicorn", "anchor.api.app:app", "--host", "0.0.0.0", "--port", "8000"]
     ports:
       - "8000:8000"
-      - "3000:3000"
     environment:
       ANCHOR_DATABASE_URL: postgresql://anchor:anchor@anchor-db:5432/anchor
       ANCHOR_REDIS_URL: redis://anchor-redis:6379/0
@@ -92,9 +89,7 @@ services:
 
   anchor-worker:
     image: n43ms/anchor-worker:latest
-    build:
-      context: .
-      dockerfile: ops/docker/Dockerfile.worker
+    command: ["python", "-m", "anchor.worker"]
     deploy:
       replicas: 3
     environment:
@@ -106,6 +101,13 @@ services:
         condition: service_healthy
       anchor-redis:
         condition: service_started
+
+  anchor-console:
+    image: n43ms/anchor-console:latest
+    ports:
+      - "3000:3000"
+    depends_on:
+      - anchor-api
 
 volumes:
   anchor-pgdata:

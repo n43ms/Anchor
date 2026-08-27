@@ -34,34 +34,44 @@ export const QuickstartModal: React.FC<QuickstartModalProps> = ({ isOpen, onClos
     }, 200);
   };
 
-  const sampleDockerCompose = `version: '3.8'
-
-services:
-  postgres:
+  const sampleDockerCompose = `services:
+  anchor-db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: anchor_dev
-      POSTGRES_PASSWORD: anchor_dev_pass
+      POSTGRES_DB: anchor
+      POSTGRES_USER: anchor
+      POSTGRES_PASSWORD: anchor
     ports:
       - "5432:5432"
 
-  redis:
+  anchor-redis:
     image: redis:7-alpine
     ports:
       - "6379:6379"
 
-  api:
-    image: anchor/api:latest
+  anchor-api:
+    image: n43ms/anchor-api:latest
+    command: ["uvicorn", "anchor.api.app:app", "--host", "0.0.0.0", "--port", "8000"]
     ports:
       - "8000:8000"
+    environment:
+      ANCHOR_DATABASE_URL: postgresql://anchor:anchor@anchor-db:5432/anchor
+      ANCHOR_REDIS_URL: redis://anchor-redis:6379/0
+      ANCHOR_AUTHORING_EXECUTE: "true"
+      ANCHOR_CONFIG_PROFILE: demo
 
-  worker:
-    image: anchor/worker:latest
+  anchor-worker:
+    image: n43ms/anchor-worker:latest
+    command: ["python", "-m", "anchor.worker"]
     deploy:
       replicas: 3
+    environment:
+      ANCHOR_DATABASE_URL: postgresql://anchor:anchor@anchor-db:5432/anchor
+      ANCHOR_REDIS_URL: redis://anchor-redis:6379/0
+      ANCHOR_CONFIG_PROFILE: demo
 
-  console:
-    image: anchor/console:latest
+  anchor-console:
+    image: n43ms/anchor-console:latest
     ports:
       - "3000:3000"`;
 
@@ -104,7 +114,7 @@ services:
             <div>
               <h2 className="text-sm sm:text-base font-extrabold text-white tracking-wide flex items-center gap-2">
                 <span>Developer Quickstart & Architecture Guide</span>
-                <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-400 font-semibold">SDK v1.4.4</span>
+                <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-400 font-semibold">SDK v1.4.5</span>
               </h2>
               <p className="text-[11px] text-zinc-400 font-sans">Scaffold your project, boot worker fleet, and execute multi-tool durable workflows.</p>
             </div>
@@ -140,7 +150,7 @@ services:
                 </button>
               </div>
               <div className="text-[11px] font-mono text-white font-bold bg-black/60 p-1.5 rounded-lg border border-white/10">$ pip install anchor-runtime && anchor init</div>
-              <div className="text-[10px] text-zinc-400 font-sans leading-tight">Scaffolds <code className="text-amber-300 font-mono">app.py</code> & <code className="text-amber-300 font-mono">docker-compose.yml</code> in directory.</div>
+              <div className="text-[10px] text-zinc-400 font-sans leading-tight">Scaffolds <code className="text-amber-300 font-mono">app.py</code> & <code className="text-amber-300 font-mono">docker-compose.yml</code>. (Windows alternative: <code className="text-amber-300 font-mono">python -m anchor.cli init</code>)</div>
             </div>
 
             {/* Step 2 */}

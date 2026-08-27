@@ -91,7 +91,7 @@ mkdir ~/test-anchor-release && cd ~/test-anchor-release
 pip install anchor-runtime
 
 # 3. Generate docker-compose.yml and app.py template
-anchor init
+anchor init        # On Windows if PATH is not configured: python -m anchor.cli init
 
 # 4. Start pre-built Docker containers from Docker Hub
 docker compose up -d

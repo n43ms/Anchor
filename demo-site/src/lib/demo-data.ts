@@ -20,7 +20,7 @@ export const DEMO_HEALTH: Health = {
   oldest_pending_age_ms: null,
   deployment_mode: "local",
   active_profile: "demo",
-  code_version: "v1.4.4-prod",
+  code_version: "v1.4.5-prod",
   schema_revision: "005_chaos",
   degraded: false,
 };
@@ -41,7 +41,7 @@ export const DEMO_WORKERS: Worker[] = [
     current_run_count: 2,
     capacity: 10,
     steps_executed: 242,
-    code_version: "v1.4.4-prod",
+    code_version: "v1.4.5-prod",
     role: "runner",
   },
   {
@@ -58,7 +58,7 @@ export const DEMO_WORKERS: Worker[] = [
     current_run_count: 1,
     capacity: 10,
     steps_executed: 198,
-    code_version: "v1.4.4-prod",
+    code_version: "v1.4.5-prod",
     role: "runner",
   },
   {
@@ -75,7 +75,7 @@ export const DEMO_WORKERS: Worker[] = [
     current_run_count: 1,
     capacity: 10,
     steps_executed: 315,
-    code_version: "v1.4.4-prod",
+    code_version: "v1.4.5-prod",
     role: "runner",
   },
   {
@@ -92,7 +92,7 @@ export const DEMO_WORKERS: Worker[] = [
     current_run_count: 0,
     capacity: 10,
     steps_executed: 176,
-    code_version: "v1.4.4-prod",
+    code_version: "v1.4.5-prod",
     role: "runner",
   },
   {
@@ -110,7 +110,7 @@ export const DEMO_WORKERS: Worker[] = [
     capacity: 10,
 
     steps_executed: 412,
-    code_version: "v1.4.4-prod",
+    code_version: "v1.4.5-prod",
     role: "runner",
   },
 ];
