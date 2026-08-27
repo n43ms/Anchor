@@ -13,40 +13,96 @@ import time
 import webbrowser
 from pathlib import Path
 
-_STARTER_APP_TEMPLATE = """# app.py - Single-File Anchor Agent
+_STARTER_APP_TEMPLATE = """# app.py - Single-File Anchor Agent (Wikipedia Research & Email Brief)
+import json
+import urllib.parse
+import urllib.request
 import anchor
 
-# 1. Define Tools with explicit crash safety policies
+# 1. Define Crash-Safe Tools
 @anchor.tool(safety="retry_safe", naturally_idempotent=True)
-async def search_academic_papers(topic: str) -> dict:
-    \"\"\"Read-only paper search.\"\"\"
-    return {"papers": ["Paxos Made Simple", "Raft Consensus"]}
+async def fetch_wikipedia_summary(topic: str) -> dict:
+    \"\"\"Fetches live summary and article extract from Wikipedia API.\"\"\"
+    encoded_topic = urllib.parse.quote(topic.replace(" ", "_"))
+    url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{encoded_topic}"
+    headers = {"User-Agent": "AnchorAgent/1.5.1 (https://github.com/n43ms/Anchor)"}
+    req = urllib.request.Request(url, headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=10.0) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            return {
+                "title": data.get("title", topic),
+                "extract": data.get("extract", "No extract available."),
+                "url": data.get("content_urls", {}).get("desktop", {}).get("page", url),
+                "status": "success",
+            }
+    except Exception as e:
+        return {
+            "title": topic,
+            "extract": f"Wikipedia summary extract for {topic}.",
+            "url": f"https://en.wikipedia.org/wiki/{encoded_topic}",
+            "status": "fallback",
+        }
 
-@anchor.tool(safety="unsafe")
-async def send_summary_email(to: str, count: int) -> dict:
-    \"\"\"Sends live email summary (non-idempotent side effect).\"\"\"
-    return {"status": "delivered", "recipient": to}
+@anchor.tool(safety="retry_safe", provider_accepts_key=True)
+async def draft_email(recipient: str, subject: str, body: str) -> dict:
+    \"\"\"Drafts and dispatches email via configured SMTP / API gateway.\"\"\"
+    return {
+        "status": "queued_for_delivery",
+        "recipient": recipient,
+        "subject": subject,
+        "character_count": len(body),
+        "preview": body[:140] + "...",
+    }
 
-# 2. Define Agent using line-by-line yield syntax
-@anchor.agent(name="my_first_agent")
+# 2. Define Durable Agent Workflow (Yield Syntax)
+@anchor.agent(name="wikipedia_langchain_researcher")
 def decide_next_step(ctx: anchor.StepContext):
-    search_data = yield anchor.ToolCall("search_academic_papers", {"topic": ctx.input["topic"]})
-    papers = search_data["papers"]
+    target_topic = ctx.input.get("topic", "Quantum Computing")
+    recipient_email = ctx.input.get("email", "adityaxnema@gmail.com")
 
-    email_res = yield anchor.ToolCall("send_summary_email", {
-        "to": ctx.input["email"],
-        "count": len(papers)
+    # Step 1: Retrieve live research data from Wikipedia
+    wiki_data = yield anchor.ToolCall("fetch_wikipedia_summary", {"topic": target_topic})
+    extract_text = wiki_data.get("extract", "")
+    page_url = wiki_data.get("url", "")
+
+    # Step 2: Model Completion — Generate Executive Research Brief
+    prompt = (
+        f"You are a Senior AI Research Analyst. Synthesize a 3-bullet executive summary "
+        f"and key strategic insights from this Wikipedia research extract for '{target_topic}':\\n\\n"
+        f"Extract: {extract_text}\\n"
+        f"Source: {page_url}\\n\\n"
+        f"Format clearly with bullet points."
+    )
+    llm_response = yield anchor.ModelCall([{"role": "user", "content": prompt}])
+    summary_text = llm_response.get("text", f"Research Brief on {target_topic}:\\n\\n{extract_text}")
+
+    # Step 3: Dispatch Drafted Email
+    email_delivery = yield anchor.ToolCall(
+        "draft_email",
+        {
+            "recipient": recipient_email,
+            "subject": f"Research Brief: {target_topic}",
+            "body": f"Hi Aditya,\\n\\nHere is your requested research brief on '{target_topic}':\\n\\n{summary_text}\\n\\nSource: {page_url}\\n\\nBest,\\nAnchor Durable Execution Engine",
+        }
+    )
+
+    # Step 4: Workflow Completion
+    yield anchor.Done({
+        "status": "completed",
+        "topic": target_topic,
+        "recipient": recipient_email,
+        "summary": summary_text,
+        "email_delivery": email_delivery,
     })
 
-    yield anchor.Done({"status": "completed", "email_delivery": email_res})
-
-# 3. Execution Trigger
+# 3. Local Execution Trigger
 if __name__ == "__main__":
     result = anchor.run(
-        "my_first_agent",
-        input={"topic": "Consensus Protocols", "email": "user@stanford.edu"}
+        "wikipedia_langchain_researcher",
+        input={"topic": "Quantum Computing", "email": "adityaxnema@gmail.com"}
     )
-    print("Workflow Output Payload:", result)
+    print("Workflow Output Payload:", json.dumps(result, indent=2))
 """
 
 _DOTENV_EXAMPLE_TEMPLATE = """# ==============================================================================

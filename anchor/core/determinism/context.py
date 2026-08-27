@@ -128,6 +128,12 @@ class StepContext:
     def result_of(self, tool_name: str, args: dict[str, Any] | None = None) -> Any:
         return self.run_context.result_of(tool_name, args)
 
+    def model_response_at(self, step_index: int) -> Any:
+        recorded = self.run_context.model_calls_by_step.get(step_index)
+        if recorded is not None:
+            return {"text": recorded.response, "model": recorded.model, "stubbed": recorded.stubbed}
+        return None
+
     def completed_tool_args(self, tool_name: str) -> list[dict[str, Any]]:
         return self.run_context.completed_tool_args(tool_name)
 
