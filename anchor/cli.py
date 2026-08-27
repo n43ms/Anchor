@@ -49,6 +49,29 @@ if __name__ == "__main__":
     print("Workflow Output Payload:", result)
 """
 
+_DOTENV_EXAMPLE_TEMPLATE = """# ==============================================================================
+# Anchor AI Model API Keys & Environment Configuration
+# ==============================================================================
+# Configure your API keys below for LangChain, Claude (Anthropic), Gemini, or OpenAI.
+# Anchor's cluster worker fleet automatically forwards these environment variables 
+# into your durable execution agent workflows.
+
+# Google Gemini API Key (e.g. AIzaSy...)
+GEMINI_API_KEY=
+
+# Anthropic Claude API Key (e.g. sk-ant-...)
+ANTHROPIC_API_KEY=
+
+# OpenAI API Key (e.g. sk-proj-...)
+OPENAI_API_KEY=
+
+# DeepSeek API Key
+DEEPSEEK_API_KEY=
+
+# Groq API Key
+GROQ_API_KEY=
+"""
+
 _DOCKER_COMPOSE_TEMPLATE = """version: "3.8"
 
 services:
@@ -74,16 +97,25 @@ services:
       - "6379:6379"
 
   anchor-api:
-    image: n43ms/anchor-api:v1.4.8
+    image: n43ms/anchor-api:v1.4.9
     pull_policy: always
     command: ["sh", "-c", "alembic -c ops/migrations/alembic.ini upgrade head && uvicorn anchor.api.app:app --host 0.0.0.0 --port 8000"]
     ports:
       - "8000:8000"
+    env_file:
+      - path: .env
+        required: false
     environment:
       ANCHOR_DATABASE_URL: postgresql://anchor:anchor@anchor-db:5432/anchor
       ANCHOR_REDIS_URL: redis://anchor-redis:6379/0
       ANCHOR_AUTHORING_EXECUTE: "true"
       ANCHOR_CONFIG_PROFILE: demo
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
     depends_on:
       anchor-db:
         condition: service_healthy
@@ -91,15 +123,24 @@ services:
         condition: service_started
 
   anchor-worker:
-    image: n43ms/anchor-worker:v1.4.8
+    image: n43ms/anchor-worker:v1.4.9
     pull_policy: always
     command: ["python", "-m", "anchor.worker"]
     deploy:
       replicas: 3
+    env_file:
+      - path: .env
+        required: false
     environment:
       ANCHOR_DATABASE_URL: postgresql://anchor:anchor@anchor-db:5432/anchor
       ANCHOR_REDIS_URL: redis://anchor-redis:6379/0
       ANCHOR_CONFIG_PROFILE: demo
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
     depends_on:
       anchor-db:
         condition: service_healthy
@@ -107,7 +148,7 @@ services:
         condition: service_started
 
   anchor-console:
-    image: n43ms/anchor-console:v1.4.8
+    image: n43ms/anchor-console:v1.4.9
     pull_policy: always
     ports:
       - "3000:3000"
@@ -130,7 +171,7 @@ def main() -> None:
 
     # `anchor init`
     subparsers.add_parser(
-        "init", help="Initialize docker-compose.yml and starter app.py in project folder"
+        "init", help="Initialize docker-compose.yml, .env, and starter app.py in project folder"
     )
 
     # `anchor dev`
@@ -140,46 +181,51 @@ def main() -> None:
     dev_parser.add_argument("--no-browser", action="store_true", help="Do not auto-open browser")
 
     # `anchor status`
-    subparsers.add_parser("status", help="Check status of running Anchor cluster")
+    subparsers.add_parser("status", help="Inspect local cluster health and active workers")
 
     args = parser.parse_args()
 
     if args.command == "version":
-        print("Anchor v1.4.8 (Apache 2.0)")
+        print("Anchor v1.4.9 (Apache 2.0)")
         sys.exit(0)
 
     if args.command == "init":
-        compose_path = Path("docker-compose.yml")
-        app_path = Path("app.py")
-        created = []
-        if not compose_path.exists():
-            compose_path.write_text(_DOCKER_COMPOSE_TEMPLATE, encoding="utf-8")
-            created.append("docker-compose.yml")
-        if not app_path.exists():
-            app_path.write_text(_STARTER_APP_TEMPLATE, encoding="utf-8")
-            created.append("app.py")
+        cwd = Path.cwd()
+        compose_file = cwd / "docker-compose.yml"
+        app_file = cwd / "app.py"
+        env_file = cwd / ".env"
 
-        if created:
-            print(f"[+] Created starter files: {', '.join(created)}")
-            print("\nNext steps:")
-            print("  1. Boot cluster:  anchor dev   (or: docker compose up -d)")
-            print("  2. Run workflow:  python app.py")
-        else:
-            print("[=] Workspace already initialized (docker-compose.yml and app.py exist).")
+        if not compose_file.exists():
+            compose_file.write_text(_DOCKER_COMPOSE_TEMPLATE, encoding="utf-8")
+            print(f"[+] Created {compose_file}")
+
+        if not app_file.exists():
+            app_file.write_text(_STARTER_APP_TEMPLATE, encoding="utf-8")
+            print(f"[+] Created {app_file}")
+
+        if not env_file.exists():
+            env_file.write_text(_DOTENV_EXAMPLE_TEMPLATE, encoding="utf-8")
+            print(f"[+] Created {env_file} (Configure your GEMINI_API_KEY, ANTHROPIC_API_KEY, or OPENAI_API_KEY here)")
+
+        print("[+] Anchor project initialized successfully.")
         sys.exit(0)
 
     if args.command == "dev":
+        cwd = Path.cwd()
+        compose_file = cwd / "docker-compose.yml"
+        app_file = cwd / "app.py"
+        env_file = cwd / ".env"
+
+        if not compose_file.exists() or not app_file.exists():
+            print("[+] Workspace uninitialized. Auto-generating docker-compose.yml, .env & app.py...")
+            compose_file.write_text(_DOCKER_COMPOSE_TEMPLATE, encoding="utf-8")
+            app_file.write_text(_STARTER_APP_TEMPLATE, encoding="utf-8")
+            if not env_file.exists():
+                env_file.write_text(_DOTENV_EXAMPLE_TEMPLATE, encoding="utf-8")
+
         print("==================================================")
         print("   Anchor Durable Execution Cluster (Dev Mode)    ")
         print("==================================================")
-        compose_path = Path("docker-compose.yml")
-        app_path = Path("app.py")
-        if not compose_path.exists():
-            print("[+] Workspace uninitialized. Auto-generating docker-compose.yml & app.py...")
-            compose_path.write_text(_DOCKER_COMPOSE_TEMPLATE, encoding="utf-8")
-            if not app_path.exists():
-                app_path.write_text(_STARTER_APP_TEMPLATE, encoding="utf-8")
-
         print("[1/2] Booting Postgres 16, Redis 7, API, 3 Workers & Operator Console...")
         try:
             res = subprocess.run(["docker", "compose", "up", "-d"], capture_output=True, text=True)

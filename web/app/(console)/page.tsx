@@ -29,12 +29,12 @@ export default function DashboardPage() {
 
   if (healthError && !health) {
     return (
-      <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-6 text-sm text-rose-400 backdrop-blur-xl" data-testid="dashboard-error">
+      <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-6 text-sm text-amber-300 backdrop-blur-xl" data-testid="dashboard-error">
         <div className="flex items-center gap-2 font-bold font-ui text-base mb-1">
-          <span className="h-2.5 w-2.5 rounded-full bg-rose-400 animate-ping shadow-glow-rose" />
-          <span>RUNTIME DISCONNECTED</span>
+          <span className="h-2.5 w-2.5 rounded-full bg-amber-400 animate-ping shadow-glow-amber" />
+          <span>Connecting to Anchor Cluster...</span>
         </div>
-        <p className="text-xs text-zinc-400">could not reach the backend api — check if docker containers and api service are running</p>
+        <p className="text-xs text-amber-200/80">Connecting to API service and worker fleet. Ensure your Docker cluster is active (`python -m anchor.cli dev`).</p>
       </div>
     );
   }

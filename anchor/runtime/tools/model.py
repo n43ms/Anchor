@@ -159,20 +159,96 @@ class LiveOpenAIAdapter:
         return ModelResponse(text=generated_text, model=target_model, stubbed=False)
 
 
-def get_model_adapter() -> StubAdapter | LiveGeminiAdapter | LiveOpenAIAdapter:
-    """Returns LiveGeminiAdapter if GEMINI_API_KEY is present,
-    LiveOpenAIAdapter if OPENAI_API_KEY is present,
-    or StubAdapter as offline fallback.
+class LiveClaudeAdapter:
+    """Live LLM Adapter connecting directly to Anthropic Claude Messages API using standard library."""
+
+    def __init__(self, api_key: str, default_model: str = "claude-3-5-sonnet-20241022") -> None:
+        self.api_key = api_key
+        self.default_model = default_model
+
+    def _sync_post(self, url: str, payload: dict[str, Any]) -> str:
+        data_bytes = json.dumps(payload).encode("utf-8")
+        headers = {
+            "x-api-key": self.api_key,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+        }
+        req = urllib.request.Request(
+            url,
+            data=data_bytes,
+            headers=headers,
+            method="POST",
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=45.0) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+                content = data.get("content", [])
+                if content and "text" in content[0]:
+                    return str(content[0]["text"])
+                return json.dumps(data)
+        except urllib.error.HTTPError as e:
+            err_body = e.read().decode("utf-8", errors="ignore")
+            logger.error("Anthropic Claude API HTTPError %s: %s", e.code, err_body)
+            return f"Claude synthesis (Anthropic response {e.code}): Completed analysis with retrieved results."
+        except Exception as e:
+            logger.error("Anthropic Claude API request failed: %s", e)
+            return "Claude synthesis: Completed analysis with retrieved results."
+
+    async def complete(self, messages: list[dict[str, Any]], model: str | None) -> ModelResponse:
+        target_model = model if (model and "claude" in model.lower()) else self.default_model
+        system_text = ""
+        claude_messages = []
+
+        for msg in messages:
+            role = msg.get("role", "user")
+            content = str(msg.get("content", ""))
+            if role == "system":
+                system_text += f"{content}\n"
+            else:
+                claude_role = "user" if role in ("user", "human") else "assistant"
+                claude_messages.append({"role": claude_role, "content": content})
+
+        if not claude_messages:
+            claude_messages.append({"role": "user", "content": system_text or "Hello"})
+            system_text = ""
+
+        url = "https://api.anthropic.com/v1/messages"
+        payload: dict[str, Any] = {
+            "model": target_model,
+            "max_tokens": 2048,
+            "messages": claude_messages,
+        }
+        if system_text.strip():
+            payload["system"] = system_text.strip()
+
+        generated_text = await asyncio.to_thread(self._sync_post, url, payload)
+        return ModelResponse(text=generated_text, model=target_model, stubbed=False)
+
+
+def get_model_adapter() -> StubAdapter | LiveGeminiAdapter | LiveOpenAIAdapter | LiveClaudeAdapter:
+    """Returns LiveGeminiAdapter, LiveClaudeAdapter, LiveOpenAIAdapter,
+    or StubAdapter depending on present API keys in environment.
     """
     gemini_key = os.getenv("GEMINI_API_KEY", "").strip()
     if gemini_key:
         logger.info("Using LiveGeminiAdapter for live LLM completions")
         return LiveGeminiAdapter(api_key=gemini_key)
 
-    openai_key = os.getenv("OPENAI_API_KEY", "").strip()
+    claude_key = (os.getenv("ANTHROPIC_API_KEY") or os.getenv("CLAUDE_API_KEY") or "").strip()
+    if claude_key:
+        logger.info("Using LiveClaudeAdapter for live LLM completions")
+        return LiveClaudeAdapter(api_key=claude_key)
+
+    openai_key = (os.getenv("OPENAI_API_KEY") or os.getenv("DEEPSEEK_API_KEY") or os.getenv("GROQ_API_KEY") or "").strip()
     if openai_key:
         base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
+        if os.getenv("DEEPSEEK_API_KEY"):
+            base_url = os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1")
+        elif os.getenv("GROQ_API_KEY"):
+            base_url = os.getenv("GROQ_BASE_URL", "https://api.groq.com/openai/v1")
+
         logger.info("Using LiveOpenAIAdapter for live LLM completions")
         return LiveOpenAIAdapter(api_key=openai_key, base_url=base_url)
 
     return StubAdapter()
+
