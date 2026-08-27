@@ -17,7 +17,7 @@ import urllib.error
 import urllib.request
 from typing import Any
 
-from anchor.core.determinism.actions import Done, ToolCall
+from anchor.core.determinism.actions import Done, ModelCall, ToolCall
 from anchor.runtime.agents.registry import resolve as resolve_agent
 from anchor.runtime.tools.registry import resolve as resolve_tool
 
@@ -40,8 +40,7 @@ class MockSingleFileContext:
         return self._tool_results[name]
 
     def model_response_at(self, index: int) -> Any:
-        del index
-        return None
+        return getattr(self, "_last_model_response", None)
 
     def now(self) -> str:
         return "2026-08-26T12:00:00Z"
@@ -203,6 +202,13 @@ async def execute_run_async(
                 res = tool_decl.fn(*call_args, **call_kwargs)
 
             ctx._tool_results[action.name] = res
+            continue
+
+        if isinstance(action, ModelCall):
+            from anchor.runtime.tools.model import get_model_adapter
+            adapter = get_model_adapter()
+            resp = await adapter.complete(action.messages, action.model)
+            ctx._last_model_response = {"text": resp.text, "model": resp.model, "stubbed": resp.stubbed}
             continue
 
         raise TypeError(f"Unexpected action type: {type(action).__name__}")
