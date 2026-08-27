@@ -29,17 +29,23 @@ class MockSingleFileContext:
         self.step_index = 0
         self.input = run_input or {}
         self._tool_results: dict[str, Any] = {}
+        self._step_tool_results: dict[int, Any] = {}
+        self._model_responses: dict[int, Any] = {}
         self.tool_registry: dict[str, Any] = {}
 
     def has_result(self, name: str) -> bool:
         return name in self._tool_results
 
-    def result_of(self, name: str) -> Any:
+    def result_of(self, name: str, step_index: int | None = None) -> Any:
+        if step_index is not None and step_index in self._step_tool_results:
+            return self._step_tool_results[step_index]
         if name not in self._tool_results:
             raise KeyError(f"Tool {name!r} has no result recorded.")
         return self._tool_results[name]
 
     def model_response_at(self, index: int) -> Any:
+        if index in self._model_responses:
+            return self._model_responses[index]
         return getattr(self, "_last_model_response", None)
 
     def now(self) -> str:
@@ -202,13 +208,16 @@ async def execute_run_async(
                 res = tool_decl.fn(*call_args, **call_kwargs)
 
             ctx._tool_results[action.name] = res
+            ctx._step_tool_results[step] = res
             continue
 
         if isinstance(action, ModelCall):
             from anchor.runtime.tools.model import get_model_adapter
             adapter = get_model_adapter()
             resp = await adapter.complete(action.messages, action.model)
-            ctx._last_model_response = {"text": resp.text, "model": resp.model, "stubbed": resp.stubbed}
+            model_dict = {"text": resp.text, "model": resp.model, "stubbed": resp.stubbed}
+            ctx._last_model_response = model_dict
+            ctx._model_responses[step] = model_dict
             continue
 
         raise TypeError(f"Unexpected action type: {type(action).__name__}")
