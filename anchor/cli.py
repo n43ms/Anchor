@@ -74,8 +74,9 @@ services:
       - "6379:6379"
 
   anchor-api:
-    image: n43ms/anchor-api:latest
-    command: ["uvicorn", "anchor.api.app:app", "--host", "0.0.0.0", "--port", "8000"]
+    image: n43ms/anchor-api:v1.4.8
+    pull_policy: always
+    command: ["sh", "-c", "alembic -c ops/migrations/alembic.ini upgrade head && uvicorn anchor.api.app:app --host 0.0.0.0 --port 8000"]
     ports:
       - "8000:8000"
     environment:
@@ -90,7 +91,8 @@ services:
         condition: service_started
 
   anchor-worker:
-    image: n43ms/anchor-worker:latest
+    image: n43ms/anchor-worker:v1.4.8
+    pull_policy: always
     command: ["python", "-m", "anchor.worker"]
     deploy:
       replicas: 3
@@ -105,7 +107,8 @@ services:
         condition: service_started
 
   anchor-console:
-    image: n43ms/anchor-console:latest
+    image: n43ms/anchor-console:v1.4.8
+    pull_policy: always
     ports:
       - "3000:3000"
     depends_on:
@@ -131,39 +134,38 @@ def main() -> None:
     )
 
     # `anchor dev`
-    dev_parser = subparsers.add_parser("dev", help="Start local cluster and open Operator Console")
-    dev_parser.add_argument(
-        "--no-browser", action="store_true", help="Do not open browser automatically"
+    dev_parser = subparsers.add_parser(
+        "dev", help="Start local Anchor cluster via docker compose and open console UI"
     )
+    dev_parser.add_argument("--no-browser", action="store_true", help="Do not auto-open browser")
 
     # `anchor status`
-    subparsers.add_parser("status", help="Check live cluster health and active workers")
+    subparsers.add_parser("status", help="Check status of running Anchor cluster")
 
     args = parser.parse_args()
 
     if args.command == "version":
-        print("Anchor Engine v0.1.0 (Durable Execution Runtime)")
+        print("Anchor v1.4.8 (Apache 2.0)")
         sys.exit(0)
 
     if args.command == "init":
         compose_path = Path("docker-compose.yml")
         app_path = Path("app.py")
-
+        created = []
         if not compose_path.exists():
             compose_path.write_text(_DOCKER_COMPOSE_TEMPLATE, encoding="utf-8")
-            print("[+] Created docker-compose.yml")
-        else:
-            print("! docker-compose.yml already exists")
-
+            created.append("docker-compose.yml")
         if not app_path.exists():
             app_path.write_text(_STARTER_APP_TEMPLATE, encoding="utf-8")
-            print("[+] Created app.py starter template")
-        else:
-            print("! app.py already exists")
+            created.append("app.py")
 
-        print("\nNext steps:")
-        print("1. Start cluster & UI:  anchor dev   (or: python -m anchor.cli dev)")
-        print("2. Run agent:           python app.py")
+        if created:
+            print(f"[+] Created starter files: {', '.join(created)}")
+            print("\nNext steps:")
+            print("  1. Boot cluster:  anchor dev   (or: docker compose up -d)")
+            print("  2. Run workflow:  python app.py")
+        else:
+            print("[=] Workspace already initialized (docker-compose.yml and app.py exist).")
         sys.exit(0)
 
     if args.command == "dev":
@@ -190,7 +192,17 @@ def main() -> None:
 
         console_url = os.getenv("ANCHOR_CONSOLE_URL", "http://localhost:3000")
         print(f"[2/2] Launching Operator Console at {console_url}...")
-        time.sleep(1)
+        
+        # Wait up to 10s for API server health before opening browser
+        import urllib.request
+        for _ in range(10):
+            try:
+                with urllib.request.urlopen("http://localhost:8000/api/health", timeout=1) as resp:
+                    if resp.status == 200:
+                        break
+            except Exception:
+                time.sleep(1)
+
         if not args.no_browser:
             try:
                 webbrowser.open(console_url)

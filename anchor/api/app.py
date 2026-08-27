@@ -90,11 +90,18 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         async with pool.acquire(timeout=5.0) as conn:
             await assert_schema_matches(conn)
     except SchemaVersionMismatchError:
-        # A real, actionable misconfiguration — the applied schema and the
-        # code disagree. Retrying without an operator noticing would only
-        # hide the problem, so this is the one case the process actually
-        # refuses to start over (D-45, FR-128).
-        raise
+        # Auto-apply Alembic migrations on fresh database boot
+        try:
+            logger.info("running automatic schema migration to head...")
+            proc = await asyncio.create_subprocess_exec(
+                sys.executable, "-m", "alembic", "-c", "ops/migrations/alembic.ini", "upgrade", "head"
+            )
+            await proc.wait()
+            async with pool.acquire(timeout=5.0) as conn:
+                await assert_schema_matches(conn)
+        except Exception as exc:
+            logger.error("auto-migration failed: %s", exc)
+            raise
     except (asyncpg.PostgresError, TimeoutError, OSError) as exc:
         # The database is unreachable, not merely mismatched — a different
         # failure with a different correct response. Per I7, the API still

@@ -21,4 +21,4 @@ ENV PATH="/app/.venv/bin:${PATH}"
 RUN uv sync --frozen --no-dev || uv sync --no-dev
 
 EXPOSE 8000
-CMD ["uvicorn", "anchor.api.app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "alembic -c ops/migrations/alembic.ini upgrade head && uvicorn anchor.api.app:app --host 0.0.0.0 --port 8000"]
