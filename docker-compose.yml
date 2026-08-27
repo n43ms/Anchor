@@ -1,0 +1,62 @@
+version: "3.8"
+
+services:
+  anchor-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: anchor
+      POSTGRES_USER: anchor
+      POSTGRES_PASSWORD: anchor
+    ports:
+      - "5432:5432"
+    volumes:
+      - anchor-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U anchor"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+  anchor-redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  anchor-api:
+    image: adityaxnema/anchor-api:latest
+    build:
+      context: .
+      dockerfile: ops/docker/Dockerfile.api
+    ports:
+      - "8000:8000"
+      - "3000:3000"
+    environment:
+      ANCHOR_DATABASE_URL: postgresql://anchor:anchor@anchor-db:5432/anchor
+      ANCHOR_REDIS_URL: redis://anchor-redis:6379/0
+      ANCHOR_AUTHORING_EXECUTE: "true"
+      ANCHOR_CONFIG_PROFILE: demo
+    depends_on:
+      anchor-db:
+        condition: service_healthy
+      anchor-redis:
+        condition: service_started
+
+  anchor-worker:
+    image: adityaxnema/anchor-worker:latest
+    build:
+      context: .
+      dockerfile: ops/docker/Dockerfile.worker
+    deploy:
+      replicas: 3
+    environment:
+      ANCHOR_DATABASE_URL: postgresql://anchor:anchor@anchor-db:5432/anchor
+      ANCHOR_REDIS_URL: redis://anchor-redis:6379/0
+      ANCHOR_CONFIG_PROFILE: demo
+    depends_on:
+      anchor-db:
+        condition: service_healthy
+      anchor-redis:
+        condition: service_started
+
+volumes:
+  anchor-pgdata:

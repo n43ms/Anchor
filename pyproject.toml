@@ -1,6 +1,6 @@
 [project]
-name = "anchor"
-version = "0.1.0"
+name = "anchor-runtime"
+version = "1.4.2"
 description = "A durable execution runtime for AI agents."
 requires-python = ">=3.12,<3.13"
 dependencies = [
@@ -38,6 +38,7 @@ dev = [
 
 [project.scripts]
 anchor = "anchor.cli:main"
+anchor-runtime = "anchor.cli:main"
 
 [build-system]
 requires = ["hatchling"]

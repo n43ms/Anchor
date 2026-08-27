@@ -147,13 +147,13 @@ def main() -> None:
 
         if not compose_path.exists():
             compose_path.write_text(_DOCKER_COMPOSE_TEMPLATE, encoding="utf-8")
-            print("✓ Created docker-compose.yml")
+            print("[+] Created docker-compose.yml")
         else:
             print("! docker-compose.yml already exists")
 
         if not app_path.exists():
             app_path.write_text(_STARTER_APP_TEMPLATE, encoding="utf-8")
-            print("✓ Created app.py starter template")
+            print("[+] Created app.py starter template")
         else:
             print("! app.py already exists")
 
