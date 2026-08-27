@@ -189,7 +189,7 @@ export function Sidebar() {
           </a>
         </div>
         <div className="text-[9.5px] font-mono text-zinc-500 flex items-center justify-between pt-1 border-t border-white/[0.06]">
-          <span className="text-zinc-400 font-semibold">v1.5.0-prod</span>
+          <span className="text-zinc-400 font-semibold">v1.5.1-prod</span>
           <a
             href="https://github.com/n43ms/Anchor/blob/main/LICENSE"
             target="_blank"

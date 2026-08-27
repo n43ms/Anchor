@@ -114,7 +114,7 @@ export const QuickstartModal: React.FC<QuickstartModalProps> = ({ isOpen, onClos
             <div>
               <h2 className="text-sm sm:text-base font-extrabold text-white tracking-wide flex items-center gap-2">
                 <span>Developer Quickstart & Architecture Guide</span>
-                <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-400 font-semibold">SDK v1.5.0</span>
+                <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-400 font-semibold">SDK v1.5.1</span>
               </h2>
               <p className="text-[11px] text-zinc-400 font-sans">Scaffold your project, boot worker fleet, and execute multi-tool durable workflows.</p>
             </div>

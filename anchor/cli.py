@@ -97,7 +97,7 @@ services:
       - "6379:6379"
 
   anchor-api:
-    image: n43ms/anchor-api:v1.5.0
+    image: n43ms/anchor-api:v1.5.1
     pull_policy: always
     command: ["sh", "-c", "alembic -c ops/migrations/alembic.ini upgrade head && uvicorn anchor.api.app:app --host 0.0.0.0 --port 8000"]
     ports:
@@ -123,7 +123,7 @@ services:
         condition: service_started
 
   anchor-worker:
-    image: n43ms/anchor-worker:v1.5.0
+    image: n43ms/anchor-worker:v1.5.1
     pull_policy: always
     command: ["python", "-m", "anchor.worker"]
     deploy:
@@ -148,7 +148,7 @@ services:
         condition: service_started
 
   anchor-console:
-    image: n43ms/anchor-console:v1.5.0
+    image: n43ms/anchor-console:v1.5.1
     pull_policy: always
     ports:
       - "3000:3000"
@@ -186,7 +186,7 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.command == "version":
-        print("Anchor v1.5.0 (Apache 2.0)")
+        print("Anchor v1.5.1 (Apache 2.0)")
         sys.exit(0)
 
     if args.command == "init":
