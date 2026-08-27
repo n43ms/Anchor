@@ -194,6 +194,7 @@ def main() -> None:
         compose_file = cwd / "docker-compose.yml"
         app_file = cwd / "app.py"
         env_file = cwd / ".env"
+        env_example = cwd / ".env.example"
 
         if not compose_file.exists():
             compose_file.write_text(_DOCKER_COMPOSE_TEMPLATE, encoding="utf-8")
@@ -207,6 +208,10 @@ def main() -> None:
             env_file.write_text(_DOTENV_EXAMPLE_TEMPLATE, encoding="utf-8")
             print(f"[+] Created {env_file} (Configure your GEMINI_API_KEY, ANTHROPIC_API_KEY, or OPENAI_API_KEY here)")
 
+        if not env_example.exists():
+            env_example.write_text(_DOTENV_EXAMPLE_TEMPLATE, encoding="utf-8")
+            print(f"[+] Created {env_example}")
+
         print("[+] Anchor project initialized successfully.")
         sys.exit(0)
 
@@ -215,13 +220,16 @@ def main() -> None:
         compose_file = cwd / "docker-compose.yml"
         app_file = cwd / "app.py"
         env_file = cwd / ".env"
+        env_example = cwd / ".env.example"
 
         if not compose_file.exists() or not app_file.exists():
-            print("[+] Workspace uninitialized. Auto-generating docker-compose.yml, .env & app.py...")
+            print("[+] Workspace uninitialized. Auto-generating docker-compose.yml, .env, .env.example & app.py...")
             compose_file.write_text(_DOCKER_COMPOSE_TEMPLATE, encoding="utf-8")
             app_file.write_text(_STARTER_APP_TEMPLATE, encoding="utf-8")
             if not env_file.exists():
                 env_file.write_text(_DOTENV_EXAMPLE_TEMPLATE, encoding="utf-8")
+            if not env_example.exists():
+                env_example.write_text(_DOTENV_EXAMPLE_TEMPLATE, encoding="utf-8")
 
         print("==================================================")
         print("   Anchor Durable Execution Cluster (Dev Mode)    ")
