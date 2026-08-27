@@ -114,7 +114,7 @@ export const QuickstartModal: React.FC<QuickstartModalProps> = ({ isOpen, onClos
             <div>
               <h2 className="text-sm sm:text-base font-extrabold text-white tracking-wide flex items-center gap-2">
                 <span>Developer Quickstart & Architecture Guide</span>
-                <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-400 font-semibold">SDK v1.4.5</span>
+                <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-400 font-semibold">SDK v1.4.6</span>
               </h2>
               <p className="text-[11px] text-zinc-400 font-sans">Scaffold your project, boot worker fleet, and execute multi-tool durable workflows.</p>
             </div>
@@ -138,19 +138,19 @@ export const QuickstartModal: React.FC<QuickstartModalProps> = ({ isOpen, onClos
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-amber-500 text-black font-extrabold text-[10px]">1</span>
-                  <span className="text-[10.5px] font-extrabold text-amber-300 uppercase tracking-wider">Install SDK & Init</span>
+                  <span className="text-[10.5px] font-extrabold text-amber-300 uppercase tracking-wider">Install Python SDK</span>
                 </div>
                 <button
                   type="button"
-                  onClick={() => copyToClipboard("pip install anchor-runtime && anchor init", 1)}
+                  onClick={() => copyToClipboard("pip install anchor-runtime", 1)}
                   className="text-[10px] bg-amber-500/20 border border-amber-500/40 text-amber-300 hover:bg-amber-500/30 px-2 py-0.5 rounded font-bold cursor-pointer flex items-center gap-1 transition-all"
                 >
                   {copiedStep === 1 ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
                   <span>{copiedStep === 1 ? "Copied!" : "Copy"}</span>
                 </button>
               </div>
-              <div className="text-[11px] font-mono text-white font-bold bg-black/60 p-1.5 rounded-lg border border-white/10">$ pip install anchor-runtime && anchor init</div>
-              <div className="text-[10px] text-zinc-400 font-sans leading-tight">Scaffolds <code className="text-amber-300 font-mono">app.py</code> & <code className="text-amber-300 font-mono">docker-compose.yml</code>. (Windows alternative: <code className="text-amber-300 font-mono">python -m anchor.cli init</code>)</div>
+              <div className="text-[11px] font-mono text-white font-bold bg-black/60 p-1.5 rounded-lg border border-white/10">$ pip install anchor-runtime</div>
+              <div className="text-[10px] text-zinc-400 font-sans leading-tight">Installs Anchor durable engine & CLI tool.</div>
             </div>
 
             {/* Step 2 */}
@@ -158,19 +158,19 @@ export const QuickstartModal: React.FC<QuickstartModalProps> = ({ isOpen, onClos
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="flex h-4.5 w-4.5 items-center justify-center rounded-full bg-emerald-500 text-black font-extrabold text-[10px]">2</span>
-                  <span className="text-[10.5px] font-extrabold text-emerald-300 uppercase tracking-wider">Boot Cluster Stack</span>
+                  <span className="text-[10.5px] font-extrabold text-emerald-300 uppercase tracking-wider">Boot Cluster & UI</span>
                 </div>
                 <button
                   type="button"
-                  onClick={() => copyToClipboard("docker compose up -d", 2)}
+                  onClick={() => copyToClipboard("anchor dev", 2)}
                   className="text-[10px] bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/30 px-2 py-0.5 rounded font-bold cursor-pointer flex items-center gap-1 transition-all"
                 >
                   {copiedStep === 2 ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
                   <span>{copiedStep === 2 ? "Copied!" : "Copy"}</span>
                 </button>
               </div>
-              <div className="text-[11px] font-mono text-white font-bold bg-black/60 p-1.5 rounded-lg border border-white/10">$ docker compose up -d</div>
-              <div className="text-[10px] text-zinc-400 font-sans leading-tight">Boots Postgres 16 DB, Redis 7 & 3 Worker Replicas.</div>
+              <div className="text-[11px] font-mono text-white font-bold bg-black/60 p-1.5 rounded-lg border border-white/10">$ anchor dev</div>
+              <div className="text-[10px] text-zinc-400 font-sans leading-tight">Boots cluster & auto-opens Console at :3000. (Win PATH fallback: <code className="text-emerald-300 font-mono">python -m anchor.cli dev</code> | Alt: <code className="text-emerald-300 font-mono">anchor init</code> & <code className="text-emerald-300 font-mono">docker compose up -d</code>)</div>
             </div>
 
             {/* Step 3 */}

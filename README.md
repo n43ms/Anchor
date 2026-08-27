@@ -5,7 +5,7 @@
 *Eliminate lost state and duplicate API calls when executing multi-step LLM agent pipelines. Anchor guarantees atomic two-phase tool journaling, monotonic epoch fencing, and sub-second crash recovery.*
 
 [![Apache 2.0 License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![PyPI version](https://img.shields.io/badge/pypi-v1.4.5-emerald.svg)](https://pypi.org/project/anchor-runtime/)
+[![PyPI version](https://img.shields.io/badge/pypi-v1.4.6-emerald.svg)](https://pypi.org/project/anchor-runtime/)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-amber.svg)](pyproject.toml)
 
 **Author & System Architect**: **Aditya Nema** — [linkedin.com/in/adityaxnema](https://linkedin.com/in/adityaxnema) • [GitHub Repository](https://github.com/n43ms/Anchor)
@@ -16,18 +16,19 @@
 
 No API keys, no cloud subscriptions, no external services required to get started.
 
-### 1. Install the Python SDK & Initialize Workspace
+### 1. Install the Python SDK
 ```bash
 pip install anchor-runtime
-anchor init           # On Windows if PATH is not configured: python -m anchor.cli init
 ```
-> Scaffolds starter `app.py` workflow template and `docker-compose.yml` cluster configuration in your current directory.
 
-### 2. Boot Local Cluster Stack
+### 2. Boot Local Cluster & UI
 ```bash
-docker compose up -d
+# 🌟 Recommended (1-Click Launch & Auto-Browser):
+anchor dev             # On Windows if PATH is not configured: python -m anchor.cli dev
 ```
-> Brings up PostgreSQL 16 (with DDL triggers `AN001`–`AN004`), Redis 7, the API Server (`http://localhost:8000`), 3 worker replicas, and the Operator Console UI at `http://localhost:3000`.
+> Scaffolds workspace, boots PostgreSQL 16, Redis 7, API Server (`:8000`), 3 worker replicas, and auto-opens the Operator Console UI at `http://localhost:3000`.
+> 
+> *Alternative manual boot*: `anchor init` (Windows: `python -m anchor.cli init`) followed by `docker compose up -d`.
 
 ### 3. Write & Run Your Agent (`app.py`)
 

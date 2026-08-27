@@ -160,20 +160,43 @@ def main() -> None:
             print("! app.py already exists")
 
         print("\nNext steps:")
-        print("1. Start cluster:  docker compose up")
-        print("2. Run agent:      python app.py")
+        print("1. Start cluster & UI:  anchor dev   (or: python -m anchor.cli dev)")
+        print("2. Run agent:           python app.py")
         sys.exit(0)
 
     if args.command == "dev":
         print("==================================================")
         print("   Anchor Durable Execution Cluster (Dev Mode)    ")
         print("==================================================")
-        print("[1/3] Connecting to PostgreSQL & Redis...")
-        print("[2/3] Starting Worker Fleet & API Server at http://localhost:8000...")
+        compose_path = Path("docker-compose.yml")
+        app_path = Path("app.py")
+        if not compose_path.exists():
+            print("[+] Workspace uninitialized. Auto-generating docker-compose.yml & app.py...")
+            compose_path.write_text(_DOCKER_COMPOSE_TEMPLATE, encoding="utf-8")
+            if not app_path.exists():
+                app_path.write_text(_STARTER_APP_TEMPLATE, encoding="utf-8")
+
+        print("[1/2] Booting Postgres 16, Redis 7, API, 3 Workers & Operator Console...")
+        try:
+            res = subprocess.run(["docker", "compose", "up", "-d"], capture_output=True, text=True)
+            if res.returncode == 0:
+                print("[+] Cluster containers active.")
+            else:
+                print(f"[!] Docker notice: {res.stderr.strip() or res.stdout.strip()}")
+        except Exception as e:
+            print(f"[!] Docker execution failed: {e}")
+
         console_url = os.getenv("ANCHOR_CONSOLE_URL", "http://localhost:3000")
-        print(f"[3/3] Opening Operator Console at {console_url}...")
+        print(f"[2/2] Launching Operator Console at {console_url}...")
+        time.sleep(1)
         if not args.no_browser:
-            webbrowser.open(console_url)
+            try:
+                webbrowser.open(console_url)
+            except Exception:
+                pass
+
+        print("\nNext step:")
+        print("Run agent workflow:  python app.py")
         sys.exit(0)
 
     if args.command == "status":
