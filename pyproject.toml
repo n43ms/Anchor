@@ -1,7 +1,8 @@
 [project]
 name = "anchor-runtime"
-version = "1.4.2"
+version = "1.4.4"
 description = "A durable execution runtime for AI agents."
+readme = "README.md"
 requires-python = ">=3.12,<3.13"
 dependencies = [
     "fastapi>=0.115",

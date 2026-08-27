@@ -72,7 +72,7 @@ services:
       - "6379:6379"
 
   anchor-api:
-    image: adityaxnema/anchor-api:latest
+    image: n43ms/anchor-api:latest
     build:
       context: .
       dockerfile: ops/docker/Dockerfile.api
@@ -91,7 +91,7 @@ services:
         condition: service_started
 
   anchor-worker:
-    image: adityaxnema/anchor-worker:latest
+    image: n43ms/anchor-worker:latest
     build:
       context: .
       dockerfile: ops/docker/Dockerfile.worker
