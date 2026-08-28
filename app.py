@@ -20,7 +20,7 @@ async def fetch_wikipedia_summary(topic: str) -> dict:
     """Fetches live summary and article extract from Wikipedia API."""
     encoded_topic = urllib.parse.quote(topic.replace(" ", "_"))
     url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{encoded_topic}"
-    headers = {"User-Agent": "AnchorAgent/1.5.6 (https://github.com/n43ms/Anchor)"}
+    headers = {"User-Agent": "AnchorAgent/1.5.7 (https://github.com/n43ms/Anchor)"}
     req = urllib.request.Request(url, headers=headers)
     try:
         with urllib.request.urlopen(req, timeout=10.0) as resp:
@@ -48,7 +48,8 @@ async def draft_email(recipient: str, subject: str, body: str) -> dict:
     print("[draft_email] Completed execution (if uninterrupted)")
     resend_api_key = os.getenv("RESEND_API_KEY")
     smtp_host = os.getenv("SMTP_HOST")
-    smtp_port = int(os.getenv("SMTP_PORT", "587"))
+    smtp_port_raw = os.getenv("SMTP_PORT")
+    smtp_port = int(smtp_port_raw) if (smtp_port_raw and smtp_port_raw.strip()) else 587
     smtp_user = os.getenv("SMTP_USER")
     smtp_pass = os.getenv("SMTP_PASS")
     smtp_from = os.getenv("SMTP_FROM", os.getenv("RESEND_FROM", "onboarding@resend.dev"))

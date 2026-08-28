@@ -30,11 +30,27 @@ services:
     ports:
       - "8000:8000"
       - "3000:3000"
+    env_file:
+      - path: .env
+        required: false
     environment:
       ANCHOR_DATABASE_URL: postgresql://anchor:anchor@anchor-db:5432/anchor
       ANCHOR_REDIS_URL: redis://anchor-redis:6379/0
       ANCHOR_AUTHORING_EXECUTE: "true"
       ANCHOR_CONFIG_PROFILE: demo
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM: ${RESEND_FROM:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
     depends_on:
       anchor-db:
         condition: service_healthy
@@ -48,10 +64,26 @@ services:
       dockerfile: ops/docker/Dockerfile.worker
     deploy:
       replicas: 3
+    env_file:
+      - path: .env
+        required: false
     environment:
       ANCHOR_DATABASE_URL: postgresql://anchor:anchor@anchor-db:5432/anchor
       ANCHOR_REDIS_URL: redis://anchor-redis:6379/0
       ANCHOR_CONFIG_PROFILE: demo
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      CLAUDE_API_KEY: ${CLAUDE_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      RESEND_FROM: ${RESEND_FROM:-}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
     depends_on:
       anchor-db:
         condition: service_healthy
