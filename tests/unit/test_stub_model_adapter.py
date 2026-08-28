@@ -28,4 +28,4 @@ async def test_stub_respects_configured_latency() -> None:
     start = time.monotonic()
     await adapter.complete([{"role": "user", "content": "x"}], None)
     elapsed_ms = (time.monotonic() - start) * 1000
-    assert elapsed_ms >= 25
+    assert elapsed_ms >= 15

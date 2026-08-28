@@ -27,7 +27,7 @@ async def _insert_runs(conn: asyncpg.Connection, n: int) -> list[int]:
     for _ in range(n):
         run_id: int = await conn.fetchval(
             "INSERT INTO runs (agent_type, input) VALUES ($1, $2::jsonb) RETURNING id",
-            "demo_minimal",
+            "test_isolated_cap_agent",
             json.dumps({}),
         )
         await append(
@@ -35,7 +35,7 @@ async def _insert_runs(conn: asyncpg.Connection, n: int) -> list[int]:
             run_id=run_id,
             type=EventType.RUN_SUBMITTED,
             payload={
-                "agent_type": "demo_minimal",
+                "agent_type": "test_isolated_cap_agent",
                 "input": {},
                 "is_demo": True,
                 "client_request_key": None,
@@ -52,6 +52,8 @@ async def _insert_runs(conn: asyncpg.Connection, n: int) -> list[int]:
 @pytest.mark.asyncio
 async def test_running_count_stops_at_cap_remainder_stays_pending(db_pool: asyncpg.Pool) -> None:
     async with db_pool.acquire() as conn:
+        if conn.is_in_transaction():
+            await conn.execute("ROLLBACK")
         await conn.execute("TRUNCATE TABLE runs RESTART IDENTITY CASCADE")
         run_ids = await _insert_runs(conn, N_RUNS)
         assert len(run_ids) == N_RUNS, "every submission succeeded — the cap never rejects one"

@@ -26,11 +26,24 @@ async def _noop_flush() -> None:
     return None
 
 
-async def _make_needs_review_run(db_pool: asyncpg.Pool, *, is_demo: bool = True) -> tuple[int, str]:
+async def _make_needs_review_run(
+    db_pool: asyncpg.Pool, *, is_demo: bool = True, safety: str = "unsafe"
+) -> tuple[int, str]:
+    from anchor.core.journal.policies import Unknown
+
     async def _send_email(args: dict[str, Any], **_: Any) -> Any:
         raise AssertionError("must not be invoked while the run is still needs_review")
 
-    decl = ToolDeclaration(name="send_email", fn=_send_email, safety="unsafe")
+    async def _reconcile(args: dict[str, Any], idempotency_key: str = "", **_: Any) -> Any:
+        return Unknown()
+
+    decl = ToolDeclaration(
+        name="send_email",
+        fn=_send_email,
+        safety=safety,
+        reconcile_fn=_reconcile if safety == "reconcilable" else None,
+        naturally_idempotent=(safety == "retry_safe"),
+    )
     args = {"recipient": "a@example.com"}
 
     async with db_pool.acquire() as conn:
@@ -131,7 +144,7 @@ async def test_mark_not_executed_authorizes_execution_and_resumes(db_pool: async
 
 @pytest.mark.asyncio
 async def test_retry_resumes_without_touching_the_journal(db_pool: asyncpg.Pool) -> None:
-    run_id, key = await _make_needs_review_run(db_pool)
+    run_id, key = await _make_needs_review_run(db_pool, safety="reconcilable")
 
     async with db_pool.acquire() as conn:
         before = await conn.fetchrow(
@@ -150,6 +163,17 @@ async def test_retry_resumes_without_touching_the_journal(db_pool: asyncpg.Pool)
         )
     assert before is not None and after is not None
     assert dict(after) == dict(before), "retry must not write to the journal at all"
+
+
+@pytest.mark.asyncio
+async def test_retry_rejected_for_unsafe_tool(db_pool: asyncpg.Pool) -> None:
+    run_id, _ = await _make_needs_review_run(db_pool, safety="unsafe")
+
+    async with _client_for(db_pool) as client:
+        resp = await client.post(f"/api/runs/{run_id}/resolve", json={"resolution": "retry"})
+
+    assert resp.status_code == 400
+    assert resp.json()["error"] == "cannot_retry_unsafe_tool"
 
 
 @pytest.mark.asyncio

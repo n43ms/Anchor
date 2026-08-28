@@ -167,7 +167,9 @@ async def _truncate_between_tests(request: pytest.FixtureRequest) -> AsyncIterat
     Uses a shared lazy pool to avoid TCP socket churn on Windows while ensuring
     deterministic database isolation across the entire suite.
     """
-    if request.node.get_closest_marker("asyncio") is not None:
+    import inspect
+
+    if inspect.iscoroutinefunction(request.node.obj) or request.node.get_closest_marker("asyncio") is not None:
         pool = await _get_truncate_pool()
         if pool is not None:
             try:
