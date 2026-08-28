@@ -20,7 +20,7 @@ async def fetch_wikipedia_summary(topic: str) -> dict:
     """Fetches live summary and article extract from Wikipedia API."""
     encoded_topic = urllib.parse.quote(topic.replace(" ", "_"))
     url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{encoded_topic}"
-    headers = {"User-Agent": "AnchorAgent/1.5.6 (https://github.com/n43ms/Anchor)"}
+    headers = {"User-Agent": "AnchorAgent/1.5.7 (https://github.com/n43ms/Anchor)"}
     req = urllib.request.Request(url, headers=headers)
     try:
         with urllib.request.urlopen(req, timeout=10.0) as resp:
