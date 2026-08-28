@@ -41,7 +41,7 @@ from anchor.core.events.append import append
 from anchor.core.events.types import EventType
 from anchor.core.journal.tool_protocol import RegisteredToolLike
 from anchor.core.journal.two_phase import execute_tool_call
-from anchor.core.replay.context import RunContext
+from anchor.core.replay.context import ModelCompletion, RunContext
 
 _T = TypeVar("_T")
 
@@ -337,6 +337,14 @@ class StepContext:
         prompt_hash = hashlib.sha256(
             json.dumps(messages, sort_keys=True, separators=(",", ":")).encode("utf-8")
         ).hexdigest()
+
+        if self.run_context is not None:
+            self.run_context.model_calls_by_step[self.step_index] = ModelCompletion(
+                step_index=self.step_index,
+                response=response.text,
+                model=model or response.model,
+                stubbed=response.stubbed,
+            )
 
         await append(
             self.conn,
