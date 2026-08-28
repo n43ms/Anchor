@@ -606,12 +606,32 @@ async def resolve_run(
 
         else:
             assert body.resolution == "retry"
+            tool_name = journal_row["tool_name"]
+            tool_row = await conn.fetchrow(
+                "SELECT safety, has_reconcile_fn FROM tool_registry WHERE name = $1",
+                tool_name,
+            )
+            from anchor.runtime.tools.registry import resolve as resolve_tool
+            tool_decl = resolve_tool(tool_name)
+
+            is_unsafe = (tool_row and tool_row["safety"] == "unsafe") or (
+                tool_decl is not None and tool_decl.safety == "unsafe"
+            )
+            has_reconcile = (tool_row and tool_row["has_reconcile_fn"]) or (
+                tool_decl is not None and tool_decl.reconcile_fn is not None
+            )
+
+            if is_unsafe and not has_reconcile:
+                raise ApiError(
+                    status_code=400,
+                    error="cannot_retry_unsafe_tool",
+                    message=(
+                        f"Tool '{tool_name}' is declared unsafe with no automatic reconciliation handler. "
+                        "Direct retry is unavailable. Please select 'mark_executed' or 'mark_not_executed'."
+                    ),
+                )
             # Re-consult the tool's declared policy from a clean slate: no
-            # tool_journal write here at all. For a tool whose safety is
-            # genuinely `unsafe`, the next resumption re-enters this exact
-            # halt immediately — expected, since no automatic policy exists
-            # for that category; `mark_executed` / `mark_not_executed` are
-            # the only ways to clear it.
+            # tool_journal write here at all.
             async with conn.transaction():
                 await conn.execute(
                     "UPDATE runs SET status = 'pending', finished_at = NULL WHERE id = $1", run_id

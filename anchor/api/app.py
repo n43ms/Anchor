@@ -11,6 +11,7 @@ import asyncio
 import contextlib
 import logging
 import os
+import sys
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 

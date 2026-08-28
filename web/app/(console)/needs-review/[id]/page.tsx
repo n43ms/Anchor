@@ -78,18 +78,31 @@ export default function NeedsReviewDetailPage() {
             <div className="mt-4">
               <div className="text-xs font-semibold text-white mb-2">Select operator resolution:</div>
               <div className="flex flex-wrap gap-2">
-                {nr.available_resolutions.map((r) => (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => resolve(r)}
-                    disabled={resolved !== null}
-                    className="rounded-xl border border-amber-500/40 bg-amber-500/15 px-3.5 py-1.5 text-xs font-mono font-medium text-amber-300 transition-colors hover:bg-amber-500/25 disabled:opacity-40"
-                  >
-                    {r.replace(/_/g, " ")}
-                  </button>
-                ))}
+                {nr.available_resolutions.map((r) => {
+                  const isUnsafeRetry = r === "retry" && nr.declared_policy === "unsafe";
+                  return (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => resolve(r)}
+                      disabled={resolved !== null || isUnsafeRetry}
+                      title={isUnsafeRetry ? "Direct retry is unavailable for unsafe tools. Select Mark Executed or Mark Not Executed." : undefined}
+                      className={
+                        isUnsafeRetry
+                          ? "rounded-xl border border-zinc-700/60 bg-zinc-800/40 px-3.5 py-1.5 text-xs font-mono font-medium text-zinc-500 cursor-not-allowed opacity-50"
+                          : "rounded-xl border border-amber-500/40 bg-amber-500/15 px-3.5 py-1.5 text-xs font-mono font-medium text-amber-300 transition-colors hover:bg-amber-500/25 disabled:opacity-40"
+                      }
+                    >
+                      {r.replace(/_/g, " ")} {isUnsafeRetry ? "(disabled)" : ""}
+                    </button>
+                  );
+                })}
               </div>
+              {nr.declared_policy === "unsafe" && (
+                <p className="mt-2 text-[11px] font-mono text-amber-400/80">
+                  ℹ️ Direct retry is disabled because tool &apos;{nr.tool_name}&apos; is declared &apos;unsafe&apos; without automatic reconciliation. Please select <strong>Mark Executed</strong> or <strong>Mark Not Executed</strong>.
+                </p>
+              )}
             </div>
 
             {resolveError && <p className="mt-3 text-xs font-mono text-rose-400">{resolveError}</p>}
