@@ -38,7 +38,15 @@ async def main() -> None:
 
     pool = await create_pool(env.database_url)
     async with pool.acquire() as conn:
-        await assert_schema_matches(conn)
+        for attempt in range(15):
+            try:
+                await assert_schema_matches(conn)
+                break
+            except SchemaVersionMismatchError:
+                if attempt == 14:
+                    raise
+                logger.info("Database schema migration in progress... waiting for API auto-migration (attempt %d/15)", attempt + 1)
+                await asyncio.sleep(2.0)
         # Per-worker capacity is `per_worker_concurrency` from
         # `runtime_config` (FR-004, FR-059) — never a module-level
         # constant. It is read here, once, at registration; live changes

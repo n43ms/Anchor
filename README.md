@@ -5,7 +5,7 @@
 *Eliminate lost state and duplicate API calls when executing multi-step LLM agent pipelines. Anchor guarantees atomic two-phase tool journaling, monotonic epoch fencing, and sub-second crash recovery.*
 
 [![Apache 2.0 License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![PyPI version](https://img.shields.io/badge/pypi-v1.5.5-emerald.svg)](https://pypi.org/project/anchor-runtime/)
+[![PyPI version](https://img.shields.io/badge/pypi-v1.5.6-emerald.svg)](https://pypi.org/project/anchor-runtime/)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-amber.svg)](pyproject.toml)
 
 **Author & System Architect**: **Aditya Nema** — [linkedin.com/in/adityaxnema](https://linkedin.com/in/adityaxnema) • [GitHub Repository](https://github.com/n43ms/Anchor)
