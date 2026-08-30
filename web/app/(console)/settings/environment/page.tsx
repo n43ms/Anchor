@@ -328,6 +328,44 @@ export default function EnvironmentPage() {
                     )}
 
                     <p className="text-[10px] text-zinc-400 font-mono leading-tight">{meta.description}</p>
+                    {key === "step_timeout_ms" && (
+                      <div className="space-y-1.5 pt-1">
+                        <div className="flex items-center gap-1.5 font-mono text-[10px]">
+                          <span className="text-zinc-500 font-semibold">Presets:</span>
+                          <button
+                            type="button"
+                            onClick={() => setOverrides((prev) => ({ ...prev, step_timeout_ms: 60000 }))}
+                            className="rounded px-1.5 py-0.5 border border-white/[0.1] bg-white/[0.05] hover:bg-white/[0.1] text-zinc-300 transition-all"
+                          >
+                            1m
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setOverrides((prev) => ({ ...prev, step_timeout_ms: 300000 }))}
+                            className="rounded px-1.5 py-0.5 border border-white/[0.1] bg-white/[0.05] hover:bg-white/[0.1] text-zinc-300 transition-all"
+                          >
+                            5m
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setOverrides((prev) => ({ ...prev, step_timeout_ms: 600000 }))}
+                            className="rounded px-1.5 py-0.5 border border-strand-gold/40 bg-strand-gold/10 hover:bg-strand-gold/20 text-strand-gold font-bold transition-all"
+                          >
+                            10m (Default)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setOverrides((prev) => ({ ...prev, step_timeout_ms: 1800000 }))}
+                            className="rounded px-1.5 py-0.5 border border-white/[0.1] bg-white/[0.05] hover:bg-white/[0.1] text-zinc-300 transition-all"
+                          >
+                            30m
+                          </button>
+                        </div>
+                        <p className="text-[10px] text-strand-gold/80 font-mono">
+                          Duration: {(Number(values[key]) / 60000).toFixed(1)} minutes ({(Number(values[key]) / 1000).toFixed(0)} seconds)
+                        </p>
+                      </div>
+                    )}
                     {key === "margin_ms" && (
                       <p className="text-[10px] text-strand-gold/80 font-mono">
                         Suggested Margin: {autoMargin} ms (Lease - Renewal)

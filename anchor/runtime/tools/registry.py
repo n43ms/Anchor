@@ -50,6 +50,7 @@ class ToolDeclaration:
     provider_accepts_key: bool = False
     reconcile_fn: ReconcileFn | None = None
     description: str | None = None
+    timeout_ms: int | None = None
 
     @property
     def has_reconcile_fn(self) -> bool:

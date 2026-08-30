@@ -261,10 +261,10 @@ class StepContext:
             )
         self._tool_called_this_step = True
         tool = self.tool_registry[name]
-        assert self.step_timeout_ms is not None, "step_timeout_ms must be supplied by the caller"
+        effective_timeout = getattr(tool, "timeout_ms", None) or self.step_timeout_ms or 600_000
 
         try:
-            async with asyncio.timeout(self.step_timeout_ms / 1000):
+            async with asyncio.timeout(effective_timeout / 1000):
                 result = await execute_tool_call(
                     self.conn,
                     run_id=self.run_id,
@@ -294,7 +294,7 @@ class StepContext:
         except TimeoutError as exc:
             raise StepTimeoutError(
                 f"step {self.step_index}: tool {name!r} exceeded step_timeout_ms "
-                f"({self.step_timeout_ms})"
+                f"({effective_timeout})"
             ) from exc
 
     async def call_model(self, messages: list[dict[str, Any]], model: str | None = None) -> Any:
@@ -323,15 +323,15 @@ class StepContext:
 
         assert self.conn is not None
         assert self.model_adapter is not None
-        assert self.step_timeout_ms is not None, "step_timeout_ms must be supplied by the caller"
+        effective_timeout = self.step_timeout_ms or 600_000
         start = time.monotonic()
         try:
-            async with asyncio.timeout(self.step_timeout_ms / 1000):
+            async with asyncio.timeout(effective_timeout / 1000):
                 response = await self.model_adapter.complete(messages, model)
         except TimeoutError as exc:
             raise StepTimeoutError(
                 f"step {self.step_index}: model call exceeded step_timeout_ms "
-                f"({self.step_timeout_ms})"
+                f"({effective_timeout})"
             ) from exc
         latency_ms = (time.monotonic() - start) * 1000
         prompt_hash = hashlib.sha256(

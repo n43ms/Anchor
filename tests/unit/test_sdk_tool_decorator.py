@@ -59,3 +59,14 @@ def test_tool_decorator_retry_safe_requires_idempotency_reason() -> None:
         @anchor.tool(safety="retry_safe")
         async def invalid_retry_safe_tool(data: str) -> dict[str, str]:
             return {"data": data}
+
+
+@pytest.mark.unit
+def test_tool_decorator_custom_timeout_ms() -> None:
+    @anchor.tool(safety="retry_safe", naturally_idempotent=True, timeout_ms=600_000)
+    async def timeout_test_tool(query: str) -> dict[str, str]:
+        return {"result": query}
+
+    decl = resolve("timeout_test_tool")
+    assert decl is not None
+    assert decl.timeout_ms == 600_000

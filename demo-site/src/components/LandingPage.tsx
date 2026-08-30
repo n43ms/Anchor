@@ -146,7 +146,7 @@ export const LandingPage: React.FC = () => {
               <div className="flex items-center gap-2">
                 <span className="font-mono text-sm font-extrabold tracking-wider text-white">ANCHOR</span>
                 <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.2 text-[9px] font-mono font-semibold text-amber-400">
-                  v1.5.8-prod
+                  v1.5.9-prod
                 </span>
               </div>
               <div className="text-[9px] font-mono text-zinc-400">
@@ -759,7 +759,7 @@ export const LandingPage: React.FC = () => {
               <ShieldCheck className="h-3.5 w-3.5 text-amber-400" />
               <span>Apache 2.0 Licensed</span>
             </a>
-            <span className="text-zinc-600">v1.5.8-prod</span>
+            <span className="text-zinc-600">v1.5.9-prod</span>
           </div>
         </div>
       </footer>

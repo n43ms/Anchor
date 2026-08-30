@@ -31,6 +31,7 @@ def tool(
     provider_accepts_key: bool = False,
     reconcile_fn: ReconcileFn | None = None,
     description: str | None = None,
+    timeout_ms: int | None = None,
 ) -> Callable[[ToolFn], ToolFn]:
     """Decorator to declare an Anchor tool with an explicit crash-safety policy."""
 
@@ -78,6 +79,7 @@ def tool(
             provider_accepts_key=provider_accepts_key,
             reconcile_fn=reconcile_fn,
             description=tool_desc,
+            timeout_ms=timeout_ms,
         )
 
         register_tool_in_process(decl)

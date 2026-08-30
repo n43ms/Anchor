@@ -14,12 +14,14 @@ from typing import Any
 class ToolCall:
     name: str
     args: dict[str, Any]
+    timeout_ms: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
 class ModelCall:
     messages: list[dict[str, Any]]
     model: str | None = None
+    timeout_ms: int | None = None
 
 
 @dataclass(frozen=True, slots=True)

@@ -25,7 +25,7 @@ async def fetch_wikipedia_summary(topic: str) -> dict:
     \"\"\"Fetches live summary and article extract from Wikipedia API.\"\"\"
     encoded_topic = urllib.parse.quote(topic.replace(" ", "_"))
     url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{encoded_topic}"
-    headers = {"User-Agent": "AnchorAgent/1.5.8 (https://github.com/n43ms/Anchor)"}
+    headers = {"User-Agent": "AnchorAgent/1.5.9 (https://github.com/n43ms/Anchor)"}
     req = urllib.request.Request(url, headers=headers)
     try:
         with urllib.request.urlopen(req, timeout=10.0) as resp:
@@ -126,6 +126,12 @@ DEEPSEEK_API_KEY=
 
 # Groq API Key
 GROQ_API_KEY=
+
+# Resend API Key for Email Dispatch
+RESEND_API_KEY=
+
+# Step Timeout in Milliseconds (Default: 600000 ms / 10 minutes)
+ANCHOR_STEP_TIMEOUT_MS=600000
 """
 
 _DOCKER_COMPOSE_TEMPLATE = """version: "3.8"
@@ -143,9 +149,9 @@ services:
       - anchor-pgdata:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U anchor"]
-      interval: 2s
-      timeout: 5s
-      retries: 10
+      interval: 3s
+      timeout: 3s
+      retries: 5
 
   anchor-redis:
     image: redis:7-alpine
@@ -153,7 +159,7 @@ services:
       - "6379:6379"
 
   anchor-api:
-    image: n43ms/anchor-api:v1.5.8
+    image: n43ms/anchor-api:v1.5.9
     pull_policy: always
     command: ["sh", "-c", "alembic -c ops/migrations/alembic.ini upgrade head && uvicorn anchor.api.app:app --host 0.0.0.0 --port 8000"]
     ports:
@@ -166,6 +172,7 @@ services:
       ANCHOR_REDIS_URL: redis://anchor-redis:6379/0
       ANCHOR_AUTHORING_EXECUTE: "true"
       ANCHOR_CONFIG_PROFILE: demo
+      ANCHOR_STEP_TIMEOUT_MS: ${ANCHOR_STEP_TIMEOUT_MS:-600000}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       CLAUDE_API_KEY: ${CLAUDE_API_KEY:-}
@@ -186,7 +193,7 @@ services:
         condition: service_started
 
   anchor-worker:
-    image: n43ms/anchor-worker:v1.5.8
+    image: n43ms/anchor-worker:v1.5.9
     pull_policy: always
     command: ["python", "-m", "anchor.worker"]
     deploy:
@@ -198,6 +205,7 @@ services:
       ANCHOR_DATABASE_URL: postgresql://anchor:anchor@anchor-db:5432/anchor
       ANCHOR_REDIS_URL: redis://anchor-redis:6379/0
       ANCHOR_CONFIG_PROFILE: demo
+      ANCHOR_STEP_TIMEOUT_MS: ${ANCHOR_STEP_TIMEOUT_MS:-600000}
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       CLAUDE_API_KEY: ${CLAUDE_API_KEY:-}
@@ -218,7 +226,7 @@ services:
         condition: service_started
 
   anchor-console:
-    image: n43ms/anchor-console:v1.5.8
+    image: n43ms/anchor-console:v1.5.9
     pull_policy: always
     ports:
       - "3000:3000"
@@ -228,6 +236,19 @@ services:
 volumes:
   anchor-pgdata:
 """
+
+
+def _parse_duration_ms(val_str: str) -> int:
+    val = val_str.strip().lower()
+    if val.endswith("ms"):
+        return int(val[:-2])
+    if val.endswith("s"):
+        return int(float(val[:-1]) * 1000)
+    if val.endswith("m"):
+        return int(float(val[:-1]) * 60 * 1000)
+    if val.endswith("h"):
+        return int(float(val[:-1]) * 3600 * 1000)
+    return int(val)
 
 
 def main() -> None:
@@ -253,10 +274,21 @@ def main() -> None:
     # `anchor status`
     subparsers.add_parser("status", help="Inspect local cluster health and active workers")
 
+    # `anchor config`
+    config_parser = subparsers.add_parser("config", help="Inspect or update live runtime configuration")
+    config_subparsers = config_parser.add_subparsers(dest="config_action")
+    
+    config_get = config_subparsers.add_parser("get", help="Get runtime config setting")
+    config_get.add_argument("key", nargs="?", default=None, help="Config key to query (e.g. step_timeout_ms)")
+
+    config_set = config_subparsers.add_parser("set", help="Set runtime config setting")
+    config_set.add_argument("key", help="Config key to update (e.g. step_timeout_ms)")
+    config_set.add_argument("value", help="Config value (supports units like 10m, 300s, 600000)")
+
     args = parser.parse_args()
 
     if args.command == "version":
-        print("Anchor v1.5.8 (Apache 2.0)")
+        print("Anchor v1.5.9 (Apache 2.0)")
         sys.exit(0)
 
     if args.command == "init":
@@ -336,6 +368,80 @@ def main() -> None:
         print("\nNext step:")
         print("Run agent workflow:  python app.py")
         sys.exit(0)
+
+    if args.command == "config":
+        api_url = os.getenv("ANCHOR_API_URL", "http://localhost:8000")
+        if args.config_action == "get":
+            target_key = args.key
+            try:
+                with urllib.request.urlopen(f"{api_url}/api/config", timeout=5) as resp:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    if target_key:
+                        val = data.get(target_key)
+                        if val is not None:
+                            if target_key.endswith("_ms") and isinstance(val, (int, float)):
+                                secs = val / 1000.0
+                                mins = secs / 60.0
+                                print(f"{target_key}: {val} ms ({mins:.1f}m / {secs:.1f}s)")
+                            else:
+                                print(f"{target_key}: {val}")
+                        else:
+                            print(f"[!] Key '{target_key}' not found in cluster configuration.")
+                    else:
+                        print(json.dumps(data, indent=2))
+            except Exception as e:
+                env_val = os.getenv(f"ANCHOR_{target_key.upper()}" if target_key else "ANCHOR_STEP_TIMEOUT_MS")
+                if env_val:
+                    print(f"{target_key or 'ANCHOR_STEP_TIMEOUT_MS'}: {env_val} (local .env)")
+                else:
+                    print(f"[!] Could not query live cluster config ({e}). Is anchor cluster running?")
+            sys.exit(0)
+
+        if args.config_action == "set":
+            key = args.key
+            raw_val = args.value
+            parsed_val: Any = raw_val
+            if key.endswith("_ms"):
+                try:
+                    parsed_val = _parse_duration_ms(raw_val)
+                except Exception:
+                    pass
+            elif raw_val.isdigit():
+                parsed_val = int(raw_val)
+
+            try:
+                payload = json.dumps({key: parsed_val}).encode("utf-8")
+                req = urllib.request.Request(
+                    f"{api_url}/api/config",
+                    data=payload,
+                    headers={"Content-Type": "application/json"},
+                    method="PATCH"
+                )
+                with urllib.request.urlopen(req, timeout=5) as resp:
+                    res_data = json.loads(resp.read().decode("utf-8"))
+                    print(f"[+] Updated cluster configuration: {key} = {res_data.get(key, parsed_val)}")
+            except Exception as e:
+                print(f"[!] Live cluster patch notice ({e}). Updating local .env file...")
+                env_path = Path.cwd() / ".env"
+                env_var_name = f"ANCHOR_{key.upper()}" if not key.startswith("ANCHOR_") else key
+                new_line = f"{env_var_name}={parsed_val}\n"
+                if env_path.exists():
+                    content = env_path.read_text(encoding="utf-8")
+                    lines = content.splitlines(keepends=True)
+                    updated = False
+                    for idx, l in enumerate(lines):
+                        if l.startswith(f"{env_var_name}="):
+                            lines[idx] = new_line
+                            updated = True
+                            break
+                    if not updated:
+                        lines.append(new_line)
+                    env_path.write_text("".join(lines), encoding="utf-8")
+                    print(f"[+] Updated {env_path}: {env_var_name}={parsed_val}")
+                else:
+                    env_path.write_text(new_line, encoding="utf-8")
+                    print(f"[+] Created {env_path}: {env_var_name}={parsed_val}")
+            sys.exit(0)
 
     if args.command == "status":
         print("Anchor Cluster Status: Healthy")
