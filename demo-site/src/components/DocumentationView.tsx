@@ -122,39 +122,37 @@ export function DocumentationView({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="h-screen w-screen bg-[#07070a] text-zinc-200 font-sans flex flex-col overflow-hidden selection:bg-amber-500/20 selection:text-amber-300">
+    <div className="h-screen w-full bg-[#07070a] text-zinc-200 font-sans flex flex-col overflow-hidden selection:bg-amber-500/20 selection:text-amber-300">
       {/* Signature High-Contrast Vibrant Gold Header Bar */}
-      <header className="shrink-0 z-50 flex items-center justify-between border-b border-amber-500/30 bg-black/90 px-6 py-3.5 backdrop-blur-md">
-        <div className="flex items-center gap-4">
+      <header className="shrink-0 z-50 flex items-center justify-between border-b border-amber-500/30 bg-black/90 px-4 md:px-6 py-2.5 md:py-3.5 backdrop-blur-md">
+        <div className="flex items-center gap-2.5 md:gap-4">
           <button
             type="button"
             onClick={onClose}
-            className="flex items-center gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3.5 py-1.5 text-xs font-mono text-amber-300 font-bold hover:bg-amber-500/20 hover:border-amber-400 transition-all cursor-pointer shadow-sm"
+            className="flex items-center gap-1.5 rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-1.5 text-xs font-mono text-amber-300 font-bold hover:bg-amber-500/20 hover:border-amber-400 transition-all cursor-pointer shadow-sm"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Return to Main Site</span>
+            <span className="hidden sm:inline">Return to Main Site</span>
+            <span className="sm:hidden">Exit</span>
           </button>
-          <div className="h-4 w-px bg-amber-500/30" />
-          <div className="flex items-center gap-2.5 font-mono text-xs">
-            <span className="font-extrabold text-amber-400 tracking-wider uppercase text-sm">ANCHOR RUNTIME ENGINE</span>
-            <span className="text-zinc-500">•</span>
-            <span className="text-zinc-300 font-semibold">User Manual & Developer Guide</span>
-            <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-0.5 text-[10px] text-amber-400 font-mono font-bold">
-              v1.6.0-prod
+          <div className="h-4 w-px bg-amber-500/30 hidden sm:block" />
+          <div className="flex items-center gap-2 font-mono text-xs">
+            <span className="font-extrabold text-amber-400 tracking-wider uppercase text-xs sm:text-sm">ANCHOR DOCS</span>
+            <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[9px] text-amber-400 font-mono font-bold">
+              v1.6.0
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-3 font-mono text-xs">
+        <div className="flex items-center gap-2 font-mono text-xs">
           <a
             href="https://github.com/n43ms/Anchor"
             target="_blank"
             rel="noreferrer"
-            className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-zinc-300 hover:text-white hover:border-amber-500/40 transition-all font-semibold"
+            className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-zinc-300 hover:text-white hover:border-amber-500/40 transition-all font-semibold text-xs"
           >
             <Code2 className="h-3.5 w-3.5 text-amber-400" />
-            <span>GitHub Repository</span>
-            <ExternalLink className="h-3 w-3 text-zinc-500" />
+            <span className="hidden sm:inline">GitHub</span>
           </a>
         </div>
       </header>
@@ -162,13 +160,13 @@ export function DocumentationView({ onClose }: { onClose: () => void }) {
       {/* Main Container - Fixed Left Sidebar & Independent Scrolling Right Main */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden max-w-[1600px] w-full mx-auto">
         {/* Mobile Section Navigation Bar (< 768px) */}
-        <div className="md:hidden flex overflow-x-auto custom-scrollbar bg-black/90 border-b border-amber-500/20 px-3 py-2 gap-1.5 shrink-0 z-20">
+        <div className="md:hidden flex overflow-x-auto custom-scrollbar bg-black/90 border-b border-amber-500/20 px-3 py-2.5 gap-2 shrink-0 z-20">
           {SECTIONS.map((sec) => (
             <button
               key={sec.id}
               type="button"
               onClick={() => scrollToSection(sec.id)}
-              className="px-3 py-1 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs font-mono whitespace-nowrap shrink-0 hover:bg-amber-500/20 transition-colors"
+              className="px-3.5 py-2 rounded-xl border border-amber-500/40 bg-amber-500/15 text-amber-300 text-xs max-md:text-sm font-mono font-bold whitespace-nowrap shrink-0 hover:bg-amber-500/25 transition-colors shadow-sm"
             >
               {sec.title}
             </button>
@@ -260,11 +258,11 @@ export function DocumentationView({ onClose }: { onClose: () => void }) {
             </p>
 
             {/* OS Selection Tabs */}
-            <div className="flex items-center gap-2 border-b border-white/10 pb-2 font-mono text-xs">
+            <div className="flex items-center gap-2 border-b border-white/10 pb-2 font-mono text-xs max-md:text-sm">
               <button
                 type="button"
                 onClick={() => setOsTab("win")}
-                className={`px-3.5 py-1.5 rounded-lg transition-all cursor-pointer font-bold ${
+                className={`px-3.5 py-1.5 max-md:px-4 max-md:py-2.5 max-md:text-sm rounded-lg transition-all cursor-pointer font-bold ${
                   osTab === "win"
                     ? "bg-white/15 text-white border border-white/30"
                     : "text-zinc-500 hover:text-zinc-300"
@@ -275,7 +273,7 @@ export function DocumentationView({ onClose }: { onClose: () => void }) {
               <button
                 type="button"
                 onClick={() => setOsTab("mac")}
-                className={`px-3.5 py-1.5 rounded-lg transition-all cursor-pointer font-bold ${
+                className={`px-3.5 py-1.5 max-md:px-4 max-md:py-2.5 max-md:text-sm rounded-lg transition-all cursor-pointer font-bold ${
                   osTab === "mac"
                     ? "bg-white/15 text-white border border-white/30"
                     : "text-zinc-500 hover:text-zinc-300"

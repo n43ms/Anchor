@@ -247,26 +247,27 @@ export const LandingPage: React.FC = () => {
       <section className="relative pt-3 pb-4 px-4">
         <div className="mx-auto max-w-4xl text-center space-y-3">
           {/* Main Headline */}
-          <h1 className="text-4xl sm:text-4xl font-extrabold tracking-tight text-white max-w-3xl mx-auto leading-tight">
+          {/* Main Headline */}
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white max-w-3xl mx-auto leading-tight">
             Durable Execution Engine for<br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-amber-200 to-amber-500">Mission-Critical AI Agents.</span>
           </h1>
 
           {/* Relatable Pain-Point Scenarios */}
           <div className="mx-auto max-w-3xl flex flex-col sm:flex-row items-center justify-center gap-2.5 font-sans text-xs sm:text-sm font-bold">
-            <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-3.5 py-1 text-amber-300 flex items-center gap-2 shadow-sm">
+            <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-3.5 py-1.5 text-amber-300 flex items-center gap-2 shadow-sm">
               <span className="text-base -mt-0.5">💳</span>
-              <span className = "text-xs">Agent double-charged a card mid-tool call?</span>
+              <span className="text-xs font-semibold">Agent double-charged a card mid-tool call?</span>
             </div>
-            <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-3.5 py-1 text-rose-300 flex items-center gap-2 shadow-sm">
+            <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 px-3.5 py-1.5 text-rose-300 flex items-center gap-2 shadow-sm">
               <span className="text-base -mt-0.5">💀</span>
-              <span className="text-xs">Woke up to a dead container and lost 4 hrs LLM progress?</span>
+              <span className="text-xs font-semibold">Woke up to a dead container and lost 4 hrs LLM progress?</span>
             </div>
           </div>
 
 
           {/* Hero Subtitle */}
-          <p className="w-full text-zinc-300 max-w-3xl mx-auto font-sans leading-relaxed px-2">
+          <p className="w-full text-zinc-300 max-w-3xl mx-auto font-sans leading-relaxed px-2 text-xs sm:text-sm">
             Eliminate <span className="text-white font-semibold">lost state</span> and <span className="text-white font-semibold">duplicate API calls</span> when executing multi-step LLM agent pipelines.<br />
             <span className="italic font-extrabold text-amber-300">Anchor</span> guarantees <span className="text-amber-300 font-semibold">atomic two-phase tool journaling</span>, <span className="text-amber-300 font-semibold">monotonic epoch fencing</span>, and <span className="text-amber-300 font-semibold">sub-second crash recovery</span>.
           </p>
@@ -275,7 +276,7 @@ export const LandingPage: React.FC = () => {
           {/* Real-Time Agent Execution Stream Header with Interactive Presets */}
           <div className="mx-auto max-w-3xl rounded-xl border border-white/10 bg-black/90 p-2.5 space-y-1 shadow-2xl backdrop-blur-xl text-left">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-[11px] font-mono text-zinc-400 border-b border-white/10 pb-1">
-              <span className="flex items-center gap-1.5 font-bold text-white uppercase tracking-wider">
+              <span className="flex items-center gap-1.5 font-bold text-white uppercase tracking-wider text-[11px] sm:text-xs">
                 <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
                 Real-Time Agent Execution Stream
               </span>
@@ -285,7 +286,7 @@ export const LandingPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setHeroPreset("normal")}
-                  className={`rounded-md px-2 py-0.5 text-[10px] font-bold transition-all cursor-pointer ${
+                  className={`rounded-md px-2.5 py-1 text-[10px] font-bold transition-all cursor-pointer ${
                     heroPreset === "normal"
                       ? "bg-emerald-500/25 text-emerald-300 border border-emerald-500/50"
                       : "bg-white/5 text-zinc-400 hover:text-white"
@@ -296,7 +297,7 @@ export const LandingPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setHeroPreset("crash")}
-                  className={`rounded-md px-2 py-0.5 text-[10px] font-bold transition-all cursor-pointer ${
+                  className={`rounded-md px-2.5 py-1 text-[10px] font-bold transition-all cursor-pointer ${
                     heroPreset === "crash"
                       ? "bg-amber-500/25 text-amber-300 border border-amber-500/50"
                       : "bg-white/5 text-zinc-400 hover:text-white"
@@ -315,7 +316,7 @@ export const LandingPage: React.FC = () => {
             type="button"
             id="try-anchor-cli-container"
             onClick={() => setIsQuickstartModalOpen(true)}
-            className="mx-auto max-w-md flex items-center justify-between rounded-xl border border-amber-500/50 bg-gradient-to-r from-amber-500/20 via-zinc-950 to-amber-500/20 hover:border-amber-400 hover:scale-[1.03] active:scale-[0.98] transition-all px-4 py-2 text-xs font-mono scroll-mt-20 shadow-xl shadow-amber-500/10 relative overflow-hidden cursor-pointer group"
+            className="mx-auto max-w-md flex items-center justify-between rounded-xl border border-amber-500/50 bg-gradient-to-r from-amber-500/20 via-zinc-950 to-amber-500/20 hover:border-amber-400 hover:scale-[1.03] active:scale-[0.98] transition-all px-4 py-2.5 text-xs font-mono scroll-mt-20 shadow-xl shadow-amber-500/10 relative overflow-hidden cursor-pointer group"
           >
             <div className="flex items-center gap-2.5">
               <div className="flex h-6 w-6 items-center justify-center rounded-lg border border-amber-500/40 bg-amber-500/20 text-amber-400 shrink-0">
@@ -332,7 +333,6 @@ export const LandingPage: React.FC = () => {
             </div>
           </button>
 
-
           {/* Value Props Cards (Prominent & Visible in 1st Frame with Highlighted Keywords) */}
           <div className="mx-auto max-w-4xl grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 text-left font-mono">
             <div className="rounded-xl border border-amber-500/40 bg-black/80 p-3.5 space-y-1.5 backdrop-blur-xl shadow-lg hover:border-amber-500/60 transition-all">
@@ -341,7 +341,7 @@ export const LandingPage: React.FC = () => {
                 <span>Developer Integration</span>
               </div>
               <div className="text-xs sm:text-sm font-extrabold text-white font-sans">Self-Healing Step Loops</div>
-              <div className="text-[11px] text-zinc-300 leading-snug font-sans">
+              <div className="text-[11px] sm:text-xs text-zinc-300 leading-snug font-sans">
                 Never write <span className="text-zinc-100 font-semibold">custom try/catch retry glue</span> again. If a worker process dies mid-loop, Anchor resumes execution at the <span className="text-amber-300 font-semibold">exact step index</span> without re-executing <span className="text-zinc-100 font-semibold">completed side effects</span>.
               </div>
             </div>
@@ -352,7 +352,7 @@ export const LandingPage: React.FC = () => {
                 <span>Cost Efficiency & ROI</span>
               </div>
               <div className="text-xs sm:text-sm font-extrabold text-white font-sans">Zero Wasted LLM Credits</div>
-              <div className="text-[11px] text-zinc-300 leading-snug font-sans">
+              <div className="text-[11px] sm:text-xs text-zinc-300 leading-snug font-sans">
                 Save <span className="text-emerald-300 font-semibold">100% of LLM API costs</span> on crashed runs. Already-executed <span className="text-zinc-100 font-semibold">prompt completions</span> and <span className="text-emerald-300 font-semibold">expensive tool outputs</span> are journaled, preventing <span className="text-zinc-100 font-semibold">duplicate OpenAI/Anthropic charges</span>.
               </div>
             </div>
@@ -363,7 +363,7 @@ export const LandingPage: React.FC = () => {
                 <span>Workflow Resilience</span>
               </div>
               <div className="text-xs sm:text-sm font-extrabold text-white font-sans">Zombie Split-Brain Immunity</div>
-              <div className="text-[11px] text-zinc-300 leading-snug font-sans">
+              <div className="text-[11px] sm:text-xs text-zinc-300 leading-snug font-sans">
                 <span className="text-blue-300 font-semibold">Monotonic epoch fencing</span> guarantees <span className="text-zinc-100 font-semibold">zero split-brain data corruption</span> when containers roll out or <span className="text-blue-300 font-semibold">nodes partition</span> under cloud infrastructure deploys.
               </div>
             </div>
@@ -441,7 +441,7 @@ export const LandingPage: React.FC = () => {
                 <span className="text-[10px] text-emerald-400 font-semibold">Auto .env • Multi-Tool Replay</span>
               </div>
 
-              <div className="p-4 bg-black/95 text-[11.5px] leading-relaxed overflow-x-auto custom-scrollbar">
+              <div className="p-4 bg-black/95 text-[11.5px] max-md:text-sm max-md:leading-loose leading-relaxed overflow-x-auto custom-scrollbar">
                 <pre className="text-zinc-200">
                   <code>
                     <span className="text-purple-400 font-bold">import</span> <span className="text-white">anchor</span>, <span className="text-white">json</span>{"\n\n"}
@@ -737,20 +737,20 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* 8. Footer Surface with Aditya Nema Branding & Outbound Links */}
-      <footer className="border-t border-white/10 bg-black py-12 px-6 font-mono text-xs text-zinc-400">
-        <div className="mx-auto flex max-w-6xl flex-col sm:flex-row items-center justify-between gap-4">
+      <footer className="border-t border-white/10 bg-black py-10 px-4 sm:px-6 font-mono text-xs text-zinc-400">
+        <div className="mx-auto flex max-w-6xl flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left">
           <div className="space-y-1">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
               <span className="font-bold text-white text-sm">⚓ ANCHOR</span>
-              <span>•</span>
-              <span>Durable Execution Engine for AI Agent Workloads</span>
+              <span className="hidden sm:inline">•</span>
+              <span className="text-zinc-400 text-xs">Durable Execution Engine for AI Agent Workloads</span>
             </div>
             <div className="text-zinc-500 text-[11px]">
               Designed & Engineered by <strong className="text-zinc-300 font-semibold">Aditya Nema</strong>
             </div>
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs">
             <a
               href="https://linkedin.com/in/adityaxnema"
               target="_blank"
@@ -778,9 +778,9 @@ export const LandingPage: React.FC = () => {
               className="flex items-center gap-1.5 text-amber-400 hover:text-amber-300 transition-colors font-semibold"
             >
               <ShieldCheck className="h-3.5 w-3.5 text-amber-400" />
-              <span>Apache 2.0 Licensed</span>
+              <span>Apache 2.0</span>
             </a>
-            <span className="text-zinc-600">v1.6.0-prod</span>
+            <span className="text-zinc-600 font-mono text-[11px]">v1.6.0-prod</span>
           </div>
         </div>
       </footer>

@@ -102,7 +102,7 @@ export const QuickstartModal: React.FC<QuickstartModalProps> = ({ isOpen, onClos
             ? "opacity-100 scale-100 translate-y-0"
             : "opacity-0 scale-95 translate-y-4"
         }`}
-        style={{ zoom: 0.935 }}
+        style={typeof window !== "undefined" && window.innerWidth < 1024 ? {} : { zoom: 0.935 }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header Bar */}
