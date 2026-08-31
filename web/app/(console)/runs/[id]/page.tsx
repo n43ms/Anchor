@@ -6,6 +6,7 @@ import { RunDetail } from "@/components/run/RunDetail";
 import { TimelineTrack } from "@/components/run/TimelineTrack";
 import { RawEventLog } from "@/components/run/RawEventLog";
 import { api, ApiRequestError } from "@/lib/api";
+import { getToolSpecificDefaultPayload } from "@/lib/payloads";
 import {
   ArrowLeft,
   Radio,
@@ -123,16 +124,18 @@ export default function RunDetailPage() {
   };
 
   const handleKill = (workerId: string) => {
+    if (!workerId) return;
     setActionError(null);
     setActionSuccess(null);
     api
       .killWorker(workerId)
       .then(() => {
-        setActionSuccess(`Kill command issued to ${workerId}`);
+        setActionSuccess(`Kill command issued to worker ${workerId}`);
+        refresh();
       })
       .catch((err: unknown) => {
         setActionError(
-          err instanceof ApiRequestError ? err.message : "kill request failed"
+          err instanceof ApiRequestError ? err.message : "kill worker failed"
         );
       });
   };
@@ -154,16 +157,40 @@ export default function RunDetailPage() {
       });
   };
 
-  const handleResolve = (
+  const [activeResolutionType, setActiveResolutionType] = useState<"mark_executed" | "mark_not_executed" | "retry" | null>(null);
+  const [customOutputJson, setCustomOutputJson] = useState<string>("");
+  const [operatorNote, setOperatorNote] = useState<string>("");
+  const [jsonError, setJsonError] = useState<string | null>(null);
+
+  const handleSelectResolution = (
     resolution: "mark_executed" | "mark_not_executed" | "retry"
+  ) => {
+    setActionError(null);
+    setActionSuccess(null);
+    setJsonError(null);
+    if (resolution === "mark_executed") {
+      setActiveResolutionType("mark_executed");
+      const toolName = effectiveTimeline?.needs_review?.tool_name || "tool";
+      const stepIdx = effectiveTimeline?.needs_review?.step_index || 0;
+      setCustomOutputJson(getToolSpecificDefaultPayload(toolName, stepIdx));
+    } else {
+      executeResolution(resolution, undefined, undefined);
+    }
+  };
+
+  const executeResolution = (
+    resolution: "mark_executed" | "mark_not_executed" | "retry",
+    note?: string,
+    resultPayload?: any
   ) => {
     if (!runId) return;
     setActionError(null);
     setActionSuccess(null);
     api
-      .resolveRun(runId, resolution)
+      .resolveRun(runId, resolution, note, resultPayload)
       .then(() => {
         setActionSuccess(`Resolution recorded: ${resolution.replace("_", " ")}`);
+        setActiveResolutionType(null);
         refresh();
       })
       .catch((err: unknown) => {
@@ -171,6 +198,19 @@ export default function RunDetailPage() {
           err instanceof ApiRequestError ? err.message : "resolution failed"
         );
       });
+  };
+
+  const handleConfirmMarkExecuted = () => {
+    setJsonError(null);
+    let parsed: any;
+    try {
+      parsed = JSON.parse(customOutputJson);
+    } catch (err: any) {
+      setJsonError(`Invalid JSON syntax: ${err.message}`);
+      return;
+    }
+
+    executeResolution("mark_executed", operatorNote || undefined, parsed);
   };
 
   const effectiveTimeline = useMemo(() => {
@@ -284,18 +324,90 @@ export default function RunDetailPage() {
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
-              {effectiveTimeline.needs_review.available_resolutions.map((res) => (
-                <button
-                  key={res}
-                  type="button"
-                  onClick={() => handleResolve(res)}
-                  className="rounded-xl border border-amber-500/40 bg-amber-500/20 px-3.5 py-1.5 text-xs font-mono font-medium text-amber-300 hover:bg-amber-500/30 transition-colors shadow-sm"
-                >
-                  {res.replace(/_/g, " ")}
-                </button>
-              ))}
+              {effectiveTimeline.needs_review.available_resolutions.map((res) => {
+                const isSelected = activeResolutionType === res;
+                return (
+                  <button
+                    key={res}
+                    type="button"
+                    onClick={() => handleSelectResolution(res)}
+                    className={
+                      isSelected
+                        ? "rounded-xl border border-emerald-500/60 bg-emerald-500/25 px-3.5 py-1.5 text-xs font-mono font-bold text-emerald-300 shadow-sm"
+                        : "rounded-xl border border-amber-500/40 bg-amber-500/20 px-3.5 py-1.5 text-xs font-mono font-medium text-amber-300 hover:bg-amber-500/30 transition-colors shadow-sm"
+                    }
+                  >
+                    {res.replace(/_/g, " ")}
+                  </button>
+                );
+              })}
             </div>
           </div>
+
+          {/* Custom Output JSON Payload Editor for Mark Executed */}
+          {activeResolutionType === "mark_executed" && (
+            <div className="rounded-xl border border-emerald-500/40 bg-black/80 p-4 space-y-3 shadow-2xl font-mono">
+              <div className="flex items-center justify-between border-b border-emerald-500/30 pb-2">
+                <div className="text-xs font-bold text-emerald-400">
+                  Operator Input: Custom JSON Output Payload for POST /api/runs/{runId}/resolve
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveResolutionType(null)}
+                  className="text-[10px] text-zinc-400 hover:text-white"
+                >
+                  cancel
+                </button>
+              </div>
+
+              <p className="text-[11px] text-zinc-300">
+                Specify the output JSON payload to record into <code>tool_journal.result</code> for step {effectiveTimeline.needs_review.step_index} ({effectiveTimeline.needs_review.tool_name}).
+              </p>
+
+              <div className="space-y-1">
+                <label className="text-[10px] text-zinc-400 uppercase tracking-wider block">
+                  Custom Output JSON Payload:
+                </label>
+                <textarea
+                  rows={6}
+                  value={customOutputJson}
+                  onChange={(e) => setCustomOutputJson(e.target.value)}
+                  className="w-full rounded-lg border border-emerald-500/30 bg-[#090a0d] p-3 text-xs text-emerald-300 focus:border-emerald-400 focus:outline-none custom-scrollbar font-mono"
+                />
+                {jsonError && <p className="text-xs text-rose-400 mt-1">{jsonError}</p>}
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] text-zinc-400 uppercase tracking-wider block">
+                  Operator Note (Optional):
+                </label>
+                <input
+                  type="text"
+                  value={operatorNote}
+                  onChange={(e) => setOperatorNote(e.target.value)}
+                  placeholder="e.g. Verified transaction ID in Stripe Dashboard out-of-band"
+                  className="w-full rounded-lg border border-white/10 bg-[#090a0d] p-2.5 text-xs text-zinc-200 focus:border-emerald-400 focus:outline-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveResolutionType(null)}
+                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-zinc-400 hover:text-white"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmMarkExecuted}
+                  className="rounded-lg border border-emerald-500/50 bg-emerald-500/20 px-4 py-1.5 text-xs font-bold text-emerald-300 hover:bg-emerald-500/30 transition-all shadow-md"
+                >
+                  Submit Resolution Payload ↗
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

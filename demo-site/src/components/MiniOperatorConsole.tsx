@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useDemo, DemoProvider, DemoTab } from "../context/DemoProvider";
 import { RunThread } from "./RunThread";
 import { WorkerBar } from "./WorkerBar";
@@ -56,6 +56,27 @@ export const MiniOperatorConsoleContent: React.FC = () => {
     resetDemoState,
   } = useDemo();
 
+  // Interactive NeedsReview Operator Resolution State
+  const [resolutionStep, setResolutionStep] = useState<"pending" | "form" | "resolved">("pending");
+  const [activeResolutionType, setActiveResolutionType] = useState<"mark_executed" | "mark_not_executed" | "retry">("mark_executed");
+  const [customOutputJson, setCustomOutputJson] = useState<string>(
+    JSON.stringify(
+      {
+        status: "sent",
+        to: "aditya@anchor.dev",
+        tier: "VIP",
+        template: "welcome_onboarding",
+        message_id: "msg_resend_98a31f",
+        delivered_at: "2026-08-31T12:00:00Z",
+        verified_by: "operator_manual_email_log_check"
+      },
+      null,
+      2
+    )
+  );
+  const [submittedResolutionPayload, setSubmittedResolutionPayload] = useState<any>(null);
+  const [jsonError, setJsonError] = useState<string | null>(null);
+
   const navGroups: {
     label: string;
     items: { id: DemoTab; label: string; icon: React.FC<{ className?: string }>; badge?: string; highlight?: boolean }[];
@@ -78,7 +99,7 @@ export const MiniOperatorConsoleContent: React.FC = () => {
       label: "Workers",
       items: [
         { id: "workers-fleet", label: "Fleet", icon: Cpu, badge: `${health.worker_count}` },
-        { id: "workers-deployments", label: "Deployments", icon: Server, badge: "v1.5.9" },
+        { id: "workers-deployments", label: "Deployments", icon: Server, badge: "v1.6.0" },
       ],
     },
     {
@@ -376,25 +397,46 @@ export const MiniOperatorConsoleContent: React.FC = () => {
                 <div>
                   <div className="flex items-center gap-2">
                     <h2 className="font-ui text-sm font-bold uppercase tracking-wider text-white">Needs Review Queue</h2>
-                    <span className="rounded-full bg-amber-500/10 px-2.5 py-0.5 font-mono text-[10px] text-amber-400 border border-amber-500/30 font-semibold">
-                      1 PENDING
+                    <span className={`rounded-full px-2.5 py-0.5 font-mono text-[10px] border font-semibold ${
+                      resolutionStep === "resolved" 
+                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30" 
+                        : "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                    }`}>
+                      {resolutionStep === "resolved" ? "0 PENDING (RESOLVED)" : "1 PENDING"}
                     </span>
                   </div>
                   <p className="text-[11px] text-zinc-400 font-mono mt-0.5">
                     Runs halted at the uncertainty window following a worker crash during non-idempotent tool execution
                   </p>
                 </div>
+                {resolutionStep === "resolved" && (
+                  <button
+                    type="button"
+                    onClick={() => setResolutionStep("pending")}
+                    className="px-3 py-1.5 rounded-xl border border-white/10 bg-white/5 text-zinc-300 hover:text-white font-mono text-xs font-semibold cursor-pointer transition-all"
+                  >
+                    Reset Queue Item
+                  </button>
+                )}
               </div>
 
               {/* Needs Review Item Card matching real operator console */}
-              <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 backdrop-blur-2xl space-y-3">
+              <div className={`rounded-2xl border p-4 backdrop-blur-2xl space-y-4 transition-all ${
+                resolutionStep === "resolved"
+                  ? "border-emerald-500/30 bg-emerald-500/[0.05]"
+                  : "border-amber-500/30 bg-amber-500/10"
+              }`}>
                 <div className="flex items-center justify-between">
                   <div className="font-mono text-xs font-bold text-white flex items-center gap-1.5">
-                    <AlertTriangle className="h-4 w-4 text-amber-400" />
+                    <AlertTriangle className={`h-4 w-4 ${resolutionStep === "resolved" ? "text-emerald-400" : "text-amber-400"}`} />
                     <span>r102 · financial_payout_agent</span>
                   </div>
-                  <span className="rounded-full border border-amber-500/40 bg-amber-500/20 px-2.5 py-0.5 font-mono text-[10px] font-semibold text-amber-300">
-                    ACTION REQUIRED
+                  <span className={`rounded-full border px-2.5 py-0.5 font-mono text-[10px] font-semibold ${
+                    resolutionStep === "resolved"
+                      ? "border-emerald-500/40 bg-emerald-500/20 text-emerald-300"
+                      : "border-amber-500/40 bg-amber-500/20 text-amber-300"
+                  }`}>
+                    {resolutionStep === "resolved" ? "RESOLVED & JOURNALED" : "ACTION REQUIRED"}
                   </span>
                 </div>
 
@@ -404,23 +446,166 @@ export const MiniOperatorConsoleContent: React.FC = () => {
                   <span>failing step: <strong className="text-white">2 (check_compliance)</strong></span>
                   <span className="text-zinc-600">·</span>
                   <span>last owner: <strong className="text-white">worker-c#1</strong></span>
+                  <span className="text-zinc-600">·</span>
+                  <span>safety policy: <strong className="text-amber-300">unsafe</strong></span>
                 </div>
 
-                {/* Operator Resolution Action Badges (Static Display) */}
-                <div className="border-t border-white/10 pt-3 space-y-2">
-                  <div className="text-[11px] font-semibold text-white">Available operator resolutions:</div>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="rounded-xl border border-amber-500/40 bg-amber-500/15 px-3 py-1 text-[11px] font-mono font-medium text-amber-300">
-                      mark executed
-                    </span>
-                    <span className="rounded-xl border border-amber-500/40 bg-amber-500/15 px-3 py-1 text-[11px] font-mono font-medium text-amber-300">
-                      mark not executed
-                    </span>
-                    <span className="rounded-xl border border-amber-500/40 bg-amber-500/15 px-3 py-1 text-[11px] font-mono font-medium text-amber-300">
-                      retry
-                    </span>
+                {/* Step 1: Initial Pending State showing Resolution buttons */}
+                {resolutionStep === "pending" && (
+                  <div className="border-t border-white/10 pt-3 space-y-2">
+                    <div className="text-[11px] font-semibold text-white">Select operator resolution action:</div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveResolutionType("mark_executed");
+                          setResolutionStep("form");
+                        }}
+                        className="rounded-xl border border-amber-500/40 bg-amber-500/20 px-3.5 py-1.5 text-xs font-mono font-bold text-amber-300 hover:bg-amber-500/30 cursor-pointer transition-all flex items-center gap-1.5"
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5 text-amber-400" />
+                        <span>mark executed (custom output)</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveResolutionType("mark_not_executed");
+                          setResolutionStep("form");
+                        }}
+                        className="rounded-xl border border-white/20 bg-white/10 px-3.5 py-1.5 text-xs font-mono font-bold text-zinc-200 hover:bg-white/20 cursor-pointer transition-all flex items-center gap-1.5"
+                      >
+                        <RotateCcw className="h-3.5 w-3.5 text-zinc-400" />
+                        <span>mark not executed</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveResolutionType("retry");
+                          setResolutionStep("form");
+                        }}
+                        className="rounded-xl border border-white/20 bg-white/10 px-3.5 py-1.5 text-xs font-mono font-bold text-zinc-200 hover:bg-white/20 cursor-pointer transition-all flex items-center gap-1.5"
+                      >
+                        <Play className="h-3.5 w-3.5 text-zinc-400" />
+                        <span>retry</span>
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {/* Step 2: Form Input state for mark_executed custom JSON payload or other resolutions */}
+                {resolutionStep === "form" && (
+                  <div className="border-t border-white/10 pt-3 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="text-[11px] font-semibold text-white flex items-center gap-2">
+                        <span>Resolution mode:</span>
+                        <span className="rounded-lg border border-amber-500/40 bg-amber-500/20 px-2.5 py-0.5 font-mono text-amber-300 font-bold uppercase">
+                          {activeResolutionType}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setResolutionStep("pending")}
+                        className="text-[10px] text-zinc-400 hover:text-white underline cursor-pointer"
+                      >
+                        Change Action
+                      </button>
+                    </div>
+
+                    {activeResolutionType === "mark_executed" && (
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-mono text-zinc-300 block font-semibold">
+                          Custom Execution Output (JSON Result Payload):
+                        </label>
+                        <textarea
+                          rows={6}
+                          value={customOutputJson}
+                          onChange={(e) => {
+                            setCustomOutputJson(e.target.value);
+                            try {
+                              JSON.parse(e.target.value);
+                              setJsonError(null);
+                            } catch (err: any) {
+                              setJsonError(err.message);
+                            }
+                          }}
+                          className="w-full rounded-xl border border-white/15 bg-black/80 p-3 font-mono text-xs text-amber-300 focus:border-amber-400 focus:outline-none custom-scrollbar"
+                          placeholder='{"status": "success", "result": ...}'
+                        />
+                        {jsonError && (
+                          <div className="text-[10px] text-rose-400 font-mono flex items-center gap-1">
+                            <AlertTriangle className="h-3 w-3" />
+                            <span>Invalid JSON: {jsonError}</span>
+                          </div>
+                        )}
+                        <p className="text-[10px] text-zinc-400 font-mono">
+                          This custom JSON result will be recorded into <code className="text-amber-300 font-bold">tool_journal.result</code> with resolution <code className="text-amber-300 font-bold">operator_marked_executed</code>.
+                        </p>
+                      </div>
+                    )}
+
+                    {activeResolutionType !== "mark_executed" && (
+                      <div className="p-3 rounded-xl border border-white/10 bg-black/60 text-zinc-300 text-xs font-mono">
+                        {activeResolutionType === "mark_not_executed" 
+                          ? "Marking as NOT EXECUTED will authorize the runner to safely re-attempt execution from step 2." 
+                          : "Retrying will force a fresh execution attempt under a new epoch."}
+                      </div>
+                    )}
+
+                    <div className="flex items-center gap-3 pt-1">
+                      <button
+                        type="button"
+                        disabled={activeResolutionType === "mark_executed" && !!jsonError}
+                        onClick={() => {
+                          let parsed = {};
+                          if (activeResolutionType === "mark_executed") {
+                            try {
+                              parsed = JSON.parse(customOutputJson);
+                            } catch {
+                              return;
+                            }
+                          }
+                          setSubmittedResolutionPayload({
+                            resolution: activeResolutionType,
+                            output: parsed,
+                            resolved_at: new Date().toISOString(),
+                            resolved_by: "admin@cluster-console"
+                          });
+                          setResolutionStep("resolved");
+                        }}
+                        className="rounded-xl border border-emerald-500/40 bg-emerald-500/20 px-4 py-2 text-xs font-mono font-bold text-emerald-300 hover:bg-emerald-500/30 disabled:opacity-50 cursor-pointer transition-all flex items-center gap-2"
+                      >
+                        <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                        <span>Submit Resolution (POST /api/runs/102/resolve)</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setResolutionStep("pending")}
+                        className="rounded-xl border border-white/10 bg-white/5 px-3.5 py-2 text-xs font-mono text-zinc-400 hover:text-white cursor-pointer transition-all"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Step 3: Resolved & Journaled state */}
+                {resolutionStep === "resolved" && (
+                  <div className="border-t border-emerald-500/20 pt-3 space-y-2">
+                    <div className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+                      <span>Operator Resolution Committed to Journal:</span>
+                    </div>
+                    <pre className="rounded-xl border border-emerald-500/30 bg-black/80 p-3 font-mono text-[11px] text-emerald-300 overflow-x-auto">
+                      {JSON.stringify(submittedResolutionPayload, null, 2)}
+                    </pre>
+                    <p className="text-[10px] text-zinc-400 font-mono">
+                      Run <code className="text-white font-bold">#102</code> status transitioned from <code className="text-amber-400">needs_review</code> to <code className="text-emerald-400">completed</code>.
+                    </p>
+                  </div>
+                )}
 
               </div>
             </div>
@@ -583,7 +768,7 @@ export const MiniOperatorConsoleContent: React.FC = () => {
               <div className="space-y-2">
                 <div className="flex items-center justify-between rounded-lg border border-white/5 bg-white/[0.02] p-3">
                   <div>
-                    <div className="font-bold text-emerald-400">v1.5.9-prod (Active Release)</div>
+                    <div className="font-bold text-emerald-400">v1.6.0-prod (Active Release)</div>
                     <div className="text-[10px] text-zinc-400 mt-0.5">Schema Revision: 005_chaos</div>
                   </div>
                   <span className="rounded bg-emerald-500/20 text-emerald-300 px-2.5 py-1 text-[10px] font-bold">
@@ -873,7 +1058,7 @@ export const MiniOperatorConsoleContent: React.FC = () => {
         <div className="flex items-center justify-between border-t border-white/10 bg-black/60 px-4 py-2 text-[10px] text-zinc-400 shrink-0">
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Connected to Anchor Engine v1.5.9</span>
+            <span>Connected to Anchor Engine v1.6.0</span>
           </div>
           <div className="flex items-center gap-3">
             <span className="text-zinc-500 font-mono">5 Active Worker Nodes</span>

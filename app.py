@@ -21,7 +21,7 @@ async def fetch_tech_market_signals(topic: str) -> dict:
     """Fetches market news & trend extracts for target technology domain."""
     encoded_topic = urllib.parse.quote(topic.replace(" ", "_"))
     url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{encoded_topic}"
-    headers = {"User-Agent": "AnchorAgent/1.5.9 (https://github.com/n43ms/Anchor)"}
+    headers = {"User-Agent": "AnchorAgent/1.6.0 (https://github.com/n43ms/Anchor)"}
     req = urllib.request.Request(url, headers=headers)
     
     try:
@@ -90,7 +90,7 @@ async def dispatch_resend_email(recipient: str, subject: str, body: str) -> dict
             headers={
                 "Authorization": f"Bearer {resend_api_key}",
                 "Content-Type": "application/json",
-                "User-Agent": "AnchorAgent/1.5.9",
+                "User-Agent": "AnchorAgent/1.6.0",
             },
             method="POST",
         )
@@ -181,7 +181,7 @@ def decide_next_step(ctx: anchor.StepContext):
         f"{report_text}\n\n"
         f"Source Intelligence: {source_url}\n\n"
         f"--------------------------------------------------\n"
-        f"Generated durably by Anchor Engine v1.5.9\n"
+        f"Generated durably by Anchor Engine v1.6.0\n"
     )
 
     # Step 3: Yield ToolCall to dispatch Resend email

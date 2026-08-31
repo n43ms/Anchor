@@ -158,7 +158,7 @@ export const LandingPage: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-sm font-extrabold tracking-wider text-white">ANCHOR</span>
                     <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.2 text-[9px] font-mono font-semibold text-amber-400">
-                      v1.5.9-prod
+                      v1.6.0-prod
                     </span>
                   </div>
                   <div className="text-[9px] font-mono text-zinc-400">
@@ -455,7 +455,7 @@ export const LandingPage: React.FC = () => {
                     <span className="text-purple-400 font-bold">    return</span> <span className="text-zinc-300">&#123;</span><span className="text-emerald-400">"status"</span><span className="text-zinc-300">: </span><span className="text-emerald-400">"sent"</span><span className="text-zinc-300">, </span><span className="text-emerald-400">"to"</span><span className="text-zinc-300">: email, </span><span className="text-emerald-400">"tier"</span><span className="text-zinc-300">: tier&#125;</span>{"\n\n"}
                     <span className="text-zinc-500 italic"># 3. Multi-Tool Durable Agent Workflow</span>{"\n"}
                     <span className="text-amber-400 font-bold">@anchor.agent</span><span className="text-zinc-300">(name=</span><span className="text-emerald-400">"onboarding_agent"</span><span className="text-zinc-300">)</span>{"\n"}
-                    <span className="text-purple-400 font-bold">def</span> <span className="text-blue-400 font-bold">onboarding_agent</span><span className="text-zinc-300">(ctx: anchor.StepContext):</span>{"\n"}
+                    <span className="text-purple-400 font-bold">def</span> <span className="text-blue-400 font-bold">decide_next_step</span><span className="text-zinc-300">(ctx: anchor.StepContext):</span>{"\n"}
                     <span className="text-zinc-300">    customer = </span><span className="text-purple-400 font-bold">yield</span><span className="text-white font-bold"> anchor.ToolCall</span><span className="text-zinc-300">(</span><span className="text-emerald-400">"fetch_customer"</span><span className="text-zinc-300">, &#123;</span><span className="text-emerald-400">"customer_id"</span><span className="text-zinc-300">: ctx.input[</span><span className="text-emerald-400">"customer_id"</span><span className="text-zinc-300">]&#125;)</span>{"\n"}
                     <span className="text-zinc-300">    email_res = </span><span className="text-purple-400 font-bold">yield</span><span className="text-white font-bold"> anchor.ToolCall</span><span className="text-zinc-300">(</span><span className="text-emerald-400">"send_welcome_email"</span><span className="text-zinc-300">, &#123;</span><span className="text-emerald-400">"email"</span><span className="text-zinc-300">: customer[</span><span className="text-emerald-400">"email"</span><span className="text-zinc-300">], </span><span className="text-emerald-400">"tier"</span><span className="text-zinc-300">: customer[</span><span className="text-emerald-400">"tier"</span><span className="text-zinc-300">]&#125;)</span>{"\n"}
                     <span className="text-purple-400 font-bold">    yield</span><span className="text-white font-bold"> anchor.Done</span><span className="text-zinc-300">(&#123;</span><span className="text-emerald-400">"status"</span><span className="text-zinc-300">: </span><span className="text-emerald-400">"completed"</span><span className="text-zinc-300">, </span><span className="text-emerald-400">"customer"</span><span className="text-zinc-300">: customer, </span><span className="text-emerald-400">"email"</span><span className="text-zinc-300">: email_res&#125;)</span>{"\n\n"}
@@ -780,7 +780,7 @@ export const LandingPage: React.FC = () => {
               <ShieldCheck className="h-3.5 w-3.5 text-amber-400" />
               <span>Apache 2.0 Licensed</span>
             </a>
-            <span className="text-zinc-600">v1.5.9-prod</span>
+            <span className="text-zinc-600">v1.6.0-prod</span>
           </div>
         </div>
       </footer>

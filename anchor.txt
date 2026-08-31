@@ -2,7 +2,7 @@
 ANCHOR: DURABLE EXECUTION RUNTIME FOR AI AGENTS
 TECHNICAL ARCHITECTURE AUDIT, SYSTEM SPECIFICATION & BUSINESS WHITEPAPER
 ==================================================================================================
-Version: 1.5.9-prod
+Version: 1.6.0-prod
 Author & System Architect: Aditya Nema (github.com/n43ms/Anchor)
 Repository: C:\Users\adity\OneDrive\Desktop\Apps\CS\Anchor
 License: Apache 2.0

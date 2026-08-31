@@ -493,6 +493,7 @@ async def reset_demo_runs(pool: Annotated[asyncpg.Pool, Depends(get_pool)]) -> d
 class ResolveRequest(BaseModel):
     resolution: Literal["mark_executed", "mark_not_executed", "retry"]
     note: str | None = None
+    result: dict[str, Any] | None = None
 
 
 @router.post("/api/runs/{run_id}/resolve", response_model=RunResponse, status_code=202)
@@ -556,7 +557,7 @@ async def resolve_run(
         settings = await load_runtime_settings(conn)
 
         if body.resolution == "mark_executed":
-            operator_result = {"operator_marked_executed": True, "note": body.note}
+            operator_result = body.result if body.result is not None else {"operator_marked_executed": True, "note": body.note}
             async with conn.transaction():
                 await conn.execute(
                     """

@@ -119,10 +119,15 @@ export const api = {
 
   cancelRun: (id: number | string) => request<Run>(`/api/runs/${id}/cancel`, { method: "POST" }),
 
-  resolveRun: (id: number | string, resolution: "mark_executed" | "mark_not_executed" | "retry", note?: string) =>
+  resolveRun: (
+    id: number | string,
+    resolution: "mark_executed" | "mark_not_executed" | "retry",
+    note?: string,
+    result?: any
+  ) =>
     request<Run>(`/api/runs/${id}/resolve`, {
       method: "POST",
-      body: JSON.stringify({ resolution, note }),
+      body: JSON.stringify({ resolution, note, result }),
     }),
 
   resetDemoRuns: () => request<{ runs_deleted: number }>("/api/runs/demo/reset", { method: "POST" }),

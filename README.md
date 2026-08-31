@@ -5,7 +5,7 @@
 *Eliminate lost state and duplicate API calls when executing multi-step LLM agent pipelines. Anchor guarantees atomic two-phase tool journaling, monotonic epoch fencing, and sub-second crash recovery.*
 
 [![Apache 2.0 License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![PyPI version](https://img.shields.io/badge/pypi-v1.5.9-emerald.svg)](https://pypi.org/project/anchor-runtime/)
+[![PyPI version](https://img.shields.io/badge/pypi-v1.6.0-emerald.svg)](https://pypi.org/project/anchor-runtime/)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-amber.svg)](pyproject.toml)
 
 **Author & System Architect**: **Aditya Nema** — [linkedin.com/in/adityaxnema](https://linkedin.com/in/adityaxnema) • [GitHub Repository](https://github.com/n43ms/Anchor)
@@ -49,7 +49,7 @@ def send_welcome_email(email: str, tier: str) -> dict:
 
 # 3. Multi-Tool Durable Agent Workflow
 @anchor.agent(name="onboarding_agent")
-def onboarding_agent(ctx: anchor.StepContext):
+def decide_next_step(ctx: anchor.StepContext):
     customer = yield anchor.ToolCall("fetch_customer", {"customer_id": ctx.input["customer_id"]})
     email_res = yield anchor.ToolCall("send_welcome_email", {"email": customer["email"], "tier": customer["tier"]})
     yield anchor.Done({"status": "completed", "customer": customer, "email": email_res})
@@ -138,7 +138,7 @@ Anchor/
 
 ## Architecture
 
-An end-to-end FAANG-level architectural breakdown of the Anchor Durable Execution Engine:
+An end-to-end architectural breakdown of the Anchor Durable Execution Engine:
 
 ```
                                     ┌───────────────────────┐
