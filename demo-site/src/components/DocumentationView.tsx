@@ -160,7 +160,21 @@ export function DocumentationView({ onClose }: { onClose: () => void }) {
       </header>
 
       {/* Main Container - Fixed Left Sidebar & Independent Scrolling Right Main */}
-      <div className="flex-1 flex overflow-hidden max-w-[1600px] w-full mx-auto">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden max-w-[1600px] w-full mx-auto">
+        {/* Mobile Section Navigation Bar (< 768px) */}
+        <div className="md:hidden flex overflow-x-auto custom-scrollbar bg-black/90 border-b border-amber-500/20 px-3 py-2 gap-1.5 shrink-0 z-20">
+          {SECTIONS.map((sec) => (
+            <button
+              key={sec.id}
+              type="button"
+              onClick={() => scrollToSection(sec.id)}
+              className="px-3 py-1 rounded-lg border border-amber-500/30 bg-amber-500/10 text-amber-300 text-xs font-mono whitespace-nowrap shrink-0 hover:bg-amber-500/20 transition-colors"
+            >
+              {sec.title}
+            </button>
+          ))}
+        </div>
+
         {/* Permanently Fixed Left Sidebar Navigation */}
         <aside className="w-80 shrink-0 border-r border-amber-500/15 p-5 space-y-6 h-full overflow-y-auto custom-scrollbar bg-[#07070a] hidden md:block">
           <div>

@@ -132,9 +132,39 @@ export const MiniOperatorConsoleContent: React.FC = () => {
 
 
   return (
-    <div className="relative flex h-full bg-zinc-950 font-mono text-xs text-zinc-100 select-none overflow-hidden rounded-2xl border border-white/10 shadow-2xl">
-      {/* 1. Left Operator Sidebar Navigation */}
-      <div className="w-56 shrink-0 border-r border-white/10 bg-black/60 backdrop-blur-xl flex flex-col justify-between p-3">
+    <div className="relative flex flex-col md:flex-row h-full bg-zinc-950 font-mono text-xs text-zinc-100 select-none overflow-hidden rounded-2xl border border-white/10 shadow-2xl">
+      {/* Mobile Operator Console Top Tab Bar (< 768px) */}
+      <div className="flex md:hidden overflow-x-auto custom-scrollbar p-2 bg-black/90 border-b border-white/10 gap-1.5 shrink-0 z-20">
+        {navGroups.flatMap((g) => g.items).map((item) => {
+          const Icon = item.icon;
+          const active = activeTab === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setActiveTab(item.id)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] whitespace-nowrap shrink-0 transition-all ${
+                active
+                  ? "bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40"
+                  : (item as any).highlight
+                  ? "bg-rose-500/20 text-rose-200 font-bold border border-rose-500/50"
+                  : "bg-white/5 text-zinc-400 hover:text-white"
+              }`}
+            >
+              <Icon className={`h-3.5 w-3.5 ${active ? "text-amber-400" : "text-zinc-400"}`} />
+              <span>{item.label}</span>
+              {item.badge && (
+                <span className="rounded-full bg-white/10 px-1.5 py-0.2 text-[9px]">
+                  {item.badge}
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 1. Left Operator Sidebar Navigation (Desktop) */}
+      <div className="hidden md:flex w-56 shrink-0 border-r border-white/10 bg-black/60 backdrop-blur-xl flex-col justify-between p-3">
         <div className="space-y-3 overflow-y-auto custom-scrollbar pr-1">
           {/* Workspace Title */}
           <div className="flex items-center gap-2.5 px-2 py-1.5 border-b border-white/10">

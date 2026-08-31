@@ -266,7 +266,7 @@ export const LandingPage: React.FC = () => {
 
 
           {/* Hero Subtitle */}
-          <p className="w-max text-zinc-300 max-w-3xl mx-auto font-sans leading-relaxed">
+          <p className="w-full text-zinc-300 max-w-3xl mx-auto font-sans leading-relaxed px-2">
             Eliminate <span className="text-white font-semibold">lost state</span> and <span className="text-white font-semibold">duplicate API calls</span> when executing multi-step LLM agent pipelines.<br />
             <span className="italic font-extrabold text-amber-300">Anchor</span> guarantees <span className="text-amber-300 font-semibold">atomic two-phase tool journaling</span>, <span className="text-amber-300 font-semibold">monotonic epoch fencing</span>, and <span className="text-amber-300 font-semibold">sub-second crash recovery</span>.
           </p>
@@ -520,7 +520,7 @@ export const LandingPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-2xl border border-white/10 bg-zinc-950 shadow-2xl">
+          <div className="overflow-x-auto custom-scrollbar rounded-2xl border border-white/10 bg-zinc-950 shadow-2xl">
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-white/10 bg-white/[0.03] text-zinc-400 uppercase text-[10px]">

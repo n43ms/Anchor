@@ -97,7 +97,7 @@ export const QuickstartModal: React.FC<QuickstartModalProps> = ({ isOpen, onClos
       onClick={handleClose}
     >
       <div
-        className={`relative w-full max-w-6xl flex flex-col rounded-2xl border border-amber-500/30 bg-zinc-950 p-4 sm:p-5 shadow-[0_0_50px_rgba(245,158,11,0.15)] space-y-3.5 my-auto overflow-hidden transition-all duration-300 cubic-bezier(0.16,1,0.3,1) ${
+        className={`relative w-full max-w-6xl flex flex-col rounded-2xl border border-amber-500/30 bg-zinc-950 p-4 sm:p-5 shadow-[0_0_50px_rgba(245,158,11,0.15)] space-y-3.5 my-auto max-h-[90vh] overflow-y-auto custom-scrollbar transition-all duration-300 cubic-bezier(0.16,1,0.3,1) ${
           isAnimateIn && !isClosing
             ? "opacity-100 scale-100 translate-y-0"
             : "opacity-0 scale-95 translate-y-4"
