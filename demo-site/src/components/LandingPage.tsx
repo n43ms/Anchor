@@ -4,6 +4,7 @@ import { MechanismExplainer } from "./MechanismExplainer";
 import { RunThread } from "./RunThread";
 import { QuickstartModal } from "./QuickstartModal";
 import { DocumentationView } from "./DocumentationView";
+import { DemosView } from "./DemosView";
 import { useDemo } from "../context/DemoProvider";
 import {
   ShieldCheck,
@@ -31,6 +32,7 @@ import {
   ChevronDown,
   ChevronUp,
   BookOpen,
+  Video,
 } from "lucide-react";
 
 
@@ -50,6 +52,7 @@ export const LandingPage: React.FC = () => {
   const { killWorker, setActiveTab } = useDemo();
   const [isQuickstartModalOpen, setIsQuickstartModalOpen] = useState(false);
   const [isDocsViewOpen, setIsDocsViewOpen] = useState(false);
+  const [isDemosViewOpen, setIsDemosViewOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [heroPreset, setHeroPreset] = useState<"normal" | "crash">("crash");
   const [showArchDetails, setShowArchDetails] = useState(false);
@@ -115,6 +118,23 @@ export const LandingPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-black text-zinc-100 font-sans selection:bg-amber-500/20 selection:text-amber-200">
+      {/* Standalone Demos View Overlay Container */}
+      <div
+        className={`fixed inset-0 z-50 bg-[#07070a] transition-all duration-300 ease-in-out ${
+          isDemosViewOpen
+            ? "opacity-100 scale-100 pointer-events-auto"
+            : "opacity-0 scale-95 pointer-events-none"
+        }`}
+      >
+        <DemosView 
+          onClose={() => setIsDemosViewOpen(false)} 
+          onOpenDocs={() => {
+            setIsDemosViewOpen(false);
+            setIsDocsViewOpen(true);
+          }}
+        />
+      </div>
+
       {/* Smooth Animated Documentation Overlay Container */}
       <div
         className={`fixed inset-0 z-50 bg-[#07070a] transition-all duration-300 ease-in-out ${
@@ -126,7 +146,7 @@ export const LandingPage: React.FC = () => {
         <DocumentationView onClose={() => setIsDocsViewOpen(false)} />
       </div>
 
-      {!isDocsViewOpen && (
+      {!isDocsViewOpen && !isDemosViewOpen && (
         <>
           {/* 1. Header Surface & Top Navigation Bar with Ambient Golden Strand Backdrop */}
           <header className="sticky top-0 z-40 border-b border-amber-500/30 bg-black/90 backdrop-blur-md relative h-12 overflow-hidden flex items-center">
@@ -167,12 +187,12 @@ export const LandingPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Top Navigation Links */}
-              <nav className="hidden lg:flex items-center gap-6 font-mono text-xs font-semibold text-zinc-300">
+              {/* Top Navigation Links (Full Original Headings, Strictly Single-Line) */}
+              <nav className="hidden lg:flex items-center gap-4 xl:gap-5 font-mono text-[11px] xl:text-xs font-semibold text-zinc-300 whitespace-nowrap shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsQuickstartModalOpen(true)}
-                  className="hover:text-amber-400 transition-colors cursor-pointer flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-amber-300 font-bold"
+                  className="hover:text-amber-400 transition-colors cursor-pointer flex items-center gap-1.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-amber-300 font-bold whitespace-nowrap shrink-0"
                 >
                   <BookOpen className="h-3.5 w-3.5 text-amber-400" />
                   <span>Quickstart Guide</span>
@@ -180,28 +200,28 @@ export const LandingPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => scrollToId("operator-console-container")}
-                  className="hover:text-amber-400 transition-colors cursor-pointer"
+                  className="hover:text-amber-400 transition-colors cursor-pointer whitespace-nowrap shrink-0"
                 >
                   Operator Console
                 </button>
                 <button
                   type="button"
                   onClick={() => scrollToId("agent-sdk-code")}
-                  className="hover:text-amber-400 transition-colors cursor-pointer text-amber-300 font-bold"
+                  className="hover:text-amber-400 transition-colors cursor-pointer text-amber-300 font-bold whitespace-nowrap shrink-0"
                 >
                   Agent Runtime SDK
                 </button>
                 <button
                   type="button"
                   onClick={() => scrollToId("why-anchor-matrix-container")}
-                  className="hover:text-amber-400 transition-colors cursor-pointer"
+                  className="hover:text-amber-400 transition-colors cursor-pointer whitespace-nowrap shrink-0"
                 >
                   Durability Matrix
                 </button>
                 <button
                   type="button"
                   onClick={() => scrollToId("engineering-core-container")}
-                  className="hover:text-amber-400 transition-colors cursor-pointer"
+                  className="hover:text-amber-400 transition-colors cursor-pointer whitespace-nowrap shrink-0"
                 >
                   How It Works
                 </button>
@@ -211,10 +231,19 @@ export const LandingPage: React.FC = () => {
               <div className="flex items-center gap-1.5 font-mono text-xs shrink-0">
                 <button
                   type="button"
-                  onClick={() => setIsDocsViewOpen(true)}
+                  onClick={() => setIsDemosViewOpen(true)}
                   className="flex items-center gap-1 rounded-xl border border-amber-500/50 bg-amber-500/20 px-2.5 py-1 text-amber-300 font-bold hover:bg-amber-500/30 hover:border-amber-400 transition-all text-[10.5px] cursor-pointer shadow-sm"
                 >
-                  <BookOpen className="h-3.5 w-3.5 text-amber-400" />
+                  <Video className="h-3.5 w-3.5 text-amber-400" />
+                  <span>Demos</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setIsDocsViewOpen(true)}
+                  className="flex items-center gap-1 rounded-xl border border-white/20 bg-white/10 px-2.5 py-1 text-zinc-200 font-bold hover:bg-white/20 hover:border-white/30 transition-all text-[10.5px] cursor-pointer shadow-sm"
+                >
+                  <BookOpen className="h-3.5 w-3.5 text-zinc-400" />
                   <span>Docs</span>
                 </button>
 
