@@ -268,8 +268,7 @@ export const LandingPage: React.FC = () => {
 
           {/* Hero Subtitle */}
           <p className="w-full text-zinc-300 max-w-3xl mx-auto font-sans leading-relaxed px-2 text-xs sm:text-sm">
-            Eliminate <span className="text-white font-semibold">lost state</span> and <span className="text-white font-semibold">duplicate API calls</span> when executing multi-step LLM agent pipelines.<br />
-            <span className="italic font-extrabold text-amber-300">Anchor</span> guarantees <span className="text-amber-300 font-semibold">atomic two-phase tool journaling</span>, <span className="text-amber-300 font-semibold">monotonic epoch fencing</span>, and <span className="text-amber-300 font-semibold">sub-second crash recovery</span>.
+            <span className="text-white font-bold">Crash-proof your AI agents.</span> If a worker container dies mid-run, <span className="italic font-extrabold text-amber-300">Anchor</span> resumes execution from its exact step — <span className="text-amber-300 font-bold">zero duplicate API calls</span>, <span className="text-emerald-400 font-bold">zero wasted LLM tokens</span>.
           </p>
 
 
