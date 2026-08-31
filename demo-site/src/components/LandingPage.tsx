@@ -129,16 +129,16 @@ export const LandingPage: React.FC = () => {
       {!isDocsViewOpen && (
         <>
           {/* 1. Header Surface & Top Navigation Bar with Ambient Golden Strand Backdrop */}
-          <header className="sticky top-0 z-50 border-b border-white/10 bg-black/85 backdrop-blur-2xl overflow-hidden">
-            {/* Ambient 15-Strand Golden Wave Ribbon Background Overlay (End-to-End, Balanced 30% Opacity) */}
-            <div className="absolute inset-0 pointer-events-none opacity-30 w-full h-full flex items-center">
+          <header className="sticky top-0 z-40 border-b border-amber-500/30 bg-black/90 backdrop-blur-md relative h-12 overflow-hidden flex items-center">
+            {/* Background 15-Golden Ribbon Canvas (Desktop & Mobile Header) */}
+            <div className="absolute inset-0 pointer-events-none opacity-45 overflow-hidden">
               <RunThread headerMode={true} segments={[]} />
             </div>
 
-            <div className="relative z-10 mx-auto flex max-w-7xl items-center justify-between px-6 py-2.5">
+            <div className="relative z-10 mx-auto flex max-w-7xl w-full items-center justify-between px-3 sm:px-6 py-1.5">
               {/* Logo & Author Branding */}
-              <div className="flex items-center gap-3">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-amber-500/40 bg-amber-500/10 p-1.5 shadow-sm">
+              <div className="flex items-center gap-2">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-amber-500/40 bg-amber-500/10 p-1 shadow-sm shrink-0">
                   <svg
                     viewBox="0 0 24 24"
                     fill="none"
@@ -154,15 +154,15 @@ export const LandingPage: React.FC = () => {
                   </svg>
                 </div>
 
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-sm font-extrabold tracking-wider text-white">ANCHOR</span>
-                    <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.2 text-[9px] font-mono font-semibold text-amber-400">
-                      v1.6.0-prod
+                <div className="flex flex-col justify-center leading-none">
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono text-xs sm:text-sm font-extrabold tracking-wider text-white leading-none">ANCHOR</span>
+                    <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-1.5 py-0.5 text-[8px] font-mono font-bold text-amber-400 leading-none">
+                      v1.6.0
                     </span>
                   </div>
-                  <div className="text-[9px] font-mono text-zinc-400">
-                    Engineered by <strong className="text-white">Aditya Nema</strong>
+                  <div className="text-[8.5px] font-mono text-zinc-400 leading-none mt-0.5">
+                    By <strong className="text-zinc-200 font-semibold">Aditya Nema</strong>
                   </div>
                 </div>
               </div>
@@ -208,11 +208,11 @@ export const LandingPage: React.FC = () => {
               </nav>
 
               {/* Action Buttons & Links */}
-              <div className="flex items-center gap-2 font-mono text-xs">
+              <div className="flex items-center gap-1.5 font-mono text-xs shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsDocsViewOpen(true)}
-                  className="flex items-center gap-1.5 rounded-xl border border-amber-500/50 bg-amber-500/20 px-3 py-1 text-amber-300 font-bold hover:bg-amber-500/30 hover:border-amber-400 transition-all text-[11px] cursor-pointer shadow-sm"
+                  className="flex items-center gap-1 rounded-xl border border-amber-500/50 bg-amber-500/20 px-2.5 py-1 text-amber-300 font-bold hover:bg-amber-500/30 hover:border-amber-400 transition-all text-[10.5px] cursor-pointer shadow-sm"
                 >
                   <BookOpen className="h-3.5 w-3.5 text-amber-400" />
                   <span>Docs</span>
@@ -222,7 +222,7 @@ export const LandingPage: React.FC = () => {
                   href="https://linkedin.com/in/adityaxnema"
                   target="_blank"
                   rel="noreferrer"
-                  className="flex items-center gap-1 rounded-xl border border-blue-500/40 bg-blue-500/10 px-2.5 py-1 text-blue-300 hover:bg-blue-500/20 transition-all font-semibold text-[11px]"
+                  className="flex items-center gap-1 rounded-xl border border-blue-500/40 bg-blue-500/10 px-2 py-1 text-blue-300 hover:bg-blue-500/20 transition-all font-semibold text-[10.5px]"
                 >
                   <LinkedinIcon className="h-3 w-3 text-blue-400" />
                   <span>LinkedIn</span>
@@ -232,7 +232,7 @@ export const LandingPage: React.FC = () => {
                   href="https://github.com/n43ms/Anchor"
                   target="_blank"
                   rel="noreferrer"
-                  className="hidden sm:flex items-center gap-1 rounded-xl border border-white/10 bg-white/5 px-2.5 py-1 text-zinc-300 hover:text-white transition-all font-semibold text-[11px]"
+                  className="hidden sm:flex items-center gap-1 rounded-xl border border-white/10 bg-white/5 px-2.5 py-1 text-zinc-300 hover:text-white transition-all font-semibold text-[10.5px]"
                 >
                   <GithubIcon className="h-3 w-3" />
                   <span>GitHub</span>
