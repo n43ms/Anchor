@@ -1,34 +1,44 @@
-# Anchor
+# ⚓ Anchor
 
 **The PostgreSQL-Authoritative Durable Execution Engine for AI Agent Workflows.**
 
 *Eliminate lost state and duplicate API calls when executing multi-step LLM agent pipelines. Anchor guarantees atomic two-phase tool journaling, monotonic epoch fencing, and sub-second crash recovery.*
 
+---
+
+### 🌐 Quick Links & Resources
+- 🌐 **Official Website**: [https://anchor-runtime.xyz](https://anchor-runtime.xyz)
+- 📹 **Live Video Demos**: [https://anchor-runtime.xyz/demo](https://anchor-runtime.xyz/demo)
+- 📚 **Technical Documentation**: [https://anchor-runtime.xyz/docs](https://anchor-runtime.xyz/docs)
+- 📦 **PyPI Package**: [`pip install anchor-runtime`](https://pypi.org/project/anchor-runtime/)
+- 👤 **Author & Creator**: **Aditya Nema** ([LinkedIn](https://linkedin.com/in/adityaxnema) • [GitHub](https://github.com/n43ms/Anchor))
+
+---
+
 [![Apache 2.0 License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![PyPI version](https://img.shields.io/badge/pypi-v1.6.0-emerald.svg)](https://pypi.org/project/anchor-runtime/)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-amber.svg)](pyproject.toml)
-
-**Author & System Architect**: **Aditya Nema** — [linkedin.com/in/adityaxnema](https://linkedin.com/in/adityaxnema) • [GitHub Repository](https://github.com/n43ms/Anchor)
+[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://anchor-runtime.xyz)
+[![Crash Recovery](https://img.shields.io/badge/crash_recovery-sub--second-success.svg)](https://anchor-runtime.xyz/demo)
 
 ---
 
 ## 🚀 Quickstart (Under 60 Seconds)
 
-No API keys, no cloud subscriptions, no external services required to get started.
+No API keys, no cloud subscriptions, and no complex cluster setups required to get started.
 
 ### 1. Install the Python SDK
 ```bash
 pip install anchor-runtime
 ```
 
-### 2. Boot Local Cluster & UI
+### 2. Boot Local Cluster & UI (1-Click Launch)
 ```bash
-# 🌟 Recommended (1-Click Launch & Auto-Browser):
-anchor dev             # On Windows if PATH is not configured: python -m anchor.cli dev
+# 🌟 Recommended (Scaffolds workspace, boots PostgreSQL 16, API daemon, and opens Operator Console):
+anchor dev
 ```
-> Scaffolds workspace, boots PostgreSQL 16, Redis 7, API Server (`:8000`), 3 worker replicas, and auto-opens the Operator Console UI at `http://localhost:3000`.
-> 
-> *Alternative manual boot*: `anchor init` (Windows: `python -m anchor.cli init`) followed by `docker compose up -d`.
+> *On Windows if PATH is not configured*: `python -m anchor.cli dev`  
+> *Alternative manual boot*: `anchor init` followed by `docker compose up -d`.
 
 ### 3. Write & Run Your Agent (`app.py`)
 
@@ -54,13 +64,27 @@ def decide_next_step(ctx: anchor.StepContext):
     email_res = yield anchor.ToolCall("send_welcome_email", {"email": customer["email"], "tier": customer["tier"]})
     yield anchor.Done({"status": "completed", "customer": customer, "email": email_res})
 
-# 4. Trigger & Submit to Cluster
+# 4. Trigger & Submit to Engine
 if __name__ == "__main__":
     result = anchor.run("onboarding_agent", input={"customer_id": "cust_99"})
     print(json.dumps(result, indent=2))
 ```
 
-Run `python app.py`. `anchor.run()` serializes the workflow AST and submits it to PostgreSQL. Cluster workers claim the run, execute steps, and log atomic two-phase tool journals. Inspect live execution at `http://localhost:3000`!
+Run `python app.py`. `anchor.run()` serializes the workflow AST and submits it to PostgreSQL. Cluster workers claim the run, execute steps, and log atomic two-phase tool journals. Inspect live execution at `http://localhost:3000` or [https://anchor-runtime.xyz](https://anchor-runtime.xyz)!
+
+---
+
+## 📹 Video Demonstrations & Empirical Benchmarks
+
+Watch live recordings of Anchor handling hard process terminations, unsafe tool pauses, and adversarial fault injections:
+
+- 📺 **[01. End-to-End Multi-Step LLM Workflow](https://anchor-runtime.xyz/demo)** — Parallel market intelligence lookup, Gemini 2.5 Flash LLM synthesis, and email delivery.
+- ⚡ **[02. SIGKILL Process Interrupt & Auto-Reclaim](https://anchor-runtime.xyz/demo)** — Hard process termination mid-run with sub-second lease reclamation by secondary worker.
+- 🛡️ **[03. Unsafe Tool Pause & NeedsReview Queue](https://anchor-runtime.xyz/demo)** — `@anchor.tool(safety="unsafe")` protection protocol halting runs for operator resolution (`mark_executed` / `mark_not_executed`).
+- 💥 **[04. Live Adversarial Fault Injection Harness](https://anchor-runtime.xyz/demo)** — Real-time random SIGKILL terminations across parallel worker replicas.
+- 📊 **[05. Invariant Verification Log Proof](https://anchor-runtime.xyz/demo)** — Benchmark logs proving 5/5 SQL invariants held under load.
+
+👉 **[Watch All Video Demos at anchor-runtime.xyz/demo](https://anchor-runtime.xyz/demo)**
 
 ---
 
@@ -94,51 +118,9 @@ When AI agents execute multi-step tasks — searching database records, calling 
 
 ---
 
-## 🏗️ Deep Architectural Intricacies & System Invariants
+## 🏗️ System Architecture & Formal SQL Invariants
 
 Anchor enforces mathematical correctness through five formal SQL invariants verified continuously by an automated chaos harness:
-
-### 1. Database-Authoritative State Engine
-All run ownership, sequence allocation, and lease renewals occur inside single PostgreSQL transactions using `SELECT ... FOR UPDATE SKIP LOCKED` CTEs. No component outside the database is ever authoritative about who owns an agent run.
-
-### 2. Two-Phase Tool Intent Journaling
-Before a side-effect tool call is executed, Anchor writes a `TOOL_INTENT` record. Upon completion, it commits `TOOL_RESULT`. On crash recovery, replayed steps load cached results in <5ms without executing side effects a second time.
-
-### 3. Monotonic Epoch Fencing (`AN001_FENCED_WRITE`)
-Every worker lease renewal or run claim increments the run's monotonic `epoch` token. Delayed writes from a zombie worker with a stale epoch are blocked at the database constraint boundary with `AN001_FENCED_WRITE`.
-
-### 4. Explicit Tool Safety Spectrum
-- **`retry_safe`**: Read-only or naturally idempotent tools. Safe to re-execute immediately on worker crash recovery.
-- **`reconcilable`**: Side-effecting tools accepting idempotency keys. Anchor queries external system state before re-running.
-- **`unsafe`**: Non-idempotent side effects (e.g., sending emails or wire transfers). If a crash lands in the uncertainty window, Anchor halts the run to the `needs_review` queue for human approval instead of guessing.
-
-### 5. Automated Adversarial Chaos Harness
-An integrated chaos harness continuously injects process `SIGKILL` signals against active worker nodes and runs automated SQL assertions (`I1`–`I5`) after every test, proving zero duplicate tool calls and zero stranded runs under load.
-
----
-
-## 🛠️ Repository Layout
-
-```
-Anchor/
-├── anchor/                      # Python Core SDK & Engine Daemon
-│   ├── api/                     # FastAPI Router & Endpoint Definitions
-│   ├── core/                    # PostgreSQL Protocol Logic, Fencing & Replay
-│   ├── chaos/                   # Automated Chaos Harness & SQL Invariant Asserter
-│   └── worker/                  # Worker Claim Loop & Process Lifecycle
-├── web/                         # Production Next.js 14 Operator Console UI
-├── demo-site/                   # Standalone Interactive Demo & Scaffold Site
-├── ops/
-│   ├── compose/                 # Production Docker Compose Stack & Dockerfiles
-│   └── migrations/              # Alembic DDL Migrations (001_foundation to 006_chaos)
-└── pyproject.toml               # Python Package Spec (anchor-runtime)
-```
-
----
-
-## Architecture
-
-An end-to-end architectural breakdown of the Anchor Durable Execution Engine:
 
 ```
                                     ┌───────────────────────┐
@@ -169,28 +151,32 @@ An end-to-end architectural breakdown of the Anchor Durable Execution Engine:
   └─────────────────┘          └─────────────────┘          └─────────────────┘
 ```
 
-### 1. Database-Authoritative State Engine (Zero External Broker Tax)
-- **Mechanism**: Rather than relying on external distributed orchestrators (Temporal, AWS Step Functions) or volatile brokers (Redis, RabbitMQ), Anchor delegates run ownership, sequence allocation, and lease renewals exclusively to PostgreSQL 16.
-- **Concurrency**: Workers claim unassigned or expired runs using `SELECT ... FOR UPDATE SKIP LOCKED` CTEs. This guarantees atomicity under high-throughput parallel worker fleets without lock contention or double-claiming.
+### Core Engine Invariants:
+1. **`I1` (Idempotency)**: `COUNT(duplicate_side_effects) == 0`. Zero non-idempotent tool calls executed twice.
+2. **`I2` (Log Monotonicity)**: Append-only event sequence integrity backed by database triggers.
+3. **`I3` (Single Writer)**: `AN001` monotonic epoch-fenced single-active-writer guarantee blocking zombie worker writes.
+4. **`I4` (Terminal Reachability)**: All runs reach deterministic terminal states (`completed`, `failed`, `needs_review`).
+5. **`I5` (Replay Determinism)**: Step replays reconstruct full generator state from journal logs in `<5ms`.
 
-### 2. Two-Phase Tool Intent Journaling (`TOOL_INTENT` $\rightarrow$ `TOOL_RESULT`)
-- **Protocol**: Every side-effecting tool invocation (`@anchor.tool`) undergoes a two-phase transactional commit protocol:
-  1. **Phase 1 (`TOOL_INTENT`)**: Pre-execution intent is written to PostgreSQL with a deterministic, canonical idempotency hash.
-  2. **Execution**: The tool function runs (e.g. calling an external HTTP API or processing a payment).
-  3. **Phase 2 (`TOOL_RESULT`)**: Post-execution result is committed to the journal.
-- **SIGKILL Fault Tolerance**: If a worker process is terminated by Kubernetes `SIGKILL` during tool execution, recovery workers inspect the `TOOL_INTENT` journal ID and execute the declared tool policy (`retry_safe`, `reconcilable`, `unsafe`), preventing duplicate charges or corrupt row mutations.
+---
 
-### 3. Monotonic Epoch Fencing (`AN001_FENCED_WRITE`)
-- **Constraint Layer**: Every lease acquisition or renewal increments the run's monotonic `epoch` integer token.
-- **Zombie Worker Shield**: If a worker experiences a long GC pause or network partition, another worker claims the run and increments the epoch. Delayed writes from the stale worker are rejected at the database trigger boundary with `AN001_FENCED_WRITE`, preventing split-brain state corruption.
+## 🛠️ Repository Structure
 
-### 4. Continuous Chaos Invariant Audit Suite
-An integrated, continuous chaos harness injects hard process terminations (`SIGKILL`) against active worker nodes and executes 5 automated SQL invariant assertions (`I1`–`I5`) after every test run:
-- **`I1` (Idempotency)**: `COUNT(duplicate_side_effects) == 0`
-- **`I2` (Log Monotonicity)**: Append-only event sequence integrity.
-- **`I3` (Single Writer)**: Epoch-fenced single-active-writer guarantee.
-- **`I4` (Terminal Reachability)**: All runs reach deterministic terminal states (`completed`, `failed`, `needs_review`).
-- **`I5` (Replay Determinism)**: Step replays reconstruct full generator state from journal logs in `<5ms`.
+```
+Anchor/
+├── anchor/                      # Python Core SDK & Engine Daemon
+│   ├── api/                     # FastAPI Router & Endpoint Definitions
+│   ├── core/                    # PostgreSQL Protocol Logic, Fencing & Replay
+│   ├── chaos/                   # Automated Chaos Harness & SQL Invariant Asserter
+│   └── worker/                  # Worker Claim Loop & Process Lifecycle
+├── demo-site/                   # Standalone Interactive Site & Video Demos (React/Vite)
+├── web/                         # Production Next.js 14 Operator Console UI
+├── ops/
+│   ├── compose/                 # Production Docker Compose Stack & Dockerfiles
+│   └── migrations/              # Alembic DDL Migrations (001_foundation to 006_chaos)
+├── GTM_LAUNCH_PLAYBOOK.md       # Go-To-Market & Monetization Master Playbook
+└── pyproject.toml               # Python Package Spec (anchor-runtime)
+```
 
 ---
 
@@ -198,6 +184,9 @@ An integrated, continuous chaos harness injects hard process terminations (`SIGK
 
 Anchor is open-source software licensed under the **[Apache License 2.0](LICENSE)**. You are free to use, modify, distribute, and embed Anchor in commercial products without copyleft restrictions.
 
-**Author & Creator**: Aditya Nema  
-**Connect on LinkedIn**: [linkedin.com/in/adityaxnema](https://linkedin.com/in/adityaxnema)  
-**GitHub Repository**: [github.com/n43ms/Anchor](https://github.com/n43ms/Anchor)
+- 👤 **Author & Creator**: Aditya Nema  
+- 🌐 **Official Website**: [https://anchor-runtime.xyz](https://anchor-runtime.xyz)  
+- 📹 **Video Demos**: [https://anchor-runtime.xyz/demo](https://anchor-runtime.xyz/demo)  
+- 📚 **Documentation**: [https://anchor-runtime.xyz/docs](https://anchor-runtime.xyz/docs)  
+- 🔗 **LinkedIn**: [linkedin.com/in/adityaxnema](https://linkedin.com/in/adityaxnema)  
+- ⭐ **GitHub Repository**: [github.com/n43ms/Anchor](https://github.com/n43ms/Anchor)
