@@ -73,6 +73,7 @@ def register_draft(source: str, agent_type: str) -> dict[str, object]:
     fn = namespace.get("decide_next_step")
     if fn is None or not callable(fn):
         from anchor.runtime.agents.registry import _REGISTRY
+
         obj = _REGISTRY.get(agent_type) or (list(_REGISTRY.values())[-1] if _REGISTRY else None)
         if obj is not None:
             fn = getattr(obj, "step_fn", obj)

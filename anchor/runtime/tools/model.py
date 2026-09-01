@@ -239,7 +239,12 @@ def get_model_adapter() -> StubAdapter | LiveGeminiAdapter | LiveOpenAIAdapter |
         logger.info("Using LiveClaudeAdapter for live LLM completions")
         return LiveClaudeAdapter(api_key=claude_key)
 
-    openai_key = (os.getenv("OPENAI_API_KEY") or os.getenv("DEEPSEEK_API_KEY") or os.getenv("GROQ_API_KEY") or "").strip()
+    openai_key = (
+        os.getenv("OPENAI_API_KEY")
+        or os.getenv("DEEPSEEK_API_KEY")
+        or os.getenv("GROQ_API_KEY")
+        or ""
+    ).strip()
     if openai_key:
         base_url = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
         if os.getenv("DEEPSEEK_API_KEY"):
@@ -251,4 +256,3 @@ def get_model_adapter() -> StubAdapter | LiveGeminiAdapter | LiveOpenAIAdapter |
         return LiveOpenAIAdapter(api_key=openai_key, base_url=base_url)
 
     return StubAdapter()
-

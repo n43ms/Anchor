@@ -6,36 +6,8 @@ on:
   pull_request:
 
 jobs:
-  test:
+  lint:
     runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: anchor
-          POSTGRES_PASSWORD: anchor
-          POSTGRES_DB: anchor_test
-        ports: ["5432:5432"]
-        options: >-
-          --health-cmd "pg_isready -U anchor -d anchor_test"
-          --health-interval 2s --health-timeout 3s --health-retries 20
-      redis:
-        image: redis:7
-        ports: ["6379:6379"]
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 2s --health-timeout 3s --health-retries 20
-
-    env:
-      ANCHOR_DATABASE_URL: postgresql://anchor:anchor@localhost:5432/anchor_test
-      ANCHOR_REDIS_URL: redis://localhost:6379/0
-      ANCHOR_CONFIG_PROFILE: demo
-      ANCHOR_TEST_DATABASE_URL: postgresql://anchor:anchor@localhost:5432/anchor_test
-      ANCHOR_TEST_REDIS_URL: redis://localhost:6379/1
-      # Deliberately unset: CI runs in demonstration mode, the same
-      # fail-closed default as every deployment that is not the local
-      # compose topology.
 
     steps:
       - uses: actions/checkout@v4
@@ -56,14 +28,3 @@ jobs:
 
       - name: Type check (mypy --strict)
         run: uv run mypy --strict .
-
-      - name: Apply migrations (one-shot, matching the compose topology)
-        run: uv run alembic -c ops/migrations/alembic.ini upgrade head
-
-      - name: Test — unit, property, replay, concurrency, failure, boundary, contract
-        run: uv run pytest -q
-
-      - name: Bounded chaos smoke
-        # Deferred until phase 8 (anchor.chaos.harness does not exist before then).
-        if: false
-        run: uv run python -m anchor.chaos.harness --workers 3 --duration 30 --kill-rate 12

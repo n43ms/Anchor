@@ -5,6 +5,8 @@ Verifies that a developer can define tools via `@anchor.tool`, define an agent v
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 
 import anchor
@@ -23,7 +25,7 @@ def test_sdk_single_file_workflow_execution() -> None:
 
     # 2. Agent defined using generator yield syntax
     @anchor.agent(name="single_file_test_agent")
-    def decide_next_step(ctx: anchor.StepContext):
+    def decide_next_step(ctx: anchor.StepContext) -> Any:
         search_res = yield anchor.ToolCall("db_search", {"query": ctx.input["field"]})
         email_res = yield anchor.ToolCall(
             "send_email",

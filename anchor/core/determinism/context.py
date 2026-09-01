@@ -330,8 +330,7 @@ class StepContext:
                 response = await self.model_adapter.complete(messages, model)
         except TimeoutError as exc:
             raise StepTimeoutError(
-                f"step {self.step_index}: model call exceeded step_timeout_ms "
-                f"({effective_timeout})"
+                f"step {self.step_index}: model call exceeded step_timeout_ms ({effective_timeout})"
             ) from exc
         latency_ms = (time.monotonic() - start) * 1000
         prompt_hash = hashlib.sha256(

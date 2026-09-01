@@ -18,6 +18,7 @@ async def test_generate_reports_unavailable_with_a_plain_reason() -> None:
         await generate_draft({"description": "anything"})
     assert exc_info.value.status_code == 503
     body = exc_info.value.detail
+    assert isinstance(body, dict)
     assert body["error"] == "generation_unavailable"
     assert "no generation provider is configured" in body["message"]
 

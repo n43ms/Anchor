@@ -7,7 +7,7 @@ guess (D-24, FR-050).
 from __future__ import annotations
 
 import json
-from typing import Any
+from typing import Any, cast
 
 import asyncpg
 import pytest
@@ -29,18 +29,16 @@ async def _noop_flush() -> None:
 async def _make_needs_review_run(
     db_pool: asyncpg.Pool, *, is_demo: bool = True, safety: str = "unsafe"
 ) -> tuple[int, str]:
-    from anchor.core.journal.policies import Unknown
-
     async def _send_email(args: dict[str, Any], **_: Any) -> Any:
         raise AssertionError("must not be invoked while the run is still needs_review")
 
     async def _reconcile(args: dict[str, Any], idempotency_key: str = "", **_: Any) -> Any:
-        return Unknown()
+        return "Unknown"
 
     decl = ToolDeclaration(
         name="send_email",
         fn=_send_email,
-        safety=safety,
+        safety=cast(Any, safety),
         reconcile_fn=_reconcile if safety == "reconcilable" else None,
         naturally_idempotent=(safety == "retry_safe"),
     )

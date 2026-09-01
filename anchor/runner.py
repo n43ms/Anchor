@@ -9,6 +9,7 @@ Falls back to local in-memory execution if no cluster server is reachable.
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import inspect
 import json
 import os
@@ -31,6 +32,7 @@ class MockSingleFileContext:
         self._tool_results: dict[str, Any] = {}
         self._step_tool_results: dict[int, Any] = {}
         self._model_responses: dict[int, Any] = {}
+        self._last_model_response: dict[str, Any] | None = None
         self.tool_registry: dict[str, Any] = {}
 
     def has_result(self, name: str) -> bool:
@@ -89,10 +91,8 @@ def _register_agent_with_api(api_url: str, agent: str, step_fn: Any) -> bool:
     except Exception as e:
         print(f"[Anchor Client] Registration details: {e}")
         if hasattr(e, "read"):
-            try:
+            with contextlib.suppress(Exception):
                 print("Registration response body:", e.read().decode("utf-8"))
-            except Exception:
-                pass
         return False
 
 
@@ -213,6 +213,7 @@ async def execute_run_async(
 
         if isinstance(action, ModelCall):
             from anchor.runtime.tools.model import get_model_adapter
+
             adapter = get_model_adapter()
             resp = await adapter.complete(action.messages, action.model)
             model_dict = {"text": resp.text, "model": resp.model, "stubbed": resp.stubbed}

@@ -10,20 +10,23 @@ import json
 import os
 import urllib.parse
 import urllib.request
+from typing import Any
+
 import anchor
 
 # ------------------------------------------------------------------------------
 # 1. Define Crash-Safe Tools
 # ------------------------------------------------------------------------------
 
+
 @anchor.tool(safety="retry_safe", naturally_idempotent=True)
-async def fetch_tech_market_signals(topic: str) -> dict:
+async def fetch_tech_market_signals(topic: str) -> dict[str, Any]:
     """Fetches market news & trend extracts for target technology domain."""
     encoded_topic = urllib.parse.quote(topic.replace(" ", "_"))
     url = f"https://en.wikipedia.org/api/rest_v1/page/summary/{encoded_topic}"
     headers = {"User-Agent": "AnchorAgent/1.6.0 (https://github.com/n43ms/Anchor)"}
     req = urllib.request.Request(url, headers=headers)
-    
+
     try:
         with urllib.request.urlopen(req, timeout=10.0) as resp:
             data = json.loads(resp.read().decode("utf-8"))
@@ -44,33 +47,38 @@ async def fetch_tech_market_signals(topic: str) -> dict:
 
 
 @anchor.tool(safety="retry_safe", naturally_idempotent=True)
-async def compute_risk_and_competitive_metrics(domain: str) -> dict:
+async def compute_risk_and_competitive_metrics(domain: str) -> dict[str, Any]:
     """Calculates competitive adoption index, market sentiment score, and risk matrix."""
     domain_len = len(domain)
     adoption_score = min(98, 65 + (domain_len * 2) % 30)
     growth_rate_pct = 14.5 + (domain_len % 10) * 1.8
     sentiment_score = 0.82
-    
+
     return {
         "domain": domain,
-        "market_adoption_score": f"{adoption_score}/100",
-        "annual_growth_rate": f"{growth_rate_pct:.1f}%",
-        "market_sentiment": "Strongly Bullish" if sentiment_score > 0.75 else "Neutral",
-        "key_drivers": ["Enterprise AI Adoption", "Infrastructure Efficiency", "Regulatory Alignment"],
+        "metrics": {
+            "adoption_index": adoption_score,
+            "annual_growth_pct": growth_rate_pct,
+            "sentiment_score": sentiment_score,
+        },
+        "key_opportunities": [
+            f"Automating multi-step workflow resilience in {domain}",
+            "Eliminating duplicate LLM API token spend on process crashes",
+        ],
         "risk_factors": ["High Initial Compute Costs", "Model Hallucination Governance"],
     }
 
 
 @anchor.tool(safety="unsafe")
-async def dispatch_resend_email(recipient: str, subject: str, body: str) -> dict:
+async def dispatch_resend_email(recipient: str, subject: str, body: str) -> dict[str, Any]:
     """Delivers an executive briefing email using Resend API (or SMTP fallback)."""
     print("\n" + "=" * 75)
     print("  [UNSAFE TOOL ENTERED] dispatch_resend_email")
     print("  Sleeping for 10 seconds... PRESS CTRL+C NOW TO KILL THE PROCESS!")
     print("  After killing, open the Operator Console at http://localhost:3000")
     print("  or resolve via API: POST /api/runs/{id}/resolve with:")
-    print("    - {\"resolution\": \"executed\", \"result\": {...}}")
-    print("    - {\"resolution\": \"not_executed\"}")
+    print('    - {"resolution": "executed", "result": {...}}')
+    print('    - {"resolution": "not_executed"}')
     print("=" * 75 + "\n")
     await asyncio.sleep(10.0)
 
@@ -78,12 +86,14 @@ async def dispatch_resend_email(recipient: str, subject: str, body: str) -> dict
     resend_from = os.getenv("RESEND_FROM", os.getenv("SMTP_FROM", "onboarding@resend.dev"))
 
     if resend_api_key:
-        payload = json.dumps({
-            "from": resend_from,
-            "to": [recipient],
-            "subject": subject,
-            "text": body,
-        }).encode("utf-8")
+        payload = json.dumps(
+            {
+                "from": resend_from,
+                "to": [recipient],
+                "subject": subject,
+                "text": body,
+            }
+        ).encode("utf-8")
         req = urllib.request.Request(
             "https://api.resend.com/emails",
             data=payload,
@@ -122,11 +132,12 @@ async def dispatch_resend_email(recipient: str, subject: str, body: str) -> dict
 # 2. Modern Generator Syntax Workflow (Python Yield)
 # ------------------------------------------------------------------------------
 
+
 @anchor.agent(
     name="langchain_executive_market_agent",
     description="Multi-stage LangChain strategic market research, Gemini LLM synthesis, & Resend email dispatcher.",
 )
-def decide_next_step(ctx: anchor.StepContext):
+def decide_next_step(ctx: anchor.StepContext) -> Any:
     """Modern Python generator syntax yielding linear step actions."""
     target_topic = ctx.input.get("topic", "Autonomous AI Agents")
     recipient_email = ctx.input.get("email", "user@example.com")
@@ -135,7 +146,9 @@ def decide_next_step(ctx: anchor.StepContext):
     signals = yield anchor.ToolCall("fetch_tech_market_signals", {"topic": target_topic})
 
     # Step 1: Yield ToolCall to compute risk & metrics
-    metrics = yield anchor.ToolCall("compute_risk_and_competitive_metrics", {"domain": target_topic})
+    metrics = yield anchor.ToolCall(
+        "compute_risk_and_competitive_metrics", {"domain": target_topic}
+    )
 
     # Step 2: Yield ModelCall for Gemini LLM synthesis
     summary_extract = signals.get("summary", "") if isinstance(signals, dict) else ""
@@ -162,18 +175,25 @@ def decide_next_step(ctx: anchor.StepContext):
     model_result = yield anchor.ModelCall(
         model="gemini-2.5-flash",
         messages=[
-            {"role": "system", "content": "You analyze technology markets and write executive briefs."},
+            {
+                "role": "system",
+                "content": "You analyze technology markets and write executive briefs.",
+            },
             {"role": "user", "content": prompt},
         ],
     )
 
     report_text = (
-        model_result.get("response")
-        or model_result.get("text")
-        or "Report generation complete."
-    ) if isinstance(model_result, dict) else str(model_result)
+        (model_result.get("response") or model_result.get("text") or "Report generation complete.")
+        if isinstance(model_result, dict)
+        else str(model_result)
+    )
 
-    source_url = signals.get("url", "https://en.wikipedia.org") if isinstance(signals, dict) else "https://en.wikipedia.org"
+    source_url = (
+        signals.get("url", "https://en.wikipedia.org")
+        if isinstance(signals, dict)
+        else "https://en.wikipedia.org"
+    )
 
     email_body = (
         f"Executive Market Intelligence Report: {target_topic}\n"
@@ -195,13 +215,15 @@ def decide_next_step(ctx: anchor.StepContext):
     )
 
     # Step 4: Yield Done action
-    yield anchor.Done({
-        "status": "completed",
-        "topic": target_topic,
-        "recipient": recipient_email,
-        "report_summary": report_text,
-        "email_delivery": email_delivery,
-    })
+    yield anchor.Done(
+        {
+            "status": "completed",
+            "topic": target_topic,
+            "recipient": recipient_email,
+            "report_summary": report_text,
+            "email_delivery": email_delivery,
+        }
+    )
 
 
 # ------------------------------------------------------------------------------

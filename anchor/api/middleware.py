@@ -28,6 +28,7 @@ authentication anywhere.
 from __future__ import annotations
 
 import logging
+import os
 import re
 import time
 from collections.abc import Awaitable, Callable
@@ -38,8 +39,6 @@ from fastapi.responses import JSONResponse
 logger = logging.getLogger("anchor.api.request")
 
 _RUN_ID_IN_PATH = re.compile(r"/api/runs/(\d+)")
-
-import os
 
 # --- Rate limiting (T359-T360) ---
 

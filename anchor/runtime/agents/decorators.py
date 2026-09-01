@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import inspect
 from collections.abc import Callable
-from typing import Any
+from typing import Any, cast
 
 from anchor.core.determinism.context import StepContext
 from anchor.runtime.agents.adapter import wrap_generator_agent
@@ -32,7 +32,7 @@ def agent(
         agent_desc = description or (inspect.getdoc(fn) or "")
 
         adapted_fn = wrap_generator_agent(fn) if inspect.isgeneratorfunction(fn) else fn
-        setattr(adapted_fn, "__original_fn__", fn)
+        cast(Any, adapted_fn).__original_fn__ = fn
 
         register_agent_in_process(
             name=agent_name,

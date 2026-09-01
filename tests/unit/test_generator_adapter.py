@@ -23,7 +23,7 @@ def dummy_reconstruct_context(
             self.step_index = step_index
             self.input = {"query": "Distributed Systems"}
             self._tool_results = tool_results or {}
-            self.tool_registry = {}
+            self.tool_registry: dict[str, Any] = {}
 
         def has_result(self, name: str) -> bool:
             return name in self._tool_results

@@ -103,7 +103,7 @@ async def main() -> None:
 
     if not report:
         try:
-            env = BootstrapEnv()
+            env = BootstrapEnv()  # type: ignore[call-arg]
             report = await fetch_latest_db_report(env.database_url)
         except Exception:
             pass

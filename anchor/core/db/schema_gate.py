@@ -63,7 +63,9 @@ async def applied_revision(conn: asyncpg.Connection[Any]) -> str | None:
     return revision
 
 
-async def assert_schema_matches(conn: asyncpg.Connection[Any], retries: int = 15, delay: float = 1.0) -> str:
+async def assert_schema_matches(
+    conn: asyncpg.Connection[Any], retries: int = 15, delay: float = 1.0
+) -> str:
     """Raise `SchemaVersionMismatchError` on any mismatch after retrying; otherwise
     return the matched revision. Called once, at process startup, before the
     process registers itself or accepts any work.

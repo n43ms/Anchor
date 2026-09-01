@@ -18,7 +18,7 @@ import redis.asyncio as redis_asyncio
 from anchor.core.config.live import load_live_settings, poll_forever
 from anchor.core.config.loader import BootstrapEnv
 from anchor.core.db.pool import create_pool
-from anchor.core.db.schema_gate import assert_schema_matches
+from anchor.core.db.schema_gate import SchemaVersionMismatchError, assert_schema_matches
 from anchor.core.events.publish import configure_publisher
 from anchor.core.logging import configure_logging
 from anchor.runtime.agents import register_all
@@ -45,7 +45,10 @@ async def main() -> None:
             except SchemaVersionMismatchError:
                 if attempt == 14:
                     raise
-                logger.info("Database schema migration in progress... waiting for API auto-migration (attempt %d/15)", attempt + 1)
+                logger.info(
+                    "Database schema migration in progress... waiting for API auto-migration (attempt %d/15)",
+                    attempt + 1,
+                )
                 await asyncio.sleep(2.0)
         # Per-worker capacity is `per_worker_concurrency` from
         # `runtime_config` (FR-004, FR-059) — never a module-level

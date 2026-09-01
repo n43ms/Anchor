@@ -6,12 +6,15 @@ Provides standard subcommands: `anchor init`, `anchor dev`, `anchor status`, and
 from __future__ import annotations
 
 import argparse
+import contextlib
+import json
 import os
 import subprocess
 import sys
 import time
 import webbrowser
 from pathlib import Path
+from typing import Any
 
 _STARTER_APP_TEMPLATE = """# app.py - Single-File Anchor Agent (Wikipedia Research & Email Brief)
 import json
@@ -275,11 +278,15 @@ def main() -> None:
     subparsers.add_parser("status", help="Inspect local cluster health and active workers")
 
     # `anchor config`
-    config_parser = subparsers.add_parser("config", help="Inspect or update live runtime configuration")
+    config_parser = subparsers.add_parser(
+        "config", help="Inspect or update live runtime configuration"
+    )
     config_subparsers = config_parser.add_subparsers(dest="config_action")
-    
+
     config_get = config_subparsers.add_parser("get", help="Get runtime config setting")
-    config_get.add_argument("key", nargs="?", default=None, help="Config key to query (e.g. step_timeout_ms)")
+    config_get.add_argument(
+        "key", nargs="?", default=None, help="Config key to query (e.g. step_timeout_ms)"
+    )
 
     config_set = config_subparsers.add_parser("set", help="Set runtime config setting")
     config_set.add_argument("key", help="Config key to update (e.g. step_timeout_ms)")
@@ -308,7 +315,9 @@ def main() -> None:
 
         if not env_file.exists():
             env_file.write_text(_DOTENV_EXAMPLE_TEMPLATE, encoding="utf-8")
-            print(f"[+] Created {env_file} (Configure your GEMINI_API_KEY, ANTHROPIC_API_KEY, or OPENAI_API_KEY here)")
+            print(
+                f"[+] Created {env_file} (Configure your GEMINI_API_KEY, ANTHROPIC_API_KEY, or OPENAI_API_KEY here)"
+            )
 
         if not env_example.exists():
             env_example.write_text(_DOTENV_EXAMPLE_TEMPLATE, encoding="utf-8")
@@ -325,7 +334,9 @@ def main() -> None:
         env_example = cwd / ".env.example"
 
         if not compose_file.exists() or not app_file.exists():
-            print("[+] Workspace uninitialized. Auto-generating docker-compose.yml, .env, .env.example & app.py...")
+            print(
+                "[+] Workspace uninitialized. Auto-generating docker-compose.yml, .env, .env.example & app.py..."
+            )
             compose_file.write_text(_DOCKER_COMPOSE_TEMPLATE, encoding="utf-8")
             app_file.write_text(_STARTER_APP_TEMPLATE, encoding="utf-8")
             if not env_file.exists():
@@ -348,9 +359,10 @@ def main() -> None:
 
         console_url = os.getenv("ANCHOR_CONSOLE_URL", "http://localhost:3000")
         print(f"[2/2] Launching Operator Console at {console_url}...")
-        
+
         # Wait up to 10s for API server health before opening browser
         import urllib.request
+
         for _ in range(10):
             try:
                 with urllib.request.urlopen("http://localhost:8000/api/health", timeout=1) as resp:
@@ -360,10 +372,8 @@ def main() -> None:
                 time.sleep(1)
 
         if not args.no_browser:
-            try:
+            with contextlib.suppress(Exception):
                 webbrowser.open(console_url)
-            except Exception:
-                pass
 
         print("\nNext step:")
         print("Run agent workflow:  python app.py")
@@ -390,11 +400,15 @@ def main() -> None:
                     else:
                         print(json.dumps(data, indent=2))
             except Exception as e:
-                env_val = os.getenv(f"ANCHOR_{target_key.upper()}" if target_key else "ANCHOR_STEP_TIMEOUT_MS")
+                env_val = os.getenv(
+                    f"ANCHOR_{target_key.upper()}" if target_key else "ANCHOR_STEP_TIMEOUT_MS"
+                )
                 if env_val:
                     print(f"{target_key or 'ANCHOR_STEP_TIMEOUT_MS'}: {env_val} (local .env)")
                 else:
-                    print(f"[!] Could not query live cluster config ({e}). Is anchor cluster running?")
+                    print(
+                        f"[!] Could not query live cluster config ({e}). Is anchor cluster running?"
+                    )
             sys.exit(0)
 
         if args.config_action == "set":
@@ -402,10 +416,8 @@ def main() -> None:
             raw_val = args.value
             parsed_val: Any = raw_val
             if key.endswith("_ms"):
-                try:
+                with contextlib.suppress(Exception):
                     parsed_val = _parse_duration_ms(raw_val)
-                except Exception:
-                    pass
             elif raw_val.isdigit():
                 parsed_val = int(raw_val)
 
@@ -415,11 +427,13 @@ def main() -> None:
                     f"{api_url}/api/config",
                     data=payload,
                     headers={"Content-Type": "application/json"},
-                    method="PATCH"
+                    method="PATCH",
                 )
                 with urllib.request.urlopen(req, timeout=5) as resp:
                     res_data = json.loads(resp.read().decode("utf-8"))
-                    print(f"[+] Updated cluster configuration: {key} = {res_data.get(key, parsed_val)}")
+                    print(
+                        f"[+] Updated cluster configuration: {key} = {res_data.get(key, parsed_val)}"
+                    )
             except Exception as e:
                 print(f"[!] Live cluster patch notice ({e}). Updating local .env file...")
                 env_path = Path.cwd() / ".env"
@@ -429,8 +443,8 @@ def main() -> None:
                     content = env_path.read_text(encoding="utf-8")
                     lines = content.splitlines(keepends=True)
                     updated = False
-                    for idx, l in enumerate(lines):
-                        if l.startswith(f"{env_var_name}="):
+                    for idx, line in enumerate(lines):
+                        if line.startswith(f"{env_var_name}="):
                             lines[idx] = new_line
                             updated = True
                             break

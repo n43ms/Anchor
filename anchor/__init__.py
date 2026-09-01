@@ -1,5 +1,6 @@
 import os
 
+
 def _auto_load_dotenv() -> None:
     """Automatically loads .env from current directory or parents when anchor is imported."""
     try:
@@ -7,7 +8,7 @@ def _auto_load_dotenv() -> None:
         while curr:
             dotenv_file = os.path.join(curr, ".env")
             if os.path.exists(dotenv_file):
-                with open(dotenv_file, "r", encoding="utf-8") as f:
+                with open(dotenv_file, encoding="utf-8") as f:
                     for line in f:
                         line = line.strip()
                         if line and not line.startswith("#") and "=" in line:
@@ -23,13 +24,14 @@ def _auto_load_dotenv() -> None:
     except Exception:
         pass
 
+
 _auto_load_dotenv()
 
-from anchor.core.determinism.actions import Done, ModelCall, ToolCall
-from anchor.core.determinism.context import StepContext
-from anchor.runner import run
-from anchor.runtime.agents.decorators import agent
-from anchor.runtime.tools.decorators import tool
+from anchor.core.determinism.actions import Done, ModelCall, ToolCall  # noqa: E402
+from anchor.core.determinism.context import StepContext  # noqa: E402
+from anchor.runner import run  # noqa: E402
+from anchor.runtime.agents.decorators import agent  # noqa: E402
+from anchor.runtime.tools.decorators import tool  # noqa: E402
 
 __all__ = [
     "Done",

@@ -47,22 +47,28 @@ Create `app.py`:
 ```python
 import anchor, json
 
+
 # 1. Custom Tool 0: Fetch Customer Data (Retry-Safe)
 @anchor.tool(safety="retry_safe", naturally_idempotent=True)
 def fetch_customer(customer_id: str) -> dict:
     return {"id": customer_id, "email": "aditya@anchor.dev", "tier": "VIP"}
+
 
 # 2. Custom Tool 1: Dispatch Email Notification (Unsafe Side-Effect)
 @anchor.tool(safety="unsafe")
 def send_welcome_email(email: str, tier: str) -> dict:
     return {"status": "sent", "to": email, "tier": tier}
 
+
 # 3. Multi-Tool Durable Agent Workflow
 @anchor.agent(name="onboarding_agent")
 def decide_next_step(ctx: anchor.StepContext):
     customer = yield anchor.ToolCall("fetch_customer", {"customer_id": ctx.input["customer_id"]})
-    email_res = yield anchor.ToolCall("send_welcome_email", {"email": customer["email"], "tier": customer["tier"]})
+    email_res = yield anchor.ToolCall(
+        "send_welcome_email", {"email": customer["email"], "tier": customer["tier"]}
+    )
     yield anchor.Done({"status": "completed", "customer": customer, "email": email_res})
+
 
 # 4. Trigger & Submit to Engine
 if __name__ == "__main__":

@@ -95,7 +95,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         try:
             logger.info("running automatic schema migration to head...")
             proc = await asyncio.create_subprocess_exec(
-                sys.executable, "-m", "alembic", "-c", "ops/migrations/alembic.ini", "upgrade", "head"
+                sys.executable,
+                "-m",
+                "alembic",
+                "-c",
+                "ops/migrations/alembic.ini",
+                "upgrade",
+                "head",
             )
             await proc.wait()
             async with pool.acquire(timeout=5.0) as conn:

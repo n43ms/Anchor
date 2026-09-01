@@ -91,6 +91,7 @@ async def register_draft(request: Request, body: dict[str, Any]) -> dict[str, An
                 await r_client.aclose()
     except Exception as e:
         import sys
+
         sys.stderr.write(f"[REDIS DRAFT ERROR] {e}\n")
 
     try:

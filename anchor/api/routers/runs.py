@@ -557,7 +557,11 @@ async def resolve_run(
         settings = await load_runtime_settings(conn)
 
         if body.resolution == "mark_executed":
-            operator_result = body.result if body.result is not None else {"operator_marked_executed": True, "note": body.note}
+            operator_result = (
+                body.result
+                if body.result is not None
+                else {"operator_marked_executed": True, "note": body.note}
+            )
             async with conn.transaction():
                 await conn.execute(
                     """
@@ -613,6 +617,7 @@ async def resolve_run(
                 tool_name,
             )
             from anchor.runtime.tools.registry import resolve as resolve_tool
+
             tool_decl = resolve_tool(tool_name)
 
             is_unsafe = (tool_row and tool_row["safety"] == "unsafe") or (

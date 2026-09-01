@@ -169,7 +169,10 @@ async def _truncate_between_tests(request: pytest.FixtureRequest) -> AsyncIterat
     """
     import inspect
 
-    if inspect.iscoroutinefunction(request.node.obj) or request.node.get_closest_marker("asyncio") is not None:
+    if (
+        inspect.iscoroutinefunction(request.node.obj)
+        or request.node.get_closest_marker("asyncio") is not None
+    ):
         pool = await _get_truncate_pool()
         if pool is not None:
             try:
