@@ -18,7 +18,6 @@
 [![Apache 2.0 License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![PyPI version](https://img.shields.io/badge/pypi-v1.6.0-emerald.svg)](https://pypi.org/project/anchor-runtime/)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-amber.svg)](pyproject.toml)
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)](https://anchor-runtime.xyz)
 [![Crash Recovery](https://img.shields.io/badge/crash_recovery-sub--second-success.svg)](https://anchor-runtime.xyz/demo)
 
 ---
@@ -174,7 +173,6 @@ Anchor/
 ├── ops/
 │   ├── compose/                 # Production Docker Compose Stack & Dockerfiles
 │   └── migrations/              # Alembic DDL Migrations (001_foundation to 006_chaos)
-├── GTM_LAUNCH_PLAYBOOK.md       # Go-To-Market & Monetization Master Playbook
 └── pyproject.toml               # Python Package Spec (anchor-runtime)
 ```
 
