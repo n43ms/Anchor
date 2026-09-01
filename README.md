@@ -1,4 +1,5 @@
 # ⚓ Anchor
+## Crash-proof your AI agents. If a worker container dies mid-run, Anchor resumes execution from its exact step — zero duplicate API calls, zero wasted LLM tokens.
 
 **The PostgreSQL-Authoritative Durable Execution Engine for AI Agent Workflows.**
 
