@@ -58,22 +58,22 @@ def run_agent(ctx: anchor.StepContext):
   },
   {
     id: "simulated-kill",
-    title: "02. SIGKILL Process Interrupt & Auto-Reclaim",
+    title: "02. Worker Process Interrupt & Auto-Reclaim",
     category: "Crash Recovery",
     badge: "SUB-SECOND RECLAIM",
     badgeType: "amber",
     videoUrl: "/videos/demo_simulated_kill.mp4",
     summary:
-      "Demonstrates a hard SIGKILL process termination mid-workflow. Shows Anchor's worker lease expiration detection, monotonic epoch fencing (Epoch 1 → Epoch 2), and sub-second lease reclamation by a secondary worker replica without lost state.",
+      "Demonstrates an unplanned worker process crash mid-workflow. Shows Anchor's worker lease expiration detection, monotonic epoch fencing (Epoch 1 → Epoch 2), and sub-second lease reclamation by a secondary worker replica without lost state.",
     keyFeatures: [
       "Monotonic Epoch Fencing (AN001)",
       "Worker Claim Lease Expiration (<300ms)",
       "Zero Lost LLM Reasoning State",
       "Automatic Re-execution & Reclaim",
     ],
-    codeSnippet: `# Worker #1 (PID 4812) killed by SIGKILL mid-execution
+    codeSnippet: `# Worker #1 (PID 4812) interrupted by container crash mid-execution
 # Worker #2 (PID 9104) detects lease expiry and reclaims run:
-# [EPOCH SWAP] worker-a#1 SIGKILL → worker-b#1 (epoch 1 → 2)
+# [EPOCH SWAP] worker-a#1 process crash → worker-b#1 (epoch 1 → 2)
 # Replaying completed step #0, step #1 (side-effects skipped)
 # Resuming LLM execution at step #2 cleanly`,
   },
@@ -103,11 +103,11 @@ POST /api/runs/102/resolve {"resolution": "mark_not_executed"}`,
     id: "chaos-run",
     title: "04. Live Adversarial Fault Injection Harness",
     category: "Chaos Testing",
-    badge: "SIGKILL FAULT INJECTION • 0 VIOLATIONS",
+    badge: "ADVERSARIAL FAULT INJECTION • 0 VIOLATIONS",
     badgeType: "rose",
     videoUrl: "/videos/demo_chaos.mp4",
     summary:
-      "Live recording of the Chaos Engine injecting random SIGKILL fault terminations across parallel worker replicas. Demonstrates real-time lease swaps, lease fencing, and 100% deterministic workflow completion.",
+      "Live recording of the Chaos Engine injecting random process terminations across parallel worker replicas. Demonstrates real-time lease swaps, lease fencing, and 100% deterministic workflow completion.",
     keyFeatures: [
       "Adversarial Process Termination Engine",
       "Multi-Worker Replica Load Balancing",
@@ -211,7 +211,7 @@ export const DemosView: React.FC<DemosViewProps> = ({ onClose, onOpenDocs }) => 
               See Anchor's Crash Recovery & Epoch Fencing in Action
             </h1>
             <p className="text-[11px] text-zinc-400 font-sans leading-normal">
-              Explore recorded video demonstrations of multi-step agent execution, hard SIGKILL process interrupts, unsafe tool pauses, and chaos harness runs.
+              Explore recorded video demonstrations of multi-step agent execution, unplanned worker process crashes, unsafe tool pauses, and chaos harness runs.
             </p>
           </div>
 

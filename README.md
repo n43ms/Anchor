@@ -79,9 +79,9 @@ Run `python app.py`. `anchor.run()` serializes the workflow AST and submits it t
 Watch live recordings of Anchor handling hard process terminations, unsafe tool pauses, and adversarial fault injections:
 
 - 📺 **[01. End-to-End Multi-Step LLM Workflow](https://anchor-runtime.xyz/demo)** — Parallel market intelligence lookup, Gemini 2.5 Flash LLM synthesis, and email delivery.
-- ⚡ **[02. SIGKILL Process Interrupt & Auto-Reclaim](https://anchor-runtime.xyz/demo)** — Hard process termination mid-run with sub-second lease reclamation by secondary worker.
+- ⚡ **[02. Worker Process Interrupt & Auto-Reclaim](https://anchor-runtime.xyz/demo)** — Unplanned process crash mid-run with sub-second lease reclamation by secondary worker.
 - 🛡️ **[03. Unsafe Tool Pause & NeedsReview Queue](https://anchor-runtime.xyz/demo)** — `@anchor.tool(safety="unsafe")` protection protocol halting runs for operator resolution (`mark_executed` / `mark_not_executed`).
-- 💥 **[04. Live Adversarial Fault Injection Harness](https://anchor-runtime.xyz/demo)** — Real-time random SIGKILL terminations across parallel worker replicas.
+- 💥 **[04. Live Adversarial Fault Injection Harness](https://anchor-runtime.xyz/demo)** — Real-time process termination faults injected across parallel worker replicas.
 - 📊 **[05. Invariant Verification Log Proof](https://anchor-runtime.xyz/demo)** — Benchmark logs proving 5/5 SQL invariants held under load.
 
 👉 **[Watch All Video Demos at anchor-runtime.xyz/demo](https://anchor-runtime.xyz/demo)**
@@ -104,7 +104,7 @@ Anchor fills this void as a lightweight, PostgreSQL-authoritative engine embeddi
 | **Infrastructure Tax** | **$0/mo** (Runs in existing DB) | $0/mo (Unsafe) | **$5,000+/mo** (Massive External Cluster) |
 | **Two-Phase Side-Effect Guard** | **Atomic INTENT / RESULT Journal** | ❌ Duplicate API Calls | ⚠️ Activity Heartbeats |
 | **Monotonic Epoch Fencing** | **Database Constraint (`AN001`)** | ❌ Split-Brain Risk | ❌ Application-Level |
-| **SIGKILL Recovery Time** | **P50 < 3.1s** | ❌ Process Crash Data Loss | ⚠️ 10s+ Timeout Window |
+| **Crash Recovery Time** | **P50 < 3.1s** | ❌ Process Crash Data Loss | ⚠️ 10s+ Timeout Window |
 | **Developer API** | **Native Python Generators** | Complex Graph State Handoffs | Multi-File SDK Boilerplate |
 
 ---
@@ -114,7 +114,7 @@ Anchor fills this void as a lightweight, PostgreSQL-authoritative engine embeddi
 When AI agents execute multi-step tasks — searching database records, calling third-party APIs, or processing payments — server crashes normally result in lost progress and double-billing. Anchor acts as an immutable flight recorder: every step is saved before it runs, so if a server dies, another takes over instantly with zero wasted credits.
 
 * **Financial Savings Analysis**: On 1,000,000 multi-step LLM requests per month with a 2% node crash rate, unmanaged retries cost over **$12,400/mo** in duplicate prompt tokens. Anchor's step-level result cache reduces wasted token charges to **$0**.
-* **Idempotent Side-Effect Guarding**: If a worker process is terminated by Kubernetes SIGKILL while calling a payment endpoint or database mutation, Anchor checks the `TOOL_INTENT` sequence ID on recovery to prevent duplicate charges or corrupt row insertions.
+* **Idempotent Side-Effect Guarding**: If a worker process experiences an OOM, cloud restart, or process termination while calling a payment endpoint or database mutation, Anchor checks the `TOOL_INTENT` sequence ID on recovery to prevent duplicate charges or corrupt row insertions.
 
 ---
 

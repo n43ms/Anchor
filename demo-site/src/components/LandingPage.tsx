@@ -624,7 +624,7 @@ export const LandingPage: React.FC = () => {
                   <td className="py-3 pr-5 text-zinc-500">❌ Application-Level</td>
                 </tr>
                 <tr className="hover:bg-white/[0.02]">
-                  <td className="py-3 pl-5 pr-3 font-semibold text-white">Sub-Second SIGKILL Recovery</td>
+                  <td className="py-3 pl-5 pr-3 font-semibold text-white">Sub-Second Crash Recovery</td>
                   <td className="py-3 px-3 font-bold text-emerald-400">✅ P50 &lt; 3.1s</td>
                   <td className="py-3 px-3 text-zinc-500">❌ Process Crash Data Loss</td>
                   <td className="py-3 pr-5 text-amber-400">⚠️ 10s+ Timeout Window</td>
@@ -680,25 +680,20 @@ export const LandingPage: React.FC = () => {
                 <div className="rounded-xl border border-white/10 bg-black/80 p-4 space-y-2">
                   <div className="font-bold text-white text-xs">Idempotent Side-Effect Guarding</div>
                   <div className="text-[11px] text-zinc-400 font-sans leading-relaxed">
-                    If a worker process is terminated by Kubernetes SIGKILL while calling a payment endpoint or database mutation, Anchor checks the <code className="text-amber-300">TOOL_INTENT</code> sequence ID on recovery to prevent duplicate charges or corrupt row insertions.
+                    If a worker process experiences an OOM, cloud restart, or process crash while calling a payment endpoint or database mutation, Anchor checks the <code className="text-amber-300">TOOL_INTENT</code> sequence ID on recovery to prevent duplicate charges or corrupt row insertions.
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
+          {/* Section 5B: Deep Engineering Breakdown */}
+          <div className="space-y-6">
+            <h3 className="text-xl font-bold font-mono text-white text-center">
+              Deep Architectural Intricacies & System Invariants
+            </h3>
 
-
-          {/* Section 5B: Consumer Wording: How Anchor Is Engineered */}
-          <div className="space-y-6 border-t border-white/10 pt-8 font-mono text-xs">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider">
-                How Anchor Is Engineered
-              </h3>
-              <span className="text-amber-400 font-bold">ENGINEERING CORE</span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono">
               <div className="rounded-2xl border border-white/10 bg-black p-5 space-y-3">
                 <div className="font-bold text-white text-sm uppercase text-amber-400">
                   1. Database-Authoritative State Engine
@@ -713,13 +708,13 @@ export const LandingPage: React.FC = () => {
                   2. Two-Phase Tool Intent Journaling
                 </div>
                 <p className="text-zinc-400 font-sans text-xs leading-relaxed">
-                  Before a side-effect tool call is executed, Anchor writes a <code className="text-amber-300">TOOL_INTENT</code> record. Upon completion, it commits <code className="text-emerald-300">TOOL_RESULT</code>. On crash recovery, replayed steps load cached results in &lt;5ms without executing side effects a second time.
+                  Before a side-effect tool call is executed, Anchor writes a <code className="text-emerald-300">TOOL_INTENT</code> record. Upon completion, it commits <code className="text-emerald-300">TOOL_RESULT</code>. On crash recovery, replayed steps load cached results in &lt;5ms without executing side effects a second time.
                 </p>
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-black p-5 space-y-3">
                 <div className="font-bold text-white text-sm uppercase text-rose-400">
-                  3. Monotonic Epoch Token Fencing
+                  3. Monotonic Epoch Fencing (`AN001`)
                 </div>
                 <p className="text-zinc-400 font-sans text-xs leading-relaxed">
                   Every worker lease renewal or run claim increments the run's monotonic <code className="text-rose-300">epoch</code> token. Delayed writes from a zombie worker with a stale epoch are blocked at the database constraint boundary with <code className="text-rose-300">AN001_FENCED_WRITE</code>.
@@ -731,7 +726,7 @@ export const LandingPage: React.FC = () => {
                   4. Automated Invariant Audit Suite
                 </div>
                 <p className="text-zinc-400 font-sans text-xs leading-relaxed">
-                  Continuous adversarial testing harness runs 5 automated SQL assertions (<code className="text-blue-300">I1 - I5</code>) after every chaos run, mathematically proving zero duplicate tool calls and zero stranded runs under process SIGKILL termination.
+                  Continuous adversarial testing harness runs 5 automated SQL assertions (<code className="text-blue-300">I1 - I5</code>) after every chaos run, mathematically proving zero duplicate tool calls and zero stranded runs under process termination faults.
                 </p>
               </div>
             </div>
