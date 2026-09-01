@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { MiniOperatorConsole } from "./MiniOperatorConsole";
 import { MechanismExplainer } from "./MechanismExplainer";
 import { RunThread } from "./RunThread";
@@ -27,10 +27,14 @@ import {
   DollarSign,
   Briefcase,
   UserCheck,
+  X,
   Copy,
   Check,
   ChevronDown,
   ChevronUp,
+  Workflow,
+  Sparkles,
+  GitBranch,
   BookOpen,
   Video,
 } from "lucide-react";
@@ -57,6 +61,51 @@ export const LandingPage: React.FC = () => {
   const [heroPreset, setHeroPreset] = useState<"normal" | "crash">("crash");
   const [showArchDetails, setShowArchDetails] = useState(false);
   const [showWhyDetails, setShowWhyDetails] = useState(false);
+
+  // Synchronize route URL path with Demos & Docs views (/demo and /docs)
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname.toLowerCase();
+      if (path.startsWith("/demo") || path.startsWith("/demos")) {
+        setIsDemosViewOpen(true);
+        setIsDocsViewOpen(false);
+      } else if (path.startsWith("/docs") || path.startsWith("/documentation")) {
+        setIsDocsViewOpen(true);
+        setIsDemosViewOpen(false);
+      } else {
+        setIsDemosViewOpen(false);
+        setIsDocsViewOpen(false);
+      }
+    };
+
+    handlePopState();
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  const openDemosView = () => {
+    setIsDemosViewOpen(true);
+    setIsDocsViewOpen(false);
+    if (window.location.pathname !== "/demo") {
+      window.history.pushState(null, "", "/demo");
+    }
+  };
+
+  const openDocsView = () => {
+    setIsDocsViewOpen(true);
+    setIsDemosViewOpen(false);
+    if (window.location.pathname !== "/docs") {
+      window.history.pushState(null, "", "/docs");
+    }
+  };
+
+  const closeOverlayViews = () => {
+    setIsDemosViewOpen(false);
+    setIsDocsViewOpen(false);
+    if (window.location.pathname !== "/") {
+      window.history.pushState(null, "", "/");
+    }
+  };
 
   const scrollToId = (id: string) => {
     const el = document.getElementById(id);
@@ -127,11 +176,8 @@ export const LandingPage: React.FC = () => {
         }`}
       >
         <DemosView 
-          onClose={() => setIsDemosViewOpen(false)} 
-          onOpenDocs={() => {
-            setIsDemosViewOpen(false);
-            setIsDocsViewOpen(true);
-          }}
+          onClose={closeOverlayViews} 
+          onOpenDocs={openDocsView}
         />
       </div>
 
@@ -143,7 +189,7 @@ export const LandingPage: React.FC = () => {
             : "opacity-0 scale-95 pointer-events-none"
         }`}
       >
-        <DocumentationView onClose={() => setIsDocsViewOpen(false)} />
+        <DocumentationView onClose={closeOverlayViews} />
       </div>
 
       {!isDocsViewOpen && !isDemosViewOpen && (
@@ -231,7 +277,7 @@ export const LandingPage: React.FC = () => {
               <div className="flex items-center gap-1.5 font-mono text-xs shrink-0">
                 <button
                   type="button"
-                  onClick={() => setIsDemosViewOpen(true)}
+                  onClick={openDemosView}
                   className="flex items-center gap-1 rounded-xl border border-amber-500/50 bg-amber-500/20 px-2.5 py-1 text-amber-300 font-bold hover:bg-amber-500/30 hover:border-amber-400 transition-all text-[10.5px] cursor-pointer shadow-sm"
                 >
                   <Video className="h-3.5 w-3.5 text-amber-400" />
@@ -240,7 +286,7 @@ export const LandingPage: React.FC = () => {
 
                 <button
                   type="button"
-                  onClick={() => setIsDocsViewOpen(true)}
+                  onClick={openDocsView}
                   className="flex items-center gap-1 rounded-xl border border-white/20 bg-white/10 px-2.5 py-1 text-zinc-200 font-bold hover:bg-white/20 hover:border-white/30 transition-all text-[10.5px] cursor-pointer shadow-sm"
                 >
                   <BookOpen className="h-3.5 w-3.5 text-zinc-400" />
